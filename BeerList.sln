@@ -1,0 +1,39 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeerList", "BeerList\BeerList.csproj", "{FF0F2218-76CC-4AA0-8669-2B853EF0E6C6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PublishScripts", "PublishScripts", "{F398B7E7-F851-422D-907E-BD40E7AAF348}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{060F1D50-2CCA-49DA-BBEB-BBED18440AE8}"
+	ProjectSection(SolutionItems) = preProject
+		PublishScripts\Scripts\Deploy-AzureResourceGroup.ps1 = PublishScripts\Scripts\Deploy-AzureResourceGroup.ps1
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Templates", "Templates", "{964B1BCF-42AC-4D35-A5C4-53E17A0A45A1}"
+	ProjectSection(SolutionItems) = preProject
+		PublishScripts\Templates\BeerList.json = PublishScripts\Templates\BeerList.json
+		PublishScripts\Templates\BeerList.param.dev.json = PublishScripts\Templates\BeerList.param.dev.json
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FF0F2218-76CC-4AA0-8669-2B853EF0E6C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FF0F2218-76CC-4AA0-8669-2B853EF0E6C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FF0F2218-76CC-4AA0-8669-2B853EF0E6C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FF0F2218-76CC-4AA0-8669-2B853EF0E6C6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{060F1D50-2CCA-49DA-BBEB-BBED18440AE8} = {F398B7E7-F851-422D-907E-BD40E7AAF348}
+		{964B1BCF-42AC-4D35-A5C4-53E17A0A45A1} = {F398B7E7-F851-422D-907E-BD40E7AAF348}
+	EndGlobalSection
+EndGlobal

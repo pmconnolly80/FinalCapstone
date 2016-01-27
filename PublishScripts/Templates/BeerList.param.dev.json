@@ -1,0 +1,32 @@
+{
+  "siteName": {
+    "value": "BeerListDemoDay"
+  },
+  "hostingPlanName": {
+    "value": "beerlistdemoday"
+  },
+  "siteLocation": {
+    "value": "Central US"
+  },
+  "sku": {
+    "value": "Free"
+  },
+  "workerSize": {
+    "value": "0"
+  },
+  "serverName": {
+    "value": "nssbeerlistdemoday"
+  },
+  "serverLocation": {
+    "value": "East US"
+  },
+  "administratorLogin": {
+    "value": "dbadmin"
+  },
+  "administratorLoginPassword": {
+    "value": "TheDude16"
+  },
+  "databaseName": {
+    "value": "BeerListDemoDay_db"
+  }
+}
