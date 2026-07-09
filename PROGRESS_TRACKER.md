@@ -30,6 +30,8 @@ The refactor has moved from planning into a working starter implementation for a
 ### Verified
 - Backend build succeeded with `dotnet build`
 - Frontend build succeeded with `npm run build`
+- Local Docker stack started successfully and exposed the app at `http://localhost:3001`
+- Backend API became available at `http://localhost:5153`
 
 ## Remaining work
 
