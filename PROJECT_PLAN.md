@@ -10,6 +10,16 @@ Refactor the existing ASP.NET MVC beer catalog into a modern product with:
 
 The initial goal is not to rebuild everything at once. The goal is to preserve the current value of the app while moving to a more scalable architecture.
 
+### Real-world driver: the tavern's mug club
+
+The concrete use case behind this app: a local tavern runs a "200 club" — drink 200 different beers off their list and earn a mug. Today this is tracked on a printed sheet where the bartender initials next to each beer as a customer drinks it. This app replaces that paper process:
+- each customer has a digital progress list (which of the ~200 beers they've had)
+- a bartender confirms a beer at the point of service, which is what actually marks it complete on the customer's list (customers can't self-report — it must be bartender-confirmed, same as the paper initials)
+- the customer can see their own progress toward 200
+- the data model should anticipate more than one tavern/location down the line, even though the first build targets a single tavern's list
+
+This is the primary MVP driver, not a secondary feature — search/filter/CRUD on the beer catalog exists to support this, not the other way around.
+
 ## 2. Recommended target architecture
 
 ### Frontend
@@ -33,14 +43,17 @@ The initial goal is not to rebuild everything at once. The goal is to preserve t
 
 ## 3. Product vision
 
-The app should evolve from a simple beer list into a richer beer discovery experience with:
-- browse by brewery, style, and name
+The app should evolve from a paper mug-club sheet into a digital progress tracker with:
+- browse the tavern's beer list by brewery, style, and name
+- a bartender-confirmation workflow that marks a beer complete on a customer's list
+- per-customer progress toward the 200-beer goal, with a clear "mug earned" milestone
 - search and filtering
-- user accounts
+- user accounts (customer and bartender/staff roles)
 - saved favorites
 - ratings and reviews
 - admin moderation tools
 - analytics and reporting over time
+- support for more than one tavern/location eventually
 
 ## 4. Phase-based roadmap
 
@@ -129,7 +142,9 @@ The first release should focus on the current app’s value, not the future visi
 - view beer details
 - create, update, and delete beers
 - user registration and login
-- role-based editing permissions
+- role-based editing permissions (admin, bartender, customer)
+- bartender flow to confirm a beer against a specific customer's list
+- customer view of their own progress toward 200 beers, with a "mug earned" milestone
 - responsive UI
 - API-backed data storage
 
@@ -139,6 +154,7 @@ The first release should focus on the current app’s value, not the future visi
 - ratings and comments
 - advanced admin dashboard
 - import/export data
+- Open Brewery DB API integration (https://www.openbrewerydb.org/) to pull real brewery info and images — scope during the next project planning session
 
 ## 6. Recommended backlog
 
@@ -153,6 +169,12 @@ The first release should focus on the current app’s value, not the future visi
 - As a user, I can register an account
 - As a user, I can log in and log out
 - As an admin, I can manage permissions
+
+### Epic 2.5 — Mug club progress and bartender confirmation
+- As a customer, I can see which beers on the list I've had and how many I have left until 200
+- As a bartender, I can look up a customer and confirm they drank a specific beer, marking it complete on their list
+- As a customer, I am notified or shown a milestone when I hit 200 beers and earn a mug
+- As an admin, I can see and correct confirmation history if a bartender makes a mistake
 
 ### Epic 3 — Discovery and engagement
 - As a user, I can search beers

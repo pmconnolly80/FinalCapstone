@@ -10,7 +10,9 @@
 
 ### Data model
 - Define Beer entity
-- Define User and role model
+- Define User and role model (customer, bartender, admin)
+- Define BeerConfirmation entity (customer, beer, confirming bartender, timestamp) — this is what marks a beer complete on a customer's list
+- Define Tavern/Location entity now so the model isn't single-tenant-locked, even though v1 only has one tavern's data
 - Create initial database schema
 - Add migration strategy
 
@@ -35,8 +37,16 @@
 
 - Add login and registration flow
 - Add protected routes
-- Add role-based permissions for editing
+- Add role-based permissions for editing (admin, bartender, customer)
 - Add session handling
+
+## Phase 3.5 — Mug club progress and bartender confirmation
+
+- Build customer lookup (by name search, with QR/membership-code lookup as a stretch goal)
+- Build bartender "confirm beer for customer" action
+- Build customer progress view (X of 200, list of remaining beers)
+- Add "mug earned" milestone at 200 confirmed beers
+- Add admin tooling to review/correct confirmations
 
 ## Phase 4 — Mobile-first polish
 
@@ -59,3 +69,4 @@
 - Reviews
 - Images
 - Metrics and reporting
+- Integrate Open Brewery DB API (https://www.openbrewerydb.org/) to pull real brewery info and images into the catalog — revisit scope/design during next project planning pass

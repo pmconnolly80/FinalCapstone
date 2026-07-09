@@ -15,7 +15,21 @@ flowchart TD
     I --> J[See updated content]
 ```
 
-## 2. Laptop admin flow
+## 2. Bartender confirmation flow (phone/tablet at the bar)
+
+```mermaid
+flowchart TD
+    A[Customer orders a beer] --> B[Bartender opens confirm-beer flow]
+    B --> C[Look up customer]
+    C --> D[Select beer from list]
+    D --> E[Confirm]
+    E --> F[Record: customer + beer + bartender + timestamp]
+    F --> G{Customer now at 200?}
+    G -->|Yes| H[Show mug-earned milestone]
+    G -->|No| I[Show updated progress count]
+```
+
+## 3. Laptop admin flow
 
 ```mermaid
 flowchart TD
@@ -26,7 +40,7 @@ flowchart TD
     E --> F[Review audit or confirmation]
 ```
 
-## 3. Account flow
+## 4. Account flow
 
 ```mermaid
 flowchart TD
@@ -38,7 +52,7 @@ flowchart TD
     D --> F[Manage account or profile]
 ```
 
-## 4. High-level system flow
+## 5. High-level system flow
 
 ```mermaid
 flowchart LR

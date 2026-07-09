@@ -48,6 +48,7 @@ The refactor has moved from planning into a working starter implementation for a
 - Add favorites or saved beers
 - Add reviews and ratings
 - Add deployment pipeline for AWS
+- Integrate Open Brewery DB API (https://www.openbrewerydb.org/) for real brewery info and images — scope this out in the next project planning/tracking pass
 
 ## Local run instructions
 
@@ -72,3 +73,4 @@ This project is now in a strong transitional state: the old ASP.NET MVC app has 
 3. Add admin-only editing workflow
 4. Polish the mobile experience
 5. Prepare for AWS deployment
+6. When planning the next round of features, scope the Open Brewery DB API integration (brewery info + images)
