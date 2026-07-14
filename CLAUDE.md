@@ -20,50 +20,52 @@ flow, not the other way around. See `PROJECT_PLAN.md` section 1 for the full fra
 - **`BeerList/`** — legacy pre-refactor ASP.NET MVC 5 / EF6 app. Kept as historical
   reference only; not where new work happens. Notably it had `[Authorize(Roles = "canEdit")]`
   role gating that the new `beer-app` backend does not currently have.
-- **Planning docs** (root level, flat, no `docs/` folder): `PROJECT_PLAN.md`,
+- **Planning/vision docs** (root level, flat, no `docs/` folder): `PROJECT_PLAN.md`,
   `TECHNICAL_ARCHITECTURE_PLAN.md`, `FEATURE_MAP.md`, `IMPLEMENTATION_BACKLOG.md`,
-  `MVP_SCREEN_PLAN.md`, `MOBILE_FIRST_PRODUCT_OUTLINE.md`, `PRODUCT_FLOW_DIAGRAM.md`,
-  `PHASE1_IMPLEMENTATION_CHECKLIST.md`, `PROGRESS_TRACKER.md`.
+  `MVP_SCREEN_PLAN.md`, `MOBILE_FIRST_PRODUCT_OUTLINE.md`, `PRODUCT_FLOW_DIAGRAM.md`.
+  These describe the target product and haven't gone stale the way a status tracker does.
+- **Agile tracking** (current source of truth for status): `EPICS_AND_SPRINTS.md` (epics,
+  sprints, links to GitHub Issues/Milestones) and `SESSION_LOG.md` (dated per-session record).
+  `PROGRESS_TRACKER.md` and `PHASE1_IMPLEMENTATION_CHECKLIST.md` are retired stubs pointing here
+  — they went stale (described a plain CRUD app, or stayed fully unchecked after the work was
+  actually done) and were replaced rather than fixed in place.
 
-Suggested reading order for onboarding: `PROJECT_PLAN.md` → `PROGRESS_TRACKER.md` →
-`FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlog detail → `beer-app/README.md`
-for run instructions.
+Suggested reading order for onboarding: `PROJECT_PLAN.md` → `EPICS_AND_SPRINTS.md` for current
+status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlog detail →
+`beer-app/README.md` for run instructions.
 
 ## Current implementation status (verified against code, not docs)
 
 **Built:**
 - `Beer` model — `Id, Name, Brewery, Style, Description, CreatedAt`
   (`beer-app/backend/Models/Beer.cs`)
-- `BeersController` — GET all / GET by id (anonymous), POST/PUT/DELETE (`[Authorize]`)
-  (`beer-app/backend/Controllers/BeersController.cs`)
-- `AuthController` — `/api/auth/register` and `/api/auth/login`, JWTs via `IdentityUser`
-  (`beer-app/backend/Controllers/AuthController.cs`)
+- `BeersController` — GET all / GET by id (anonymous), POST/PUT/DELETE
+  (`[Authorize(Roles = "Admin")]`) (`beer-app/backend/Controllers/BeersController.cs`)
+- `AuthController` — `/api/auth/register` (assigns the `Customer` role) and `/api/auth/login`,
+  JWTs via `IdentityUser` with role claims (`beer-app/backend/Controllers/AuthController.cs`)
 - React pages: beer list, beer detail, create/edit form, login/register
   (`beer-app/frontend/src/pages/`)
 - Docker Compose wiring for db/api/web
+- EF Core migrations (`beer-app/backend/Migrations/`) and startup seeding of the
+  `Admin`/`Bartender`/`Customer` roles plus sample beers (`beer-app/backend/Data/SeedData.cs`)
+- **Note:** the auth/roles/migrations/seed work above is complete on the `harden-foundation`
+  branch (PR open) but not yet merged to `master` — check which branch you're on.
 
-**Not built** — documented across the planning docs as the primary MVP driver, but a grep
-for "confirm|mug|tavern" across the entire backend and frontend source returns zero hits:
+**Not built** — the primary MVP driver per the planning docs, and the active work: Sprint 1 in
+`EPICS_AND_SPRINTS.md` (GitHub issues [#2](https://github.com/pmconnolly80/FinalCapstone/issues/2)–[#6](https://github.com/pmconnolly80/FinalCapstone/issues/6)):
 - No `BeerConfirmation` or `Tavern`/`Location` entity
 - No bartender confirm-a-beer-for-a-customer flow
 - No customer "X of 200" progress view or "mug earned" milestone
-- No user roles at all — no `[Authorize(Roles=...)]` anywhere in `beer-app`
+- No admin UI to assign roles (currently DB-manual only) or audit/correct confirmations
 - No Open Brewery DB API integration (flagged in docs as a future scope item, revisit in
   next planning pass)
 
-**Known gap:** `beer-app/backend/Data/` has no `Migrations/` folder, but `Program.cs` calls
-`db.Database.Migrate()` on startup. A fresh database will not get a schema until someone
-runs `dotnet ef migrations add Initial`.
-
 ## Known doc inconsistencies (flagged, not yet fixed)
 
-- Root `README.md` and `PROGRESS_TRACKER.md` still describe a plain CRUD app and don't
-  mention the mug-club reframing that the other docs and the latest commit already reflect.
-- `PHASE1_IMPLEMENTATION_CHECKLIST.md` has every box unchecked even though
-  `PROGRESS_TRACKER.md` confirms most of that work (scaffolds, CRUD API, auth endpoints,
-  Docker) is done.
-- Frontend port mismatch: `beer-app/README.md` says `:3000`, `PROGRESS_TRACKER.md` says the
-  Docker stack exposed it at `:3001`.
+- Root `README.md` still describes a plain CRUD app and doesn't mention the mug-club
+  reframing that the other docs already reflect.
+- Frontend port mismatch: `beer-app/README.md` says `:3000`, historical Docker runs exposed
+  it at `:3001` — worth double-checking against current `docker-compose.yml` if it matters.
 - Root `README.md` is UTF-16 encoded — plain `cat`/grep will show garbled output; use
   `iconv -f UTF-16 -t UTF-8` or an editor that auto-detects encoding.
 
@@ -81,9 +83,10 @@ Manual (no Docker): `dotnet run` in `beer-app/backend/`, and
 
 ## Likely next steps
 
-Per `PROGRESS_TRACKER.md`'s own "suggested next focus," and given mug-club/bartender
-confirmation is the stated primary driver with zero code yet, the realistic paths forward are:
-- Start Epic 2.5 from `PROJECT_PLAN.md` (mug club progress + bartender confirmation) — the
-  actual product differentiator, currently 0% built.
-- Or harden the existing CRUD/auth foundation first (seed data, add EF Core migrations,
-  add role-based auth) before layering on the mug-club feature.
+The foundation (migrations, seed data, role-based auth) is hardened — see `harden-foundation`
+branch above. Current active work is **Sprint 1: Mug Club Core** (the actual product
+differentiator, per `EPICS_AND_SPRINTS.md`): merge `harden-foundation` into `master` first
+(the mug-club API depends on the role-gating it adds), then work GitHub issues
+[#2](https://github.com/pmconnolly80/FinalCapstone/issues/2)–[#6](https://github.com/pmconnolly80/FinalCapstone/issues/6)
+in order — data model, bartender confirm endpoint, customer progress endpoint, then the two
+matching UI screens.

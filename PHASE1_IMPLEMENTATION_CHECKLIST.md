@@ -1,71 +1,13 @@
-# Phase 1 Implementation Checklist
+# Phase 1 Implementation Checklist (retired)
 
-## 1. Define the initial domain model
+This file has been superseded by formal Agile tracking. It stayed fully unchecked even after
+the underlying work (scaffolds, CRUD API, auth endpoints, Docker) was actually done, which made
+it actively misleading rather than just outdated.
 
-- [ ] Confirm the first beer fields needed for MVP
-- [ ] Decide whether description, image, and tags are in v1 or later
-- [ ] Define the initial user role model
-- [ ] Decide how admin and editor permissions will work
+Current status now lives in:
 
-## 2. Set up the backend API
-
-- [ ] Create a new ASP.NET Core Web API project
-- [ ] Add Entity Framework Core and PostgreSQL support
-- [ ] Create a Beer entity and DbContext
-- [ ] Add initial migration
-- [ ] Create endpoints for:
-  - [ ] GET /beers
-  - [ ] GET /beers/{id}
-  - [ ] POST /beers
-  - [ ] PUT /beers/{id}
-  - [ ] DELETE /beers/{id}
-
-## 3. Set up the frontend app
-
-- [ ] Create a React or Next.js project
-- [ ] Add TypeScript
-- [ ] Set up a basic app shell
-- [ ] Add routing for:
-  - [ ] Home
-  - [ ] Beer list
-  - [ ] Beer detail
-  - [ ] Create/edit beer
-  - [ ] Login/register
-
-## 4. Connect frontend to backend
-
-- [ ] Add API client configuration
-- [ ] Fetch and render the beer list
-- [ ] Build the beer detail view
-- [ ] Submit create/edit forms
-- [ ] Handle loading, error, and empty states
-
-## 5. Add authentication
-
-- [ ] Set up authentication flow
-- [ ] Add login and registration UI
-- [ ] Protect admin-only actions
-- [ ] Add role-based authorization rules
-
-## 6. Make it mobile-first
-
-- [ ] Design the main screens for phone screens first
-- [ ] Ensure touch-friendly buttons and forms
-- [ ] Optimize spacing and navigation for small screens
-- [ ] Test main flows on a mobile viewport
-
-## 7. Prepare deployment
-
-- [ ] Create a local environment configuration
-- [ ] Set up a development database
-- [ ] Prepare AWS hosting plan
-- [ ] Add basic CI/CD workflow if desired
-
-## 8. First milestone definition
-
-The first milestone is complete when:
-- [ ] the beer list loads from the API
-- [ ] users can view beer details
-- [ ] authorized users can create/edit/delete beers
-- [ ] login and auth work
-- [ ] the experience works on a phone screen
+- **[`EPICS_AND_SPRINTS.md`](EPICS_AND_SPRINTS.md)** — epics, sprints, and their status
+- **[GitHub Issues](https://github.com/pmconnolly80/FinalCapstone/issues)** and
+  **[Milestones](https://github.com/pmconnolly80/FinalCapstone/milestones)** — the live
+  sprint board
+- **[`SESSION_LOG.md`](SESSION_LOG.md)** — a dated record of what happened each working session
