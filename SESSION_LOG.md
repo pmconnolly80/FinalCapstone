@@ -126,3 +126,114 @@ Fix homes: mobile blockers → Customer Phone Experience sprint; security items 
 Hardening sprint (both named in `EPICS_AND_SPRINTS.md`).
 
 No product code changed this session — docs only.
+
+## 2026-07-13 — Feature expansion: one-device PIN confirmation, push, social layer, rotating inventory, social sign-in + persona deep dive
+
+**Epic:** planning (reshapes `epic:mug-club` Sprints 1–2; expands `epic:auth`,
+`epic:phone-experience`, `epic:admin`, `epic:retention`)
+
+Planning session adding five feature ideas to the product, expanded into concrete usage via
+a new persona deep-dive doc (`PERSONAS_AND_USAGE.md` — customer/bartender/owner/admin
+day-in-the-life narratives):
+
+1. **One-device confirmation rule (the big one, decided mid-session):** everything happens
+   on the customer's phone — no bar tablet, no bartender screens. The bartender types their
+   personal **6-digit PIN** on the customer's phone to confirm a beer (customer from JWT
+   session, bartender resolved from PIN). Supersedes the earlier "I'm drinking this"
+   request-queue and QR-membership-card designs. Threat model + two-axis lockout +
+   velocity/anomaly flags in `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1; alternatives kept in
+   `PERSONAS_AND_USAGE.md` §6. **GitHub issues #3/#6 need re-scoping to match** (flagged in
+   `EPICS_AND_SPRINTS.md`, issues not yet edited).
+2. **Push notifications:** frontend becomes an installable PWA; Web Push w/ VAPID,
+   `PushSubscription` entity, owner-composed sends with consent-gated audience targeting
+   plus automated nudges, frequency caps (§4.2).
+3. **Social layer (opt-in, default private):** display name, system-generated milestone
+   feed (no free-text posts), cheers, leaderboard, communal goal widget, wall of mugs (§4.3).
+4. **Rotating inventory:** `Beer.Availability` (on tap/available/out of stock/retired),
+   in-stock-by-default search, confirmations permanent through churn (§4.4); plus a
+   **catalog guardrail** — an abnormal burst of beer-adds notifies owner+admin (§4.5), and
+   **admin can edit all data** to fix inaccuracies/questionable submissions, audited with
+   reason notes.
+5. **Social sign-in (researched):** Google/Facebook/Apple via ASP.NET Core Identity
+   external login providers (recommended over Auth0/Clerk/Firebase/Cognito for a single
+   tavern — Identity+JWT already wired, no vendor), account linking on verified email,
+   marketing-consent checkbox at signup (§4.6).
+
+Docs updated: `PERSONAS_AND_USAGE.md` (new), `TECHNICAL_ARCHITECTURE_PLAN.md` (§4.1–4.6),
+`FEATURE_MAP.md`, `PROJECT_PLAN.md`, `MOBILE_FIRST_PRODUCT_OUTLINE.md`,
+`MVP_SCREEN_PLAN.md`, `IMPLEMENTATION_BACKLOG.md`, `PRODUCT_FLOW_DIAGRAM.md` (flows redrawn
+for the single-phone model), `EPICS_AND_SPRINTS.md` (epic table + Sprint 2 scope + later
+sprints; new "Auth II: Social Sign-in" sprint named).
+
+No product code changed this session — docs only.
+
+## 2026-07-14 — Beer-data API research: Catalog.beer (candidate), beer.db (rejected); "auto-enrich first" principle
+
+**Epic:** planning (feeds `epic:phone-experience`)
+
+Researched two open beer-data projects the owner suggested, to fill the beer-level gap Open
+Brewery DB can't (OBDB is breweries-only):
+
+- **Catalog.beer (https://catalog.beer) — candidate.** ~60k beers / ~6.8k brewers, free
+  under CC BY 4.0 (attribution line required). Beer object has exactly the beer-nerd
+  fields the product wants: style (+ structured family and ale/lager class), ABV, IBU,
+  description, nested brewer, `cb_verified` quality flags. REST API, key via free account
+  (Basic auth), default 1,000 requests/month — fine with admin-add-time-only calls plus
+  the same server-side caching planned for OBDB. **Gate before integrating:** a hit-rate
+  spike searching a sample of the tavern's actual list (small local breweries are the
+  likely misses); if the hit rate is poor, skip it.
+- **beer.db / openbeer.github.io — rejected.** Right data shape on paper (public-domain
+  beers with ABV/style), but dormant: most GitHub repos last touched 2015–2018, hosted
+  API/admin was on Heroku's long-dead free tier. Stale data is useless for a rotating list.
+
+**Product principle stated (owner direction):** customers get cool beer-nerd data (ABV,
+IBU, style family, description, brewery provenance), and bartenders/owner should **not**
+have to enter beer information — auto-enrich every field from open projects first, keep
+manual admin entry as the always-available fallback and override. Also noted: the `Beer`
+entity needs to grow (Abv, Ibu, style metadata, OBDB id, optional Catalog.beer id,
+Availability) — plan the migration once. Open BJCP-style guideline datasets flagged as a
+later candidate for per-style "what is a saison?" primers.
+
+Docs updated: `TECHNICAL_ARCHITECTURE_PLAN.md` §6 (sourcing principle + both API verdicts),
+`FEATURE_MAP.md`, `PROJECT_PLAN.md`, `MOBILE_FIRST_PRODUCT_OUTLINE.md`, `MVP_SCREEN_PLAN.md`,
+`IMPLEMENTATION_BACKLOG.md` (spike + integration items), `EPICS_AND_SPRINTS.md`
+(phone-experience scope), `PERSONAS_AND_USAGE.md` (Sam's add-a-beer flow, Dana's detail page).
+
+No product code changed this session — docs only.
+
+## 2026-07-14 — Feature addition: "My Beers" — completed list, ratings, want list, personal stats visualizations
+
+**Epic:** planning (extends `epic:retention`)
+
+Added the customer's personal layer over their confirmation history, per owner direction:
+
+1. **My Beers** — the completed list: every confirmed beer with its date, searchable,
+   sortable by date/name/style/my rating.
+2. **Ratings ("rank your beers")** — 1–5 stars on any beer the customer has had confirmed
+   (rating requires a confirmation, keeping rankings tied to club integrity). Prompted
+   with "How was it?" on the PIN pad success screen; private by default. Ratings graduate
+   out of the beer-journal bullet (journal keeps tasting notes).
+3. **Want list** — the "not sure what to order" answer, superseding the old
+   favorites/watchlists idea: add from search/detail, in-stock-tonight filter on by
+   default, auto-check-off on confirmation, and an automated targeted push when a wanted
+   beer flips to on-tap ("Beer X you wanted is on tap tonight").
+4. **My Stats** — beer-nerd visualizations of completions + ratings: progress over time,
+   style-family breakdown, explored-vs-remaining by style, ABV distribution, rating
+   distribution + average by style. One `GET /api/me/stats` aggregate endpoint,
+   lightweight client-side charts.
+5. **Owner signals** — want-list demand counts + anonymized average ratings per beer on
+   the owner dashboard (purchasing signals; want-count powers composer targeting).
+
+Data model: `BeerRating` (unique per user+beer, requires confirmation) and `WantListItem`
+(auto-resolved on confirmation, on-tap trigger through the §4.2 push pipeline) — see
+`TECHNICAL_ARCHITECTURE_PLAN.md` §4.7 (new).
+
+Docs updated: `TECHNICAL_ARCHITECTURE_PLAN.md` (§4.7), `FEATURE_MAP.md`, `PROJECT_PLAN.md`
+(new Epic 3.6), `MOBILE_FIRST_PRODUCT_OUTLINE.md`, `MVP_SCREEN_PLAN.md` (three new
+screens: My Beers / Want List / My Stats), `IMPLEMENTATION_BACKLOG.md` (Phase 6
+sub-block), `EPICS_AND_SPRINTS.md`, `PERSONAS_AND_USAGE.md` (Dana's bar night + couch
+loop, Terri's demand signals, new want-list cross-persona flow).
+
+No product code changed this session — docs only. Committed and pushed to
+`docs/phone-first-replan` per owner request (together with the 2026-07-13/14 planning
+sessions' doc changes).

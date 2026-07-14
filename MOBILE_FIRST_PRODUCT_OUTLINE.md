@@ -4,7 +4,7 @@
 
 Build a mobile-first beer application that is easy to use on a phone, while also supporting management workflows on a laptop.
 
-Concretely: digitize a tavern's paper mug-club sheet, where a bartender initials next to a beer once a customer has had it. The app needs a fast, at-the-bar bartender flow (phone/tablet, not laptop) to confirm a beer for a customer, plus a customer-facing progress view toward the 200-beer goal.
+Concretely: digitize a tavern's paper mug-club sheet, where a bartender initials next to a beer once a customer has had it. **The one-device rule (decided July 2026): the whole at-the-bar flow lives on the customer's phone** — the customer finds the beer, and the bartender's "initials" are a personal 6-digit PIN typed on the customer's phone. There is no bar tablet and no bartender screen; back-office management stays on a laptop.
 
 ## 2. Core usage pattern
 
@@ -15,11 +15,28 @@ counted toward their 200. Everything else supports that moment.
 - Primary customer interaction happens on a phone (search, beer info, viewing progress)
 - Search is the customer's front door — finding the beer they're drinking in a few
   keystrokes, not scrolling a 200-item list
-- Beer details are worth reading: style and description from the tavern's list plus real
-  brewery info (location, website) pulled from Open Brewery DB
-- Confirmation stays bartender-gated, but the customer does the finding: "I'm drinking
-  this" on the customer's phone queues a request the bartender approves with one tap
-- Bartender confirmation happens on a phone or tablet at the bar — it needs to be quick enough to use mid-shift, closer to a point-of-sale interaction than a content-management one
+- Beer details are worth reading — the data beer nerds love: style (and family/class),
+  ABV, IBU, description, plus real brewery info (location, website) pulled from Open
+  Brewery DB. Principle: auto-source these fields from open projects so staff never have
+  to type them (manual entry remains the fallback/override) — see
+  `TECHNICAL_ARCHITECTURE_PLAN.md` §6
+- Confirmation stays bartender-gated, but the whole flow runs on the customer's phone
+  (decided July 2026): the customer taps "Confirm with bartender," a full-screen PIN pad
+  appears showing the beer and customer name, and the phone is handed across the bar
+- The bartender types their **personal 6-digit PIN** on the customer's phone — that's the
+  bartender's entire interaction with the app. No bartender device, no queue to watch, no
+  login mid-shift; the PIN authorizes the confirmation and attributes it by name, same
+  meaning as initials on the paper sheet. Under five seconds, wet hands and all
+- PINs are protected for the bartender's sake (they're typed on an untrusted device):
+  masked entry, server-side validation only, two-axis lockout, and velocity/anomaly flags
+  on the owner dashboard — see `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1
+- Search results default to what's **in stock tonight**: the inventory rotates constantly
+  and the catalog will grow well past 200 entries, so availability (on tap / out of
+  stock / retired) is first-class data and the default filter
+- When the customer *isn't* sure what to order, the **want list** is the answer (added
+  July 2026): beers they saved from earlier browsing, filtered to what's in stock tonight
+  — a personal menu to work from. Right after a confirmation, "How was it?" captures a
+  1–5 rating in one tap
 - Back-office management and administration happen on a laptop
 - The product should feel fast and lightweight on mobile
 - The same core data and business rules should support both experiences
@@ -34,7 +51,10 @@ no endpoint for individual beers, styles, or ABV. So:
 - Each beer record links to an Open Brewery DB brewery id; the detail page shows live/cached
   brewery info (where it's from, website, brewery type).
 - When an admin adds a beer, brewery autocomplete searches Open Brewery DB so brewery data
-  is real and consistent instead of free-typed.
+  is real and consistent instead of free-typed — with a large rotating inventory, cutting
+  the admin's per-beer data entry is the difference between the catalog staying current
+  and going stale. Beer-level fields (style, description) still come from the admin;
+  OBDB makes the brewery half free.
 
 ## 3. Primary user experience on mobile
 
@@ -48,13 +68,20 @@ no endpoint for individual beers, styles, or ABV. So:
 - Home = my progress: the X-of-200 count is the first thing a signed-in customer sees,
   with the search bar directly beneath it
 - Search and filter (name/brewery/style; filter by had / not had yet)
-- Beer detail page — style, description, brewery info from Open Brewery DB, and an
-  "I'm drinking this" action that queues a bartender confirmation request
+- Beer detail page — style, description, brewery info from Open Brewery DB, and a
+  "Confirm with bartender" action that opens the full-screen PIN pad for the phone handoff
 - Browse beer catalog
 - My mug club progress (X of 200, remaining beers, milestone badges)
-- Account / profile with QR membership code for instant bartender lookup
-- Bartender: customer lookup + confirm beer, including a pending-requests approval queue
-  (separate fast-path flow, not part of admin)
+- My Beers — the completed list with dates and my 1–5 ratings, sortable (added July 2026)
+- Want List — saved beers with in-stock-tonight filter, auto-check-off on confirmation
+  (added July 2026)
+- My Stats — beer-nerd visualizations of completions and ratings (added July 2026)
+- Account / profile
+- Confirmation PIN pad (on the customer's phone — beer and customer name shown large so
+  the bartender can verify at a glance before keying their PIN; there are no
+  bartender-facing screens beyond this shared moment)
+- Later: social feed of member milestones, cheers, leaderboard (opt-in; see
+  `PERSONAS_AND_USAGE.md`)
 
 Deliberately removed from the customer's mobile surface: beer create/edit/delete. Catalog
 management is an admin task and shouldn't sit in the customer's navigation.
@@ -68,9 +95,16 @@ management is an admin task and shouldn't sit in the customer's navigation.
 
 ### Laptop-first screens
 - Admin dashboard
-- Beer management table
+- Beer management table (with availability states for the rotating inventory and OBDB
+  brewery autocomplete)
 - Create / edit / delete workflows
-- User management
+- User management (roles + bartender PIN issue/reset/deactivate)
+- Data correction: admin can edit any record — beers, confirmations, accounts, social
+  content — to fix inaccuracies or questionable submissions, every change audited
+- Owner: push-notification composer with audience targeting (all / active / lapsed /
+  hasn't-had-beer-X), send/schedule, basic delivery results
+- Owner/admin anomaly panel: bulk beer-add alerts, confirmation velocity spikes,
+  off-hours activity
 - Analytics / reporting views
 
 ## 5. Experience split
@@ -96,9 +130,11 @@ management is an admin task and shouldn't sit in the customer's navigation.
 - Search beers (the primary entry point at the bar)
 - View beer details, including Open Brewery DB brewery info
 - Browse beers
-- Log in / sign up
+- Log in / sign up — social sign-in first (Google/Facebook/Apple, one tap at the bar;
+  marketing-consent checkbox captured at signup), email/password as fallback
 - Customer: view mug club progress toward 200
-- Bartender: look up a customer and confirm a beer for them
+- Confirmation: "Confirm with bartender" PIN pad on the customer's phone (the bartender
+  types their PIN — no bartender-side flow exists)
 
 ### Must-have laptop flows
 - Admin dashboard
@@ -110,14 +146,24 @@ management is an admin task and shouldn't sit in the customer's navigation.
 The bar owner's return on this app is repeat visits. Prioritize expansion by what brings a
 member back in or tells the owner something actionable:
 
-- "I'm drinking this" confirmation-request queue (customer finds, bartender one-tap approves)
 - Milestone badges at 25/50/100/150 and a shareable "mug earned" moment
 - Seasonal mini-challenges (short repeatable clubs for finishers and slow movers)
-- Notifications: new beers on the list, "N to go" nudges, win-back after inactivity
-- Opt-in leaderboard among regulars
-- Personal beer journal: favorites, tasting notes, private ratings
+- **Push notifications** (upgraded from in-app-only, July 2026): the frontend ships as an
+  installable PWA with real web push — automated sends (new beers batched, "N to go"
+  nudges, win-back after inactivity) plus owner-composed announcements targeted by
+  audience; frequency-capped so members don't turn push off
+- **Social layer** (July 2026, opt-in with display name): activity feed generated from
+  real progress events, one-tap cheers, opt-in leaderboard among regulars, communal goal
+  widget ("the bar has drunk N club beers this year" — TV-friendly), wall of mugs for
+  finishers; free-text posting deliberately excluded to keep moderation near zero
+- Personal beer journal: tasting notes (ratings and favorites graduated to My Beers and
+  the want list, July 2026)
+- Want-list on-tap push (added July 2026): a wanted beer flips to on-tap → automated
+  targeted push to the members who want it, through the standard pipeline and caps
 - Owner analytics: most/least confirmed beers (purchasing signal), member activity,
-  lapsed-member list (promotion signal)
+  lapsed-member list (promotion signal), want-list demand counts and anonymized average
+  ratings per beer (added July 2026)
 - Public ratings and reviews
 - Advanced search and recommendations
-- Native mobile app later if demand increases
+- Native mobile app later if demand increases (the PWA covers install-to-home-screen and
+  push in the meantime)

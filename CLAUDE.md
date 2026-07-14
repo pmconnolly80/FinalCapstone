@@ -25,8 +25,14 @@ flow, not the other way around. See `PROJECT_PLAN.md` section 1 for the full fra
   role gating that the new `beer-app` backend does not currently have.
 - **Planning/vision docs** (root level, flat, no `docs/` folder): `PROJECT_PLAN.md`,
   `TECHNICAL_ARCHITECTURE_PLAN.md`, `FEATURE_MAP.md`, `IMPLEMENTATION_BACKLOG.md`,
-  `MVP_SCREEN_PLAN.md`, `MOBILE_FIRST_PRODUCT_OUTLINE.md`, `PRODUCT_FLOW_DIAGRAM.md`.
+  `MVP_SCREEN_PLAN.md`, `MOBILE_FIRST_PRODUCT_OUTLINE.md`, `PRODUCT_FLOW_DIAGRAM.md`,
+  and `PERSONAS_AND_USAGE.md` (persona day-in-the-life deep dive, added July 2026).
   These describe the target product and haven't gone stale the way a status tracker does.
+  **Load-bearing July 2026 product decision — the one-device rule:** the entire at-the-bar
+  flow lives on the *customer's* phone; the bartender confirms by typing their personal
+  6-digit PIN on it. No bartender-facing screens, no bar tablet; the earlier "I'm drinking
+  this" request-queue and QR-membership-card ideas are superseded — don't reintroduce them.
+  See `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1.
 - **`DIAGRAMS_AND_STORYBOARD.html`** — self-contained visual system architecture diagram, data
   model, bartender-confirmation core loop, and screen-by-screen storyboard. Open directly in a
   browser. Built/Sprint 1/Sprint 2 status is color-coded per element and should be re-checked
@@ -114,4 +120,7 @@ Current active work is **Sprint 1: Mug Club Core** (the actual product different
 `EPICS_AND_SPRINTS.md`): work GitHub issues
 [#2](https://github.com/pmconnolly80/FinalCapstone/issues/2)–[#6](https://github.com/pmconnolly80/FinalCapstone/issues/6)
 in order — data model, bartender confirm endpoint, customer progress endpoint, then the two
-matching UI screens.
+matching UI screens. **Note (July 2026):** issues #3 and #6 need re-scoping to the one-device
+model before implementation — the endpoint is `POST /api/confirmations {beerId, pin}`
+authenticated as the customer, and #6's screen is the Confirmation PIN Pad on the customer's
+phone, not a bartender screen (see the flagged note in `EPICS_AND_SPRINTS.md` Sprint 1).
