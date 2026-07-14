@@ -56,3 +56,18 @@ truth for status.
   [#4](https://github.com/pmconnolly80/FinalCapstone/issues/4),
   [#5](https://github.com/pmconnolly80/FinalCapstone/issues/5),
   [#6](https://github.com/pmconnolly80/FinalCapstone/issues/6)
+
+## 2026-07-13 — Merge `harden-foundation` into `master`
+
+**Epic:** Auth & Roles (`epic:auth`)
+
+Opened and merged [PR #7](https://github.com/pmconnolly80/FinalCapstone/pull/7), bringing the
+migrations/seed-data/role-based-auth work onto `master`. Sprint 1's API stories (bartender
+confirm endpoint, customer progress endpoint) depend on the role gating this adds, so this had
+to land before that work starts. Also committed the Agile process docs
+(`EPICS_AND_SPRINTS.md`, `SESSION_LOG.md`, retired-doc stubs, updated `CLAUDE.md`) directly to
+`master`, since they document process rather than product code.
+
+- Merge commit: `526b7b9`
+- Docs commit: `50ca9c1` — *docs: establish Agile process with epics, sprints, and session
+  logging*
