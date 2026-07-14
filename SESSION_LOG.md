@@ -91,3 +91,38 @@ role-based auth) actually stands up cleanly, ahead of starting Sprint 1's confir
 **To resume:** `cd beer-app && docker compose up --build` — frontend at `localhost:3001`, API/
 Swagger at `localhost:5153/swagger`, db at `localhost:5432`. No code changes this session, so no
 new commit.
+
+## 2026-07-13 — Product re-plan: phone-first UX, Open Brewery DB scoping, retention features + full code audit
+
+**Epic:** planning (touches `epic:phone-experience` and `epic:retention`, both newly named)
+
+Planning session prompted by dissatisfaction with the current app's real-world usability: it
+reads as an admin CRUD catalog, not an app on a customer's phone at the bar. Re-planned the
+product around the customer's defining moment — order a beer, **search** for it, read about
+it, get it bartender-confirmed — and added an engagement/retention feature set that makes the
+app pay off for the bar owner (badges, notifications, challenges, QR membership card, owner
+analytics). Docs updated: `FEATURE_MAP.md`, `MOBILE_FIRST_PRODUCT_OUTLINE.md`,
+`MVP_SCREEN_PLAN.md`, `IMPLEMENTATION_BACKLOG.md`, `PROJECT_PLAN.md`, `EPICS_AND_SPRINTS.md`
+(two new named epics, not yet ticketed per the grooming rule).
+
+**Open Brewery DB scoped (was "revisit next planning pass"):** verified against the live API —
+`api.openbrewerydb.org/v1` serves **breweries only** (name, type, address, geo, website);
+there is no beer-level endpoint (`/v1/beers` → 404). Decision: the tavern's list stays the
+source of truth for the ~200 beers; OBDB enriches beer detail pages with brewery info and
+powers brewery autocomplete in the admin add/edit form, with server-side caching.
+
+**Code audit (subagent, findings verified against source):** highest-priority items —
+1. JWT signing key committed and used as the live fallback (`appsettings.json`, `Program.cs`,
+   `AuthController.cs`); compose never overrides it.
+2. No path to an Admin/Bartender user exists (register hardcodes `Customer`, seed assigns no
+   users to roles) → every `[Authorize(Roles = "Admin")]` write endpoint is unreachable.
+3. Frontend API base URL is `http://localhost:5153` baked into the bundle → the app cannot
+   work from a real phone.
+4. Bug: `saveBeer` in `frontend/src/lib/api.js` parses JSON on the PUT's `204 No Content`,
+   so edits appear to fail even when they succeed.
+5. No search/filter on the beer list; nav is auth-blind (always shows "Sign in"/"Add Beer");
+   errors go to `console.error` only; CORS is `AllowAnyOrigin`.
+Fix homes: mobile blockers → Customer Phone Experience sprint; security items → Deployment &
+Hardening sprint (both named in `EPICS_AND_SPRINTS.md`).
+
+No product code changed this session — docs only.

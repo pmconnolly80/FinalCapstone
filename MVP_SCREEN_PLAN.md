@@ -1,45 +1,42 @@
 # MVP Screen Plan
 
-## 1. Mobile screens
+## 1. Mobile screens (the customer's phone is the primary device)
 
-### Home / Dashboard
-- Welcome area
-- Quick links to browse beers
-- Search entry point
-- Recently viewed or featured beers
+### Home / Dashboard (signed-in customer)
+- My progress front and center: X of 200 with a progress ring/bar
+- Search bar directly below — the fastest path from "I just ordered" to the beer's page
+- What's new: recently added beers
+- Next milestone (e.g. "7 beers to your 100 badge")
 
-### Beer List
-- Search bar
-- Filter controls
-- Scrollable list of beers
-- Each item shows name, brewery, and style
+### Beer List / Search
+- Search bar with autocomplete (name, brewery, style) — minimal typing, results as you type
+- Filter chips: style, brewery, and **had / not had yet**
+- Scrollable list of beers; each item shows name, brewery, style, and a checkmark if
+  already confirmed for this customer
 
 ### Beer Detail
-- Beer name
-- Brewery
-- Style
-- Description or notes
-- Edit action for authorized users
+- Beer name, style, description from the tavern's list
+- Brewery card enriched from Open Brewery DB: brewery type, city/state, website link
+- Confirmed state (date + which visit) if the customer has had it
+- **"I'm drinking this"** action — queues a confirmation request for the bartender
+- No edit action here — catalog management is admin-only and lives on the laptop screens
 
 ### Login / Register
 - Email and password form
 - External login options if desired
 - Clear error states
 
-### Create / Edit Beer
-- Simple form for name, brewery, style
-- Validation and save action
-- Cancel or go back
-
 ### My Progress (customer)
 - Progress toward 200 (count and percent)
+- Milestone badges earned (25/50/100/150) and next milestone
 - List of confirmed beers with confirmation date
-- List of remaining beers
+- List of remaining beers (links back into search/filter)
 - "Mug earned" state once 200 is reached
+- QR membership code for instant bartender lookup
 
 ### Confirm Beer (bartender, phone/tablet at the bar)
-- Search or select customer
-- Search or select beer
+- Pending "I'm drinking this" requests as a one-tap approval queue (primary path)
+- Manual path: search or select customer (or scan their QR code), then search or select beer
 - Confirm action (records bartender identity + timestamp)
 - Success state showing customer's updated count
 - Designed to be fast — this replaces initialing a paper sheet, not a full admin form
@@ -53,7 +50,9 @@
 
 ### Beer Management Table
 - List view of all beers
-- Add, edit, delete actions
+- Add, edit, delete actions (moved off the customer's phone — this is the only place
+  catalog CRUD appears)
+- Brewery autocomplete against Open Brewery DB when adding/editing a beer
 - Search and filtering
 
 ### User Management
@@ -74,11 +73,12 @@
 
 ## 4. MVP priority order
 
-1. Home / browse screen
-2. Beer detail screen
-3. Create / edit beer form
-4. Login / register
-5. Bartender: confirm beer for customer
-6. Customer: my progress
-7. Admin dashboard
+1. Bartender: confirm beer for customer (the paper sheet replacement — nothing else matters
+   until this works)
+2. Customer: my progress (home screen)
+3. Beer list with search and had/not-had filter
+4. Beer detail screen with Open Brewery DB brewery info
+5. Login / register (exists; needs logout + auth-aware navigation)
+6. "I'm drinking this" request queue
+7. Admin dashboard + beer management (CRUD relocates here from the customer surface)
 8. User management

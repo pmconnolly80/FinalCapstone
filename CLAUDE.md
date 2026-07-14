@@ -64,8 +64,11 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
 - No bartender confirm-a-beer-for-a-customer flow
 - No customer "X of 200" progress view or "mug earned" milestone
 - No admin UI to assign roles (currently DB-manual only) or audit/correct confirmations
-- No Open Brewery DB API integration (flagged in docs as a future scope item, revisit in
-  next planning pass)
+- No Open Brewery DB API integration — scoped in the 2026-07-13 planning session: OBDB is
+  breweries-only (no beer-level endpoint), so it enriches beer details with brewery info and
+  powers admin brewery autocomplete; the tavern's list stays the source of truth for beers.
+  See `MOBILE_FIRST_PRODUCT_OUTLINE.md` §2 and the `epic:phone-experience` entry in
+  `EPICS_AND_SPRINTS.md`.
 
 ## Testing policy (TDD)
 

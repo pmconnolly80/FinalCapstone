@@ -48,25 +48,53 @@
 - Add "mug earned" milestone at 200 confirmed beers
 - Add admin tooling to review/correct confirmations
 
-## Phase 4 — Mobile-first polish
+## Phase 4 — Customer phone experience (search-first redesign)
 
-- Optimize layout for phone screens
-- Improve form usability
-- Add responsive navigation
-- Improve loading and error states
+The app lives on the customer's phone; this phase makes that true rather than aspirational.
+
+### Search as the front door
+- Search endpoint on the API (name/brewery/style, paginated) — the current GET-all won't
+  scale to a 200-beer list on a phone
+- Search bar with autocomplete on the beer list, filter chips for style/brewery and
+  had / not had yet
+- Per-beer confirmed checkmark in list results for the signed-in customer
+
+### Open Brewery DB enrichment (breweries only — the API has no beer-level data)
+- Store an Open Brewery DB brewery id on each beer
+- Beer detail shows brewery card (type, city/state, website) from cached OBDB data
+- Brewery autocomplete against OBDB in the admin add/edit-beer form
+- Server-side caching so the tavern's app doesn't hammer or depend on OBDB uptime
+
+### Mobile UX repair
+- Home screen = customer progress + search, not a generic catalog welcome
+- Auth-aware navigation (logout, logged-in state; hide Add Beer from customers)
+- Remove beer CRUD from the customer surface (admin-only)
+- Fix API base URL config so a real phone can reach the API (no hardcoded localhost)
+- Optimize layout for phone screens, responsive navigation
+- Improve form usability (input types, labels, validation)
+- Improve loading and error states (errors currently only go to the console)
 
 ## Phase 5 — Admin experience
 
 - Build admin dashboard
-- Add beer management table
-- Add user management tools
+- Add beer management table (catalog CRUD's new — and only — home)
+- Add user management tools (role assignment is currently DB-manual)
 - Add moderation workflow basics
 
-## Phase 6 — Future enhancements
+## Phase 6 — Engagement & retention (the business-owner payoff)
 
-- Search and filtering
-- Favorites
-- Reviews
+- "I'm drinking this" confirmation-request queue (customer initiates, bartender one-tap
+  approves)
+- QR membership code for instant customer lookup
+- Milestone badges at 25/50/100/150 plus the "mug earned" moment
+- Notifications: new beers on the list, "N to go" nudges, win-back after inactivity
+- Seasonal mini-challenges and opt-in leaderboard
+- Personal beer journal: favorites, tasting notes, private ratings
+- Owner analytics: most/least confirmed beers, member activity, lapsed-member list
+
+## Phase 7 — Future enhancements
+
+- Public reviews and ratings
 - Images
-- Metrics and reporting
-- Integrate Open Brewery DB API (https://www.openbrewerydb.org/) to pull real brewery info and images into the catalog — revisit scope/design during next project planning pass
+- Recommendations
+- Full metrics and reporting

@@ -43,16 +43,28 @@ This is the primary MVP driver, not a secondary feature — search/filter/CRUD o
 
 ## 3. Product vision
 
-The app should evolve from a paper mug-club sheet into a digital progress tracker with:
-- browse the tavern's beer list by brewery, style, and name
-- a bartender-confirmation workflow that marks a beer complete on a customer's list
-- per-customer progress toward the 200-beer goal, with a clear "mug earned" milestone
-- search and filtering
+The app should evolve from a paper mug-club sheet into a digital progress tracker that
+lives on the customer's phone. The defining moment: a customer orders a beer, searches for
+it in the app, reads about it (including real brewery info from Open Brewery DB), and gets
+it bartender-confirmed toward their 200.
+
+- search-first catalog: find the beer you're drinking in a few keystrokes (name, brewery,
+  style; filter by had / not had yet)
+- beer detail pages worth reading — the tavern's style/description plus brewery info
+  (location, type, website) enriched from Open Brewery DB (note: OBDB is a *brewery*
+  directory only; the tavern's own list stays the source of truth for the beers themselves)
+- a bartender-confirmation workflow that marks a beer complete on a customer's list —
+  including an "I'm drinking this" request the customer initiates and the bartender
+  approves with one tap
+- per-customer progress toward the 200-beer goal, with milestone badges along the way and
+  a clear "mug earned" moment at the end
 - user accounts (customer and bartender/staff roles)
-- saved favorites
-- ratings and reviews
+- retention features that make the app pay off for the bar owner: notifications (new
+  beers, progress nudges, win-back), seasonal mini-challenges, opt-in leaderboard, a
+  personal beer journal (favorites, tasting notes)
+- owner analytics: which beers get confirmed most/least (purchasing signal), member
+  activity and lapsed members (promotion signal)
 - admin moderation tools
-- analytics and reporting over time
 - support for more than one tavern/location eventually
 
 ## 4. Phase-based roadmap
@@ -154,7 +166,10 @@ The first release should focus on the current app’s value, not the future visi
 - ratings and comments
 - advanced admin dashboard
 - import/export data
-- Open Brewery DB API integration (https://www.openbrewerydb.org/) to pull real brewery info and images — scope during the next project planning session
+- Open Brewery DB API integration (https://www.openbrewerydb.org/) — scoped July 2026: the
+  API provides brewery data only (no beer-level endpoint), so it's used to enrich beer
+  detail pages with brewery info and to power brewery autocomplete in the admin form; the
+  tavern's list remains the source of truth for the beers
 
 ## 6. Recommended backlog
 
