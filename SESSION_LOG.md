@@ -71,3 +71,23 @@ to land before that work starts. Also committed the Agile process docs
 - Merge commit: `526b7b9`
 - Docs commit: `50ca9c1` — *docs: establish Agile process with epics, sprints, and session
   logging*
+
+## 2026-07-13 — Verify `beer-app` runs end-to-end via Docker Compose
+
+**Epic:** none (environment verification, not product work)
+
+Ran the full stack from `master` to confirm the merged foundation work (migrations, seed data,
+role-based auth) actually stands up cleanly, ahead of starting Sprint 1's confirm-endpoint work.
+
+- `cd beer-app && docker compose up --build -d` — built `api` and `web` images, started `db`
+  (`postgres:16-alpine`), `api`, `web`; all three came up healthy.
+- Smoke-tested: `GET /api/beers` → `200` with seeded beers (Dogfish Head 60 Minute IPA, Fat
+  Tire, Duvel, etc.), `/swagger/index.html` → `200`, frontend root → `200`.
+- Confirmed the port mismatch already flagged in `CLAUDE.md`: compose maps the frontend to
+  host port **3001**, not the `3000` the README states.
+- Shut down cleanly afterward (`docker compose down`, no `-v`, so the `pgdata` volume and its
+  seeded rows persist) so next session starts from a known-clean state.
+
+**To resume:** `cd beer-app && docker compose up --build` — frontend at `localhost:3001`, API/
+Swagger at `localhost:5153/swagger`, db at `localhost:5432`. No code changes this session, so no
+new commit.
