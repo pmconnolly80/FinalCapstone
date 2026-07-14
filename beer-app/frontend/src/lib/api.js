@@ -13,9 +13,13 @@ export async function fetchBeer(id) {
 }
 
 export async function saveBeer(beer, id) {
+  const token = localStorage.getItem('beer-token');
   const response = await fetch(`${API_BASE_URL}/api/beers${id ? `/${id}` : ''}`, {
     method: id ? 'PUT' : 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: JSON.stringify(beer),
   });
 
