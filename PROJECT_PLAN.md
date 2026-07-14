@@ -43,17 +43,57 @@ This is the primary MVP driver, not a secondary feature — search/filter/CRUD o
 
 ## 3. Product vision
 
-The app should evolve from a paper mug-club sheet into a digital progress tracker with:
-- browse the tavern's beer list by brewery, style, and name
-- a bartender-confirmation workflow that marks a beer complete on a customer's list
-- per-customer progress toward the 200-beer goal, with a clear "mug earned" milestone
-- search and filtering
-- user accounts (customer and bartender/staff roles)
-- saved favorites
-- ratings and reviews
-- admin moderation tools
-- analytics and reporting over time
+The app should evolve from a paper mug-club sheet into a digital progress tracker that
+lives on the customer's phone. The defining moment: a customer orders a beer, searches for
+it in the app, reads about it (including real brewery info from Open Brewery DB), and gets
+it bartender-confirmed toward their 200.
+
+- search-first catalog: find the beer you're drinking in a few keystrokes (name, brewery,
+  style; filter by had / not had yet)
+- beer detail pages worth reading — the data beer nerds love: style and style family,
+  ABV, IBU, description, plus brewery info (location, type, website) enriched from Open
+  Brewery DB. Sourcing principle (July 2026): auto-enrich from open projects first
+  (OBDB for breweries; Catalog.beer is the researched candidate for beer-level fields)
+  so staff never *have* to type beer data — manual entry stays available as fallback and
+  override, and the tavern's own list stays the source of truth
+- a bartender-confirmation workflow that lives entirely **on the customer's phone**
+  (decided July 2026 — no bar tablet, no bartender device): the customer finds the beer,
+  taps "Confirm with bartender," and hands their phone over; the bartender types their
+  **personal 6-digit PIN**, which authorizes and attributes the confirmation — the
+  digital version of initialing the customer's paper sheet
+- per-customer progress toward the 200-beer goal, with milestone badges along the way and
+  a clear "mug earned" moment at the end
+- a catalog that handles the bar's reality — a large, constantly rotating inventory:
+  every beer has an availability state (on tap / out of stock / retired), search defaults
+  to what's in stock tonight, and confirmations are permanent even when beers rotate off
+- user accounts (customer and bartender/staff roles), with **social sign-in** — Google,
+  Facebook, or Apple alongside email/password — so joining the club is one tap on a
+  barstool, and the bar gains a verified contact (consent-gated) for targeted marketing
+- retention features that make the app pay off for the bar owner: **push notifications**
+  (owner-composed announcements with audience targeting, plus automated new-beer,
+  progress-nudge, and win-back sends — the frontend becomes an installable PWA),
+  seasonal mini-challenges, a personal beer journal (tasting notes)
+- "My Beers" for the customer (added July 2026): the completed list (every confirmed
+  beer with its date), personal 1–5 star ratings on beers they've had (prompted right
+  after confirmation), a **want list** to work from when they're not sure what to order
+  (filtered to what's in stock tonight, auto-checked-off on confirmation, with an
+  automated push when a wanted beer comes on tap), and **My Stats** — beer-nerd
+  visualizations of completions and ratings (styles explored, ABV spread, progress over
+  time, what they rate highest)
+- a social layer among the bar's members — opt-in activity feed of milestones, cheers,
+  leaderboard, communal goal widget, wall of mugs — so the club feels like a community
+  working the same list, not 200 solo climbs
+- owner analytics: which beers get confirmed most/least (purchasing signal), member
+  activity and lapsed members (promotion signal)
+- admin moderation tools, including full data correction: an admin can edit any record —
+  beers, confirmations, accounts, social content — to fix inaccuracies or questionable
+  submissions, with every correction audited (who, when, why), and automatic anomaly
+  alerts to the owner and admin when something abnormal happens (e.g. an unusual burst of
+  beers added to the catalog at once)
 - support for more than one tavern/location eventually
+
+Persona-level detail on how each of these plays out at the bar — for customer, bartender,
+owner, and admin — lives in `PERSONAS_AND_USAGE.md`.
 
 ## 4. Phase-based roadmap
 
@@ -109,7 +149,7 @@ Duration: 2–4 weeks
 
 Goals:
 - add search and filtering
-- add user favorites
+- add the want list and personal ratings (My Beers)
 - add ratings/reviews
 - improve admin workflows
 - improve error handling and validation
@@ -150,11 +190,27 @@ The first release should focus on the current app’s value, not the future visi
 
 ### Nice-to-have later
 - search by name/style/brewery
-- favorites and watchlists
-- ratings and comments
+- bartender PIN entry on the customer's phone (design the confirm endpoint to carry the
+  `pin` field from day one; ship PIN validation right after the core loop works)
+- beer availability states for the rotating inventory (in-stock-by-default search)
+- push notifications (installable PWA + web push; owner composer with audience targeting
+  and automated nudges)
+- social layer v1 (opt-in display name, milestone activity feed, cheers, leaderboard,
+  communal goal, wall of mugs)
+- social sign-in (Google/Facebook/Apple via ASP.NET Core Identity external providers —
+  researched July 2026, see `TECHNICAL_ARCHITECTURE_PLAN.md` §4.6) with marketing-consent
+  capture
+- want list (supersedes the earlier favorites/watchlists idea) with in-stock filter and
+  on-tap push trigger
+- personal 1–5 ratings on confirmed beers + My Stats visualizations
+- public ratings and comments
 - advanced admin dashboard
 - import/export data
-- Open Brewery DB API integration (https://www.openbrewerydb.org/) to pull real brewery info and images — scope during the next project planning session
+- Open Brewery DB API integration (https://www.openbrewerydb.org/) — scoped July 2026: the
+  API provides brewery data only (no beer-level endpoint), so it's used to enrich beer
+  detail pages with brewery info and to power brewery autocomplete in the admin form —
+  the admin stops hand-typing brewery data and the customer gets real info about where
+  the beer comes from; the tavern's list remains the source of truth for the beers
 
 ## 6. Recommended backlog
 
@@ -168,22 +224,45 @@ The first release should focus on the current app’s value, not the future visi
 ### Epic 2 — Authentication
 - As a user, I can register an account
 - As a user, I can log in and log out
+- As a user, I can sign in with Google, Facebook, or Apple instead of creating a password, and link more than one provider to the same account so my progress never forks
+- As a user, I can opt in (or not) to marketing communications at signup, and my choice is stored
+- As an owner, I get a verified email and name for each consenting member, feeding targeted marketing segments
 - As an admin, I can manage permissions
 
 ### Epic 2.5 — Mug club progress and bartender confirmation
 - As a customer, I can see which beers on the list I've had and how many I have left until 200
-- As a bartender, I can look up a customer and confirm they drank a specific beer, marking it complete on their list
+- As a customer, I can tap "Confirm with bartender" on the beer I'm drinking and hand my phone across the bar
+- As a bartender, I type my personal 6-digit PIN on the customer's phone to confirm the beer — my whole interaction with the app, recorded under my name like initials on the paper sheet
 - As a customer, I am notified or shown a milestone when I hit 200 beers and earn a mug
 - As an admin, I can see and correct confirmation history if a bartender makes a mistake
 
 ### Epic 3 — Discovery and engagement
-- As a user, I can search beers
-- As a user, I can filter by style or brewery
+- As a user, I can search beers, seeing what's in stock tonight by default
+- As a user, I can filter by style or brewery, and by had / not had yet
 - As a user, I can save favorite beers
 
+### Epic 3.5 — Push notifications and social
+- As a customer, I can install the app to my phone's home screen and opt into push notifications
+- As an owner, I can compose and send a push notification to a targeted audience (all / active / lapsed / hasn't-had-beer-X)
+- As a customer, I automatically hear about new beers, my next milestone, and get a win-back nudge if I've gone quiet
+- As a customer, I can opt into the social layer with a display name and see a feed of member milestones, cheer on other members, and check the leaderboard
+- As an owner, I can show a communal goal ("the bar has drunk N club beers this year") and a wall of mug earners
+
+### Epic 3.6 — My Beers: ratings, want list, personal stats (added July 2026)
+- As a customer, I can see the full list of beers I've completed, with confirmation dates, sortable by date, name, style, or my rating
+- As a customer, I can rate any beer I've had confirmed 1–5 stars — asked "How was it?" right on the confirmation success screen, and editable later
+- As a customer, I can add beers to a want list from search or a beer's page, and open it filtered to what's in stock tonight when I'm not sure what to order
+- As a customer, a confirmed beer is automatically checked off my want list, and I get a push when a beer I want comes on tap
+- As a beer nerd, I can see visualizations of my completions and ratings: progress over time, styles explored vs. remaining, ABV spread, what I rate highest
+- As an owner, I see want-list demand counts and anonymized average ratings per beer as purchasing signals
+
 ### Epic 4 — Admin experience
-- As an admin, I can review and moderate content
+- As an admin, I can review and moderate content (including social display names and feed items)
 - As an admin, I can manage users and roles
+- As an admin, I can issue, reset, and deactivate bartender PINs
+- As an admin, I can keep the catalog current as inventory rotates (availability states, OBDB brewery autocomplete on add/edit)
+- As an admin, I can edit any data in the system — beers, confirmations, accounts, social content — to correct inaccuracies or questionable submissions, with every change audited (who, when, why)
+- As an owner or admin, I am automatically notified when abnormal activity occurs, such as an unusual burst of beers added to the catalog at once or a confirmation velocity spike
 
 ## 7. Data migration approach
 
@@ -226,7 +305,7 @@ Mitigation: define the first release around the beer catalog and keep future fea
 - users can authenticate
 
 ### Milestone 2 — Feature-rich catalog
-- search, filters, favorites, and improved admin workflows
+- search, filters, want list/ratings, and improved admin workflows
 
 ### Milestone 3 — Production launch
 - deployment, monitoring, and documentation
