@@ -14,7 +14,10 @@ flow, not the other way around. See `PROJECT_PLAN.md` section 1 for the full fra
 - **`beer-app/`** — the active, in-progress refactor. This is where new work happens.
   - `backend/` — ASP.NET Core 8 Web API, EF Core 8 + Npgsql (PostgreSQL), ASP.NET Core
     Identity, JWT bearer auth, Swashbuckle/Swagger.
+  - `BeerApi.Tests/` — xUnit test project (unit tests against EF Core's InMemory provider,
+    plus `WebApplicationFactory<Program>` integration tests covering role-based authorization).
   - `frontend/` — React 18 + Vite 5 + react-router-dom 6, inline styles (no UI framework).
+    Vitest + React Testing Library for tests, colocated as `*.test.jsx`/`*.test.js`.
   - `docker-compose.yml` — `db` (postgres:16-alpine), `api`, `web` services.
   - `infra/aws-architecture.md` — deployment design doc only, no actual IaC yet.
 - **`BeerList/`** — legacy pre-refactor ASP.NET MVC 5 / EF6 app. Kept as historical
@@ -63,6 +66,22 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
 - No admin UI to assign roles (currently DB-manual only) or audit/correct confirmations
 - No Open Brewery DB API integration (flagged in docs as a future scope item, revisit in
   next planning pass)
+
+## Testing policy (TDD)
+
+This is a TDD project: every new feature/story needs tests — unit and/or integration —
+before it's considered done, not backfilled after. See `EPICS_AND_SPRINTS.md`'s
+"Definition of Done" for the process rule.
+
+- **Backend**: `beer-app/BeerApi.Tests` (xUnit). Controller-level CRUD logic is unit-tested
+  against EF Core's InMemory provider; `[Authorize(Roles = "Admin")]` gating on
+  `BeersController` is enforced by ASP.NET's middleware pipeline, not the action method, so
+  that behavior is covered at the HTTP level via `WebApplicationFactory<Program>` instead of a
+  controller unit test. Run locally with `dotnet test beer-app/BeerApi.Tests/BeerApi.Tests.csproj`.
+- **Frontend**: Vitest + React Testing Library, tests colocated as `*.test.jsx`/`*.test.js`
+  next to the file under test. Page tests mock `src/lib/api.js`; `api.js` itself mocks `fetch`.
+  Run locally with `npm test` from `beer-app/frontend` (after `npm install`).
+- **CI**: `.github/workflows/tests.yml` runs both suites on every push/PR to `master`.
 
 ## Known doc inconsistencies (flagged, not yet fixed)
 

@@ -24,12 +24,20 @@ Only the **next** epic gets fully broken into GitHub issues at any given time �
 named below so the roadmap is visible, but aren't ticketed until they're actually up next
 (real backlog grooming, not pre-ticketing work that's sprints away and likely to change shape).
 
+## Definition of Done
+
+This is a TDD project: starting now, every story ships with tests — unit and/or integration —
+before it's considered done, not added after the fact. `.github/workflows/tests.yml` runs the
+backend (`dotnet test`) and frontend (`npm test`) suites on every push/PR to `master`, so this
+is enforced, not just stated. See `CLAUDE.md`'s "Testing policy (TDD)" section for where tests
+live and how to run them locally.
+
 ## Epics
 
 | Epic | Label | Status |
 |---|---|---|
 | Core Catalog (browse/detail/CRUD) | `epic:core-catalog` | ✅ Done — pre-dates formal sprint tracking |
-| Auth & Roles | `epic:auth` | ✅ Code complete on `harden-foundation` branch ([PR](https://github.com/pmconnolly80/FinalCapstone/pull/new/harden-foundation)), not yet merged to `master` |
+| Auth & Roles | `epic:auth` | ✅ Done — merged to `master` via [PR #7](https://github.com/pmconnolly80/FinalCapstone/pull/7) |
 | **Mug Club Progress & Bartender Confirmation** | `epic:mug-club` | 🔵 In progress — Sprint 1 open. The actual product driver (see `PROJECT_PLAN.md` §1) |
 | Discovery & Engagement (search/filter/favorites) | `epic:discovery` | ⬜ Not started |
 | Admin Experience (dashboard, user/role mgmt UI, confirmation audit) | `epic:admin` | ⬜ Not started |

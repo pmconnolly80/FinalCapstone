@@ -71,10 +71,20 @@ app.UseAuthorization();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    db.Database.Migrate();
+    if (db.Database.IsRelational())
+    {
+        db.Database.Migrate();
+    }
+    else
+    {
+        // EF Core's InMemory provider (used by BeerApi.Tests) doesn't support Migrate().
+        db.Database.EnsureCreated();
+    }
     await SeedData.InitializeAsync(scope.ServiceProvider);
 }
 
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }
