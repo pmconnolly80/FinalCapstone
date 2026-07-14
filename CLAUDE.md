@@ -24,6 +24,10 @@ flow, not the other way around. See `PROJECT_PLAN.md` section 1 for the full fra
   `TECHNICAL_ARCHITECTURE_PLAN.md`, `FEATURE_MAP.md`, `IMPLEMENTATION_BACKLOG.md`,
   `MVP_SCREEN_PLAN.md`, `MOBILE_FIRST_PRODUCT_OUTLINE.md`, `PRODUCT_FLOW_DIAGRAM.md`.
   These describe the target product and haven't gone stale the way a status tracker does.
+- **`DIAGRAMS_AND_STORYBOARD.html`** — self-contained visual system architecture diagram, data
+  model, bartender-confirmation core loop, and screen-by-screen storyboard. Open directly in a
+  browser. Built/Sprint 1/Sprint 2 status is color-coded per element and should be re-checked
+  against `EPICS_AND_SPRINTS.md` as sprints close, since it's a snapshot, not a live view.
 - **Agile tracking** (current source of truth for status): `EPICS_AND_SPRINTS.md` (epics,
   sprints, links to GitHub Issues/Milestones) and `SESSION_LOG.md` (dated per-session record).
   `PROGRESS_TRACKER.md` and `PHASE1_IMPLEMENTATION_CHECKLIST.md` are retired stubs pointing here
@@ -48,8 +52,8 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
 - Docker Compose wiring for db/api/web
 - EF Core migrations (`beer-app/backend/Migrations/`) and startup seeding of the
   `Admin`/`Bartender`/`Customer` roles plus sample beers (`beer-app/backend/Data/SeedData.cs`)
-- **Note:** the auth/roles/migrations/seed work above is complete on the `harden-foundation`
-  branch (PR open) but not yet merged to `master` — check which branch you're on.
+- **Note:** the auth/roles/migrations/seed work above is merged to `master` (via `harden-foundation`,
+  [PR #7](https://github.com/pmconnolly80/FinalCapstone/pull/7)).
 
 **Not built** — the primary MVP driver per the planning docs, and the active work: Sprint 1 in
 `EPICS_AND_SPRINTS.md` (GitHub issues [#2](https://github.com/pmconnolly80/FinalCapstone/issues/2)–[#6](https://github.com/pmconnolly80/FinalCapstone/issues/6)):
@@ -83,10 +87,9 @@ Manual (no Docker): `dotnet run` in `beer-app/backend/`, and
 
 ## Likely next steps
 
-The foundation (migrations, seed data, role-based auth) is hardened — see `harden-foundation`
-branch above. Current active work is **Sprint 1: Mug Club Core** (the actual product
-differentiator, per `EPICS_AND_SPRINTS.md`): merge `harden-foundation` into `master` first
-(the mug-club API depends on the role-gating it adds), then work GitHub issues
+The foundation (migrations, seed data, role-based auth) is hardened and merged to `master`.
+Current active work is **Sprint 1: Mug Club Core** (the actual product differentiator, per
+`EPICS_AND_SPRINTS.md`): work GitHub issues
 [#2](https://github.com/pmconnolly80/FinalCapstone/issues/2)–[#6](https://github.com/pmconnolly80/FinalCapstone/issues/6)
 in order — data model, bartender confirm endpoint, customer progress endpoint, then the two
 matching UI screens.

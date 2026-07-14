@@ -1,0 +1,733 @@
+<title>Mug Club Tracker — Diagrams &amp; Storyboard</title>
+<style>
+  :root {
+    --ground: #f3ede0;
+    --surface: #fffaf0;
+    --surface-2: #ece2cd;
+    --ink: #241d15;
+    --ink-dim: #6e6250;
+    --line: #d8cbae;
+    --copper: #9c5f28;
+    --copper-soft: rgba(156, 95, 40, 0.12);
+    --verdigris: #3f7364;
+    --verdigris-soft: rgba(63, 115, 100, 0.12);
+
+    --font-display: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+    --font-body: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #1c1712;
+      --surface: #262019;
+      --surface-2: #302820;
+      --ink: #f1e6d3;
+      --ink-dim: #a89a80;
+      --line: #47392a;
+      --copper: #c17d3f;
+      --copper-soft: rgba(193, 125, 63, 0.16);
+      --verdigris: #6ba896;
+      --verdigris-soft: rgba(107, 168, 150, 0.14);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #1c1712;
+    --surface: #262019;
+    --surface-2: #302820;
+    --ink: #f1e6d3;
+    --ink-dim: #a89a80;
+    --line: #47392a;
+    --copper: #c17d3f;
+    --copper-soft: rgba(193, 125, 63, 0.16);
+    --verdigris: #6ba896;
+    --verdigris-soft: rgba(107, 168, 150, 0.14);
+  }
+  :root[data-theme="light"] {
+    --ground: #f3ede0;
+    --surface: #fffaf0;
+    --surface-2: #ece2cd;
+    --ink: #241d15;
+    --ink-dim: #6e6250;
+    --line: #d8cbae;
+    --copper: #9c5f28;
+    --copper-soft: rgba(156, 95, 40, 0.12);
+    --verdigris: #3f7364;
+    --verdigris-soft: rgba(63, 115, 100, 0.12);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.5;
+  }
+  a { color: inherit; }
+
+  .page {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 5rem;
+  }
+
+  /* ---------- Masthead ---------- */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+  .masthead h1 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 2.6rem;
+    margin: 0.4rem 0 0.6rem;
+    text-wrap: balance;
+  }
+  .subhead {
+    max-width: 42rem;
+    color: var(--ink-dim);
+    font-size: 1rem;
+    margin: 0 0 1.25rem;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.02em;
+    padding: 0.3rem 0.6rem;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+  .chip.built { color: var(--copper); border: 1px solid var(--copper); background: var(--copper-soft); }
+  .chip.sprint1 { color: var(--verdigris); border: 1px solid var(--verdigris); background: var(--verdigris-soft); }
+  .chip.sprint2 { color: var(--ink-dim); border: 1px dashed var(--verdigris); background: transparent; }
+
+  /* ---------- Index nav ---------- */
+  .index {
+    display: flex;
+    gap: 1.5rem;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 0.75rem 0;
+    margin: 1.75rem 0 2.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
+    overflow-x: auto;
+  }
+  .index a { text-decoration: none; color: var(--ink-dim); white-space: nowrap; }
+  .index a:hover { color: var(--copper); }
+
+  /* ---------- Section shell ---------- */
+  .panel { margin-bottom: 4rem; }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .section-head h2 {
+    font-family: var(--font-display);
+    font-size: 1.7rem;
+    font-weight: 600;
+    margin: 0;
+  }
+  .section-note {
+    color: var(--ink-dim);
+    font-size: 0.9rem;
+    max-width: 40rem;
+    margin: -0.75rem 0 1.5rem;
+  }
+  .diagram-frame {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 2rem 1.5rem;
+  }
+
+  /* ---------- Architecture diagram ---------- */
+  .arch-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    padding: 0.5rem 0;
+  }
+  .arch-box {
+    flex: none;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 0.9rem 1.1rem;
+    min-width: 9.5rem;
+    text-align: center;
+  }
+  .arch-box .name { font-weight: 600; font-size: 0.92rem; }
+  .arch-box .sub { display: block; color: var(--ink-dim); font-size: 0.72rem; margin-top: 0.25rem; font-family: var(--font-mono); }
+  .arrow-h { flex: none; width: 2.25rem; height: 2px; background: var(--ink-dim); position: relative; margin: 0 0.35rem; }
+  .arrow-h::after {
+    content: ''; position: absolute; right: -1px; top: 50%; transform: translateY(-50%);
+    border: 5px solid transparent; border-left-color: var(--ink-dim);
+  }
+  .arrow-v { width: 2px; height: 1.4rem; background: var(--ink-dim); margin: 0 auto; position: relative; }
+  .arrow-v::after {
+    content: ''; position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%);
+    border: 5px solid transparent; border-top-color: var(--ink-dim);
+  }
+  .compose-group {
+    flex: none;
+    display: flex;
+    align-items: center;
+    border: 1.5px dashed var(--line);
+    border-radius: 8px;
+    padding: 1rem 1.25rem 0.6rem;
+    position: relative;
+  }
+  .compose-label {
+    position: absolute; top: -0.65rem; left: 0.9rem;
+    background: var(--surface); padding: 0 0.4rem;
+    font-family: var(--font-mono); font-size: 0.66rem; color: var(--ink-dim);
+    letter-spacing: 0.03em;
+  }
+  .api-branch { display: flex; flex-direction: column; align-items: center; flex: none; }
+
+  /* ---------- Data model ---------- */
+  .model-group { margin-bottom: 2rem; }
+  .model-group:last-child { margin-bottom: 0; }
+  .model-group-label {
+    display: flex; align-items: center; gap: 0.6rem;
+    margin-bottom: 0.9rem;
+  }
+  .model-group-label .label-text { font-size: 0.85rem; color: var(--ink-dim); }
+  .model-cards { display: flex; gap: 1.1rem; flex-wrap: wrap; }
+  .entity-card {
+    background: var(--surface-2);
+    border-radius: 4px;
+    padding: 0;
+    min-width: 15.5rem;
+    flex: 1 1 15.5rem;
+    overflow: hidden;
+  }
+  .entity-card.status-built { border: 1.5px solid var(--copper); }
+  .entity-card.status-sprint1 { border: 1.5px solid var(--verdigris); }
+  .entity-card.status-sprint2 { border: 1.5px dashed var(--verdigris); opacity: 0.88; }
+  .entity-head {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.55rem 0.9rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .entity-card.status-built .entity-head { color: var(--copper); }
+  .entity-card.status-sprint1 .entity-head, .entity-card.status-sprint2 .entity-head { color: var(--verdigris); }
+  .field-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.4rem 0.9rem;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .field-row:last-child { border-bottom: none; }
+  .field-name { color: var(--ink); }
+  .field-type { color: var(--ink-dim); text-align: right; }
+  .field-fk { color: var(--verdigris); }
+
+  /* ---------- Core loop timeline ---------- */
+  .timeline { max-width: 34rem; margin: 0 auto; }
+  .tl-step { display: flex; gap: 1rem; }
+  .tl-rail { display: flex; flex-direction: column; align-items: center; flex: none; width: 1.6rem; }
+  .tl-dot {
+    width: 1.6rem; height: 1.6rem; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600;
+    flex: none; color: var(--ground);
+  }
+  .tl-dot.actor-customer { background: var(--copper); }
+  .tl-dot.actor-bartender { background: var(--ink); }
+  .tl-dot.actor-system { background: var(--verdigris); }
+  .tl-line { width: 2px; flex: 1; background: var(--line); margin: 0.15rem 0; }
+  .tl-body { padding-bottom: 1.6rem; flex: 1; }
+  .tl-actor { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-dim); }
+  .tl-text { font-size: 0.95rem; margin: 0.15rem 0 0.3rem; }
+  .tl-tag { font-family: var(--font-mono); font-size: 0.68rem; }
+
+  .fork-bar { height: 2px; background: var(--line); width: 66%; margin: 0 auto; }
+  .fork-branches { display: flex; gap: 1.5rem; padding-top: 0; }
+  .fork-branch { flex: 1; display: flex; flex-direction: column; align-items: center; }
+  .fork-stem { width: 2px; height: 1.2rem; background: var(--line); }
+  .branch-card {
+    background: var(--surface-2);
+    border-radius: 4px;
+    padding: 0.9rem 1rem;
+    text-align: center;
+    width: 100%;
+  }
+  .branch-card.sprint1 { border: 1.5px solid var(--verdigris); }
+  .branch-card.sprint2 { border: 1.5px dashed var(--verdigris); opacity: 0.88; }
+  .branch-title { font-weight: 600; font-size: 0.92rem; margin-bottom: 0.2rem; }
+  .branch-note { color: var(--ink-dim); font-size: 0.78rem; }
+
+  /* ---------- Storyboard ---------- */
+  .film-row { margin-bottom: 2.5rem; }
+  .film-row:last-child { margin-bottom: 0; }
+  .film-label { margin-bottom: 1rem; }
+  .film-label .name { font-weight: 600; font-family: var(--font-display); font-size: 1.05rem; }
+  .film-label .desc { color: var(--ink-dim); font-size: 0.85rem; margin-top: 0.1rem; }
+  .film-strip {
+    display: flex;
+    gap: 1.25rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+  }
+  .frame-card { flex: none; width: 13.5rem; }
+  .frame-num {
+    font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-dim);
+    margin-bottom: 0.4rem;
+  }
+  .frame-screen {
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 0.6rem;
+    height: 15.5rem;
+    display: flex;
+    flex-direction: column;
+  }
+  .frame-screen.status-built { border: 1.5px solid var(--copper); }
+  .frame-screen.status-sprint1 { border: 1.5px solid var(--verdigris); }
+  .frame-screen.status-sprint2 { border: 1.5px dashed var(--verdigris); opacity: 0.9; }
+  .mock-bar {
+    font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--ink-dim);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 0.4rem; margin-bottom: 0.5rem;
+  }
+  .mock-input {
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 3px;
+    height: 1.4rem; margin-bottom: 0.4rem; flex: none;
+  }
+  .mock-line { background: var(--surface-2); border-radius: 2px; height: 0.55rem; margin-bottom: 0.35rem; }
+  .mock-line.w60 { width: 60%; } .mock-line.w80 { width: 80%; } .mock-line.w40 { width: 40%; } .mock-line.w100 { width: 100%; }
+  .mock-row { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.4rem 0; border-bottom: 1px solid var(--line); }
+  .mock-btn {
+    margin-top: auto;
+    background: var(--copper-soft); border: 1px solid var(--copper); color: var(--copper);
+    border-radius: 3px; text-align: center; font-family: var(--font-mono); font-size: 0.68rem;
+    padding: 0.4rem; letter-spacing: 0.03em;
+  }
+  .mock-btn.verdigris { background: var(--verdigris-soft); border-color: var(--verdigris); color: var(--verdigris); }
+  .mock-progress {
+    height: 0.6rem; border-radius: 100px; background: var(--surface-2);
+    overflow: hidden; margin-bottom: 0.3rem;
+  }
+  .mock-progress > div { height: 100%; background: var(--verdigris); }
+  .mock-fill { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; }
+  .mock-num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.5rem; font-weight: 600; }
+  .frame-caption { margin-top: 0.6rem; }
+  .frame-caption .title { font-size: 0.85rem; font-weight: 600; }
+  .frame-caption .status { font-family: var(--font-mono); font-size: 0.66rem; margin-top: 0.15rem; }
+  .frame-caption .status.built { color: var(--copper); }
+  .frame-caption .status.sprint1, .frame-caption .status.sprint2 { color: var(--verdigris); }
+
+  .ledger-mock {
+    font-family: var(--font-mono); font-size: 0.68rem;
+    display: flex; flex-direction: column; gap: 0.5rem; flex: 1;
+    justify-content: center;
+  }
+  .ledger-line { display: flex; justify-content: space-between; border-bottom: 1px dotted var(--line); padding-bottom: 0.35rem; }
+  .ledger-line .k { color: var(--ink-dim); }
+  .ledger-line .v { color: var(--ink); }
+
+  footer {
+    margin-top: 3rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--line);
+    color: var(--ink-dim);
+    font-size: 0.8rem;
+  }
+
+  @media (max-width: 640px) {
+    .masthead h1 { font-size: 2rem; }
+    .model-cards { flex-direction: column; }
+    .fork-branches { flex-direction: column; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <div class="eyebrow">beer-app · Sprint 1: Mug Club Core</div>
+    <h1>Mug Club Tracker</h1>
+    <p class="subhead">
+      Diagrams and storyboard for the bartender-confirmed progress flow — a tavern's paper
+      "200 club" sheet, digitized. The product driver is a bartender confirming a beer for a
+      customer, not generic catalog browsing.
+    </p>
+    <div class="legend">
+      <span class="chip built">● built — merged to master</span>
+      <span class="chip sprint1">◐ sprint 1 — in progress</span>
+      <span class="chip sprint2">○ sprint 2+ — planned, unticketed</span>
+    </div>
+  </header>
+
+  <nav class="index">
+    <a href="#architecture">01 — System</a>
+    <a href="#data-model">02 — Data model</a>
+    <a href="#core-loop">03 — Core loop</a>
+    <a href="#storyboard">04 — Storyboard</a>
+  </nav>
+
+  <!-- ================= 01 ARCHITECTURE ================= -->
+  <section id="architecture" class="panel">
+    <div class="section-head">
+      <span class="eyebrow">01</span>
+      <h2>System architecture</h2>
+    </div>
+    <p class="section-note">
+      One request path, whether it's a customer browsing beers or a bartender confirming a
+      pour. Everything inside the dashed boundary ships as one <code>docker compose up</code>.
+    </p>
+    <div class="diagram-frame">
+      <div class="arch-row">
+        <div class="arch-box">
+          <span class="name">Customer / Bartender</span>
+          <span class="sub">phone or tablet, at the bar</span>
+        </div>
+        <div class="arrow-h"></div>
+        <div class="compose-group">
+          <span class="compose-label">docker-compose.yml</span>
+          <div class="arch-box">
+            <span class="name">React frontend</span>
+            <span class="sub">Vite 5 · react-router-dom 6</span>
+          </div>
+          <div class="arrow-h"></div>
+          <div class="api-branch">
+            <div class="arch-box">
+              <span class="name">ASP.NET Core 8 API</span>
+              <span class="sub">Swashbuckle / Swagger</span>
+            </div>
+            <div class="arrow-v"></div>
+            <div class="arch-box">
+              <span class="name">Identity + JWT</span>
+              <span class="sub">role claims: Admin / Bartender / Customer</span>
+            </div>
+          </div>
+          <div class="arrow-h"></div>
+          <div class="arch-box">
+            <span class="name">PostgreSQL 16</span>
+            <span class="sub">EF Core 8 · Npgsql</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 02 DATA MODEL ================= -->
+  <section id="data-model" class="panel">
+    <div class="section-head">
+      <span class="eyebrow">02</span>
+      <h2>Data model</h2>
+    </div>
+    <p class="section-note">
+      <code>Tavern</code> and <code>BeerConfirmation</code> don't exist in the database yet —
+      they're issue <a href="https://github.com/pmconnolly80/FinalCapstone/issues/2">#2</a>,
+      first up in Sprint 1. Everything else below is already migrated and seeded.
+    </p>
+    <div class="diagram-frame">
+
+      <div class="model-group">
+        <div class="model-group-label">
+          <span class="chip built">● built</span>
+          <span class="label-text">exists today</span>
+        </div>
+        <div class="model-cards">
+          <div class="entity-card status-built">
+            <div class="entity-head">Beer</div>
+            <div class="field-row"><span class="field-name">Id</span><span class="field-type">int</span></div>
+            <div class="field-row"><span class="field-name">Name</span><span class="field-type">string</span></div>
+            <div class="field-row"><span class="field-name">Brewery</span><span class="field-type">string</span></div>
+            <div class="field-row"><span class="field-name">Style</span><span class="field-type">string</span></div>
+            <div class="field-row"><span class="field-name">Description</span><span class="field-type">string?</span></div>
+            <div class="field-row"><span class="field-name">CreatedAt</span><span class="field-type">DateTime</span></div>
+          </div>
+          <div class="entity-card status-built">
+            <div class="entity-head">User (IdentityUser)</div>
+            <div class="field-row"><span class="field-name">Id</span><span class="field-type">string (guid)</span></div>
+            <div class="field-row"><span class="field-name">Email</span><span class="field-type">string</span></div>
+            <div class="field-row"><span class="field-name">PasswordHash</span><span class="field-type">string</span></div>
+            <div class="field-row"><span class="field-name">Role</span><span class="field-type">Admin | Bartender | Customer</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="model-group">
+        <div class="model-group-label">
+          <span class="chip sprint1">◐ sprint 1</span>
+          <span class="label-text">issue #2 — Tavern + BeerConfirmation entities and migration</span>
+        </div>
+        <div class="model-cards">
+          <div class="entity-card status-sprint1">
+            <div class="entity-head">Tavern</div>
+            <div class="field-row"><span class="field-name">Id</span><span class="field-type">int</span></div>
+            <div class="field-row"><span class="field-name">Name</span><span class="field-type">string</span></div>
+          </div>
+          <div class="entity-card status-sprint1">
+            <div class="entity-head">BeerConfirmation</div>
+            <div class="field-row"><span class="field-name">Id</span><span class="field-type">int</span></div>
+            <div class="field-row"><span class="field-name">CustomerId</span><span class="field-type field-fk">→ User</span></div>
+            <div class="field-row"><span class="field-name">BeerId</span><span class="field-type field-fk">→ Beer</span></div>
+            <div class="field-row"><span class="field-name">BartenderId</span><span class="field-type field-fk">→ User</span></div>
+            <div class="field-row"><span class="field-name">TavernId</span><span class="field-type field-fk">→ Tavern</span></div>
+            <div class="field-row"><span class="field-name">ConfirmedAt</span><span class="field-type">DateTime</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= 03 CORE LOOP ================= -->
+  <section id="core-loop" class="panel">
+    <div class="section-head">
+      <span class="eyebrow">03</span>
+      <h2>Core loop — confirming a beer</h2>
+    </div>
+    <p class="section-note">
+      The dot color is who acts. The customer never appears until step 6 — they can't
+      self-report a beer as drunk, same as the paper sheet.
+    </p>
+    <div class="diagram-frame">
+      <div class="timeline">
+
+        <div class="tl-step">
+          <div class="tl-rail"><div class="tl-dot actor-customer">C</div><div class="tl-line"></div></div>
+          <div class="tl-body">
+            <div class="tl-actor">Customer</div>
+            <div class="tl-text">Orders a beer at the bar.</div>
+          </div>
+        </div>
+
+        <div class="tl-step">
+          <div class="tl-rail"><div class="tl-dot actor-bartender">B</div><div class="tl-line"></div></div>
+          <div class="tl-body">
+            <div class="tl-actor">Bartender</div>
+            <div class="tl-text">Opens Confirm Beer, looks up the customer.</div>
+            <div class="tl-tag" style="color:var(--verdigris)">sprint 1 · #6</div>
+          </div>
+        </div>
+
+        <div class="tl-step">
+          <div class="tl-rail"><div class="tl-dot actor-bartender">B</div><div class="tl-line"></div></div>
+          <div class="tl-body">
+            <div class="tl-actor">Bartender</div>
+            <div class="tl-text">Selects the beer, taps Confirm.</div>
+            <div class="tl-tag" style="color:var(--verdigris)">sprint 1 · #6</div>
+          </div>
+        </div>
+
+        <div class="tl-step">
+          <div class="tl-rail"><div class="tl-dot actor-system">S</div><div class="tl-line"></div></div>
+          <div class="tl-body">
+            <div class="tl-actor">System</div>
+            <div class="tl-text">Writes a BeerConfirmation: customer + beer + bartender + timestamp.</div>
+            <div class="tl-tag" style="color:var(--verdigris)">sprint 1 · #2 #3</div>
+          </div>
+        </div>
+
+        <div class="tl-step">
+          <div class="tl-rail"><div class="tl-dot actor-system">S</div></div>
+          <div class="tl-body">
+            <div class="tl-actor">System</div>
+            <div class="tl-text">Recalculates the customer's confirmed-beer count.</div>
+            <div class="tl-tag" style="color:var(--verdigris)">sprint 1 · #4</div>
+          </div>
+        </div>
+
+        <div class="fork-bar"></div>
+        <div class="fork-branches">
+          <div class="fork-branch">
+            <div class="fork-stem"></div>
+            <div class="branch-card sprint1">
+              <div class="branch-title">Progress updates</div>
+              <div class="branch-note">"X of 200" — sprint 1 · #5</div>
+            </div>
+          </div>
+          <div class="fork-branch">
+            <div class="fork-stem"></div>
+            <div class="branch-card sprint2">
+              <div class="branch-title">Mug-earned milestone</div>
+              <div class="branch-note">celebratory flag — sprint 2, unticketed</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 04 STORYBOARD ================= -->
+  <section id="storyboard" class="panel">
+    <div class="section-head">
+      <span class="eyebrow">04</span>
+      <h2>Storyboard</h2>
+    </div>
+    <p class="section-note">Screen-by-screen, in the order a customer and bartender actually hit them.</p>
+
+    <div class="film-row">
+      <div class="film-label">
+        <div class="name">1 — Customer browses and signs in</div>
+        <div class="desc">Catalog browsing is anonymous; an account is what Sprint 1's progress screen will track against.</div>
+      </div>
+      <div class="film-strip">
+
+        <div class="frame-card">
+          <div class="frame-num">1.1</div>
+          <div class="frame-screen status-built">
+            <div class="mock-bar">Mug Club — Beers</div>
+            <div class="mock-input"></div>
+            <div class="mock-row"><div class="mock-line w80"></div><div class="mock-line w40"></div></div>
+            <div class="mock-row"><div class="mock-line w60"></div><div class="mock-line w40"></div></div>
+            <div class="mock-row"><div class="mock-line w80"></div><div class="mock-line w40"></div></div>
+          </div>
+          <div class="frame-caption">
+            <div class="title">Beer list</div>
+            <div class="status built">built · BeerList.jsx</div>
+          </div>
+        </div>
+
+        <div class="frame-card">
+          <div class="frame-num">1.2</div>
+          <div class="frame-screen status-built">
+            <div class="mock-bar">← Back</div>
+            <div class="mock-line w60" style="height:0.9rem"></div>
+            <div class="mock-line w40"></div>
+            <div class="mock-line w100"></div>
+            <div class="mock-line w100"></div>
+            <div class="mock-line w80"></div>
+          </div>
+          <div class="frame-caption">
+            <div class="title">Beer detail</div>
+            <div class="status built">built · BeerDetail.jsx</div>
+          </div>
+        </div>
+
+        <div class="frame-card">
+          <div class="frame-num">1.3</div>
+          <div class="frame-screen status-built">
+            <div class="mock-bar">Sign in</div>
+            <div class="mock-line w40"></div>
+            <div class="mock-input"></div>
+            <div class="mock-line w40"></div>
+            <div class="mock-input"></div>
+            <div class="mock-btn">Log in</div>
+          </div>
+          <div class="frame-caption">
+            <div class="title">Login / register</div>
+            <div class="status built">built · AuthPage.jsx</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="film-row">
+      <div class="film-label">
+        <div class="name">2 — At the bar, the bartender confirms</div>
+        <div class="desc">Replaces initialing a paper sheet — this is the actual product differentiator.</div>
+      </div>
+      <div class="film-strip">
+
+        <div class="frame-card">
+          <div class="frame-num">2.1</div>
+          <div class="frame-screen status-sprint1">
+            <div class="mock-bar">Confirm Beer</div>
+            <div class="mock-line w40"></div>
+            <div class="mock-input"></div>
+            <div class="mock-line w40"></div>
+            <div class="mock-input"></div>
+            <div class="mock-btn verdigris">Confirm</div>
+          </div>
+          <div class="frame-caption">
+            <div class="title">Bartender confirms</div>
+            <div class="status sprint1">sprint 1 · #6</div>
+          </div>
+        </div>
+
+        <div class="frame-card">
+          <div class="frame-num">2.2</div>
+          <div class="frame-screen status-sprint1">
+            <div class="ledger-mock">
+              <div class="ledger-line"><span class="k">customer</span><span class="v">j.rivera</span></div>
+              <div class="ledger-line"><span class="k">beer</span><span class="v">#118</span></div>
+              <div class="ledger-line"><span class="k">bartender</span><span class="v">m.hale</span></div>
+              <div class="ledger-line"><span class="k">confirmed</span><span class="v">21:04</span></div>
+            </div>
+          </div>
+          <div class="frame-caption">
+            <div class="title">BeerConfirmation record</div>
+            <div class="status sprint1">sprint 1 · #2 #3</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="film-row">
+      <div class="film-label">
+        <div class="name">3 — The customer sees the payoff</div>
+        <div class="desc">Why the mug club matters at all: visible progress toward 200.</div>
+      </div>
+      <div class="film-strip">
+
+        <div class="frame-card">
+          <div class="frame-num">3.1</div>
+          <div class="frame-screen status-sprint1">
+            <div class="mock-bar">My Progress</div>
+            <div class="mock-progress"><div style="width:64%"></div></div>
+            <div class="mock-line w40"></div>
+            <div class="mock-row"><div class="mock-line w80"></div></div>
+            <div class="mock-row"><div class="mock-line w60"></div></div>
+          </div>
+          <div class="frame-caption">
+            <div class="title">128 / 200 confirmed</div>
+            <div class="status sprint1">sprint 1 · #4 #5</div>
+          </div>
+        </div>
+
+        <div class="frame-card">
+          <div class="frame-num">3.2</div>
+          <div class="frame-screen status-sprint2">
+            <div class="mock-fill">
+              <div>
+                <div class="mock-num">200 / 200</div>
+                <div class="mock-line w80" style="margin:0.6rem auto 0"></div>
+              </div>
+            </div>
+          </div>
+          <div class="frame-caption">
+            <div class="title">Mug earned</div>
+            <div class="status sprint2">sprint 2 · planned</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </section>
+
+  <footer>
+    Status reflects EPICS_AND_SPRINTS.md as of 2026-07-13 — Sprint 1 (issues #2–#6) open,
+    Sprint 2 named but not yet ticketed. Regenerate this page once Sprint 1 ships.
+  </footer>
+
+</div>
