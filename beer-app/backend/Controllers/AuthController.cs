@@ -12,12 +12,16 @@ namespace BeerApi.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
+    private const string DefaultRole = "Customer";
+
     private readonly UserManager<IdentityUser> _userManager;
+    private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IConfiguration _configuration;
 
-    public AuthController(UserManager<IdentityUser> userManager, IConfiguration configuration)
+    public AuthController(UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration)
     {
         _userManager = userManager;
+        _roleManager = roleManager;
         _configuration = configuration;
     }
 
@@ -48,7 +52,13 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = string.Join(" ", result.Errors.Select(e => e.Description)) });
         }
 
-        var token = CreateToken(user);
+        if (!await _roleManager.RoleExistsAsync(DefaultRole))
+        {
+            await _roleManager.CreateAsync(new IdentityRole(DefaultRole));
+        }
+        await _userManager.AddToRoleAsync(user, DefaultRole);
+
+        var token = await CreateToken(user);
         return Ok(new AuthResponse(token, user.Email!));
     }
 
@@ -73,11 +83,11 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = "Invalid credentials." });
         }
 
-        var token = CreateToken(user);
+        var token = await CreateToken(user);
         return Ok(new AuthResponse(token, user.Email!));
     }
 
-    private string CreateToken(IdentityUser user)
+    private async Task<string> CreateToken(IdentityUser user)
     {
         var jwtKey = _configuration["Jwt:Key"] ?? "development-secret-key-change-me";
         var issuer = _configuration["Jwt:Issuer"] ?? "beer-api";
@@ -88,6 +98,9 @@ public class AuthController : ControllerBase
             new(ClaimTypes.NameIdentifier, user.Id),
             new(ClaimTypes.Email, user.Email ?? string.Empty)
         };
+
+        var roles = await _userManager.GetRolesAsync(user);
+        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

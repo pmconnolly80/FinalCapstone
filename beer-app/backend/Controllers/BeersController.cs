@@ -35,7 +35,7 @@ public class BeersController : ControllerBase
         return beer;
     }
 
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<ActionResult<Beer>> PostBeer(Beer beer)
     {
@@ -45,7 +45,7 @@ public class BeersController : ControllerBase
         return CreatedAtAction(nameof(GetBeer), new { id = beer.Id }, beer);
     }
 
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> PutBeer(int id, Beer beer)
     {
@@ -60,7 +60,7 @@ public class BeersController : ControllerBase
         return NoContent();
     }
 
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteBeer(int id)
     {
