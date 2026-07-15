@@ -286,3 +286,36 @@ design merged in PR #10. Re-titled and re-scoped issues #3/#6 on GitHub first.
   `localhost:3001`, open a beer, "Confirm with bartender", PIN `123456`.
 - Tooling gotcha for next session: run backend tests with the .NET 8 SDK at `~/.dotnet8`,
   NOT `DOTNET_ROLL_FORWARD` — full recipe in `.claude/skills/verify/SKILL.md`.
+
+## 2026-07-14 — Sprint 1 closed out; Sprint 2 groomed into issues #12–#16
+
+**Sprint/story:** wraps Sprint 1 (Mug Club Core), opens Sprint 2 (Mug Club Completion) — `epic:mug-club`.
+
+- Confirmed [PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11) merged to
+  `master` (`3cf94c3`) — issues #2–#6 auto-closed, Sprint 1 milestone closed on GitHub.
+  Verified the running Docker stack matches merged `master` (api image built from code
+  byte-identical to the merge; web serves the working tree via the Vite volume mount).
+- Created the **Sprint 2: Mug Club Completion**
+  [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/2) and groomed the
+  planned scope into five stories, per the "only the next sprint gets ticketed" rule:
+  - [#12](https://github.com/pmconnolly80/FinalCapstone/issues/12) API: PIN lockout —
+    per-PIN (`FailedAttempts`/`LockedUntil`, schema-ahead since Sprint 1) + per-customer
+    axis; generic 401s so there's no lockout oracle
+  - [#13](https://github.com/pmconnolly80/FinalCapstone/issues/13) PIN lifecycle — admin
+    issue/reset/deactivate, staff change their own; uniqueness among active PINs
+  - [#14](https://github.com/pmconnolly80/FinalCapstone/issues/14) Mug earned — persist
+    `MugEarnedAtUtc` (durable, not derived), owner list of earners; push/badges deferred
+    to the Retention epic
+  - [#15](https://github.com/pmconnolly80/FinalCapstone/issues/15) API: admin
+    confirmation audit & correction — required reason notes, audit log entity
+    (also `epic:admin` — first slice of edit-everything)
+  - [#16](https://github.com/pmconnolly80/FinalCapstone/issues/16) UI: admin confirmation
+    review & correction screen (also `epic:admin`)
+- Updated `EPICS_AND_SPRINTS.md` to mirror: Sprint 1 marked complete (stale re-scope
+  warning removed — #3/#6 were re-titled on GitHub before implementation), Sprint 2
+  section now links milestone + issues.
+
+**Resume here:** implement Sprint 2, suggested order #12 → #13 → #14 → #15 → #16 (lockout
+first — it hardens the already-live confirm endpoint; UI story depends on #15's API).
+TDD per Definition of Done. Backend tests need the .NET 8 SDK at `~/.dotnet8` — recipe in
+`.claude/skills/verify/SKILL.md`.

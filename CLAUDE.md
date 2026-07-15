@@ -64,7 +64,7 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
 - **Note:** the auth/roles/migrations/seed work above is merged to `master` (via `harden-foundation`,
   [PR #7](https://github.com/pmconnolly80/FinalCapstone/pull/7)).
 - **Sprint 1: Mug Club Core** (2026-07-14, [PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11)
-  — open with CI green at time of writing; merging it closes issues #2–#6):
+  — merged to `master`; issues #2–#6 closed, milestone closed):
   - `Tavern`, `BeerConfirmation` (unique per customer+beer), `StaffPin` entities +
     `AddMugClubCore` migration (`beer-app/backend/Models/`, `Migrations/`)
   - `POST /api/confirmations {beerId, pin}` — authenticated as the *customer*, bartender
@@ -78,9 +78,11 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     PIN `123456` (dev bootstrap only — real PIN lifecycle is Sprint 2 scope)
 
 **Not built** — next up per `EPICS_AND_SPRINTS.md`:
-- Sprint 2 (Mug Club Completion, not yet ticketed): PIN lockout behavior (`StaffPin`
-  already has `FailedAttempts`/`LockedUntil` columns, unused), PIN lifecycle UI
-  (issue/reset/deactivate), "mug earned" notification, admin confirmation audit/correction
+- Sprint 2 (Mug Club Completion, groomed 2026-07-14 into issues #12–#16,
+  [milestone 2](https://github.com/pmconnolly80/FinalCapstone/milestone/2)): PIN lockout
+  (#12 — `StaffPin` already has `FailedAttempts`/`LockedUntil` columns, unused), PIN
+  lifecycle (#13), durable "mug earned" milestone (#14), admin confirmation
+  audit/correction API + screen (#15/#16)
 - No admin UI to assign roles (currently DB-manual only)
 - No Open Brewery DB API integration — scoped in the 2026-07-13 planning session: OBDB is
   breweries-only (no beer-level endpoint), so it enriches beer details with brewery info and
@@ -127,18 +129,16 @@ Manual (no Docker): `dotnet run` in `beer-app/backend/`, and
 
 ## Likely next steps
 
-**Sprint 1 (Mug Club Core) is code complete** on `feat/sprint1-mug-club-core` —
-[PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), CI green, verified live
-against Docker Postgres. Issues #3/#6 were re-scoped on GitHub to the one-device model
-before implementation. In order:
+**Sprint 1 (Mug Club Core) is done** — [PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11)
+merged 2026-07-14, issues #2–#6 and the milestone closed. **Sprint 2 (Mug Club Completion)
+is groomed** into issues [#12–#16](https://github.com/pmconnolly80/FinalCapstone/milestone/2)
+(see `EPICS_AND_SPRINTS.md` and the 2026-07-14 `SESSION_LOG.md` entry). In order:
 
-1. **Merge PR #11** if not yet merged (auto-closes issues #2–#6, completing the Sprint 1
-   milestone), then close the milestone on GitHub.
-2. **Groom Sprint 2 (Mug Club Completion) into GitHub issues** — per the grooming rule in
-   `EPICS_AND_SPRINTS.md`, it's now "next up": PIN lockout (columns already exist on
-   `StaffPin`), PIN lifecycle in user management, "mug earned" notification, admin
-   confirmation audit/correction with reason notes.
-3. Then the named later sprints: Customer Phone Experience (search/availability/OBDB),
+1. **Implement Sprint 2**, suggested order #12 (PIN lockout — hardens the already-live
+   confirm endpoint) → #13 (PIN lifecycle) → #14 (durable mug-earned) → #15 (admin
+   audit/correction API) → #16 (admin correction screen, depends on #15). TDD per the
+   Definition of Done.
+2. Then the named later sprints: Customer Phone Experience (search/availability/OBDB),
    Auth II (social sign-in), Admin Experience, Engagement/Retention/Social.
 
 Local tooling note: only the .NET 10 SDK is on PATH but the projects target net8.0 — run

@@ -38,7 +38,7 @@ live and how to run them locally.
 |---|---|---|
 | Core Catalog (browse/detail/CRUD) | `epic:core-catalog` | ✅ Done — pre-dates formal sprint tracking |
 | Auth & Roles | `epic:auth` | ✅ Done for password auth ([PR #7](https://github.com/pmconnolly80/FinalCapstone/pull/7)) — **new scope added July 2026, not yet ticketed**: social sign-in (Google/Facebook/Apple via Identity external providers) + marketing-consent capture, see `TECHNICAL_ARCHITECTURE_PLAN.md` §4.6 |
-| **Mug Club Progress & Bartender Confirmation** | `epic:mug-club` | 🔵 In progress — **Sprint 1 code complete** ([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), CI green; merging closes #2–#6). Built to the one-device rule: confirmation on the customer's phone, sealed by the bartender's personal 6-digit PIN. Sprint 2 (completion) is next to groom |
+| **Mug Club Progress & Bartender Confirmation** | `epic:mug-club` | 🔵 In progress — **Sprint 1 done** ([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11) merged 2026-07-14, milestone closed). Built to the one-device rule: confirmation on the customer's phone, sealed by the bartender's personal 6-digit PIN. **Sprint 2 groomed 2026-07-14 into issues #12–#16** — next up to implement |
 | Customer Phone Experience (search-first UX, availability states for the rotating inventory, Open Brewery DB brewery enrichment, mobile repair) | `epic:phone-experience` | ⬜ Not started — planned July 2026, see `MOBILE_FIRST_PRODUCT_OUTLINE.md` |
 | Admin Experience (dashboard + anomaly panel, user/role/PIN mgmt UI, full data correction with audit, catalog bulk-add guardrail) | `epic:admin` | ⬜ Not started |
 | Engagement, Retention & Social (badges, push notifications + owner composer, My Beers — ratings/want list/personal stats viz, social feed/cheers/leaderboard, journal, owner analytics) | `epic:retention` | ⬜ Not started — the business-owner payoff, see `FEATURE_MAP.md` and `PERSONAS_AND_USAGE.md` |
@@ -47,44 +47,39 @@ live and how to run them locally.
 
 ## Sprints
 
-### Sprint 1: Mug Club Core — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/1) (code complete — PR open)
+### Sprint 1: Mug Club Core — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/1) (✅ complete — merged 2026-07-14)
 
 The core mug-club loop end to end: a bartender can confirm a beer for a customer, and that
 customer can see their progress. This alone delivers the primary MVP driver described in
 `PROJECT_PLAN.md` and `FEATURE_MAP.md`.
 
-> **Status (2026-07-14):** all five stories implemented on `feat/sprint1-mug-club-core` —
-> [PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), CI green (37 backend /
-> 38 frontend tests), verified live against Docker Postgres (see `SESSION_LOG.md`).
-> #3/#6 were re-titled on GitHub to the one-device PIN design before implementation.
-> **Merging PR #11 auto-closes #2–#6 and completes this sprint** — then close the
-> milestone and groom Sprint 2 below into issues.
+> **Status (2026-07-14):** [PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11)
+> merged to `master` (37 backend / 38 frontend tests, CI green, verified live against
+> Docker Postgres — see `SESSION_LOG.md`). Issues #2–#6 closed by the merge; milestone
+> closed. #3/#6 had been re-titled on GitHub to the one-device PIN design before
+> implementation.
 
 1. [#2 Add Tavern and BeerConfirmation entities + migration](https://github.com/pmconnolly80/FinalCapstone/issues/2)
-2. [#3 API: bartender confirm-beer-for-customer endpoint](https://github.com/pmconnolly80/FinalCapstone/issues/3)
+2. [#3 API: confirmation endpoint — customer session + bartender PIN](https://github.com/pmconnolly80/FinalCapstone/issues/3)
 3. [#4 API: customer mug-club progress endpoint](https://github.com/pmconnolly80/FinalCapstone/issues/4)
 4. [#5 UI: customer "My Progress" screen](https://github.com/pmconnolly80/FinalCapstone/issues/5)
-5. [#6 UI: bartender "Confirm Beer" screen](https://github.com/pmconnolly80/FinalCapstone/issues/6)
+5. [#6 UI: Confirmation PIN Pad on the customer's phone](https://github.com/pmconnolly80/FinalCapstone/issues/6)
 
-> **⚠ July 2026 re-scope needed on #3 and #6 (GitHub issues not yet edited):** the
-> one-device decision means there is no separate bartender screen. #6 becomes the
-> **Confirmation PIN Pad on the customer's phone** (full-screen takeover from beer
-> detail: beer + customer name large, masked 6-digit pad, success state). #3's endpoint
-> becomes `POST /api/confirmations {beerId, pin}` authenticated as the *customer* — the
-> request should carry the `pin` field from day one even if full PIN validation lands in
-> Sprint 2. See `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1.
+### Sprint 2: Mug Club Completion — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/2) (groomed 2026-07-14, up next)
 
-### Sprint 2: Mug Club Completion — planned, not yet ticketed
+Finishes the epic on top of Sprint 1's verified core loop: brute-force protection for the
+PIN-on-customer's-phone model, real PIN lifecycle, a durable mug-earned milestone, and the
+admin fix path for at-the-bar mistakes (the first slice of admin edit-everything):
 
-Finishes the epic once Sprint 1's core loop is verified working:
+1. [#12 API: PIN lockout — per-PIN and per-customer failed-attempt lockout](https://github.com/pmconnolly80/FinalCapstone/issues/12)
+   — wires up the `FailedAttempts`/`LockedUntil` columns `StaffPin` shipped with
+2. [#13 PIN lifecycle — admin issue/reset/deactivate, staff change their own](https://github.com/pmconnolly80/FinalCapstone/issues/13)
+3. [#14 Mug earned — persist the milestone, surface it to customer and owner](https://github.com/pmconnolly80/FinalCapstone/issues/14)
+4. [#15 API: admin confirmation audit & correction with required reason notes](https://github.com/pmconnolly80/FinalCapstone/issues/15)
+5. [#16 UI: admin confirmation review & correction screen](https://github.com/pmconnolly80/FinalCapstone/issues/16)
 
-- Bartender PIN validation end to end: `StaffPin` entity (hashed, unique among active
-  staff), two-axis lockout (per-PIN + per-customer-account), PIN lifecycle in user
-  management (issue / reset / deactivate; staff change their own)
-- "Mug earned" milestone flag/notification once a customer hits 200 confirmed beers
-- Admin tooling to review and correct a bartender's confirmation history (mistakes happen at
-  the bar; there needs to be a fix path) — first slice of the admin edit-everything
-  capability, with reason notes and an audit log
+Push notifications and badges are explicitly *not* here — they stay in the Engagement,
+Retention & Social epic; #14 is the durable flag + in-app surfacing only.
 
 ### Later sprints (named only — groomed into issues when they're next up)
 
