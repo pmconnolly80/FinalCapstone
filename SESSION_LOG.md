@@ -273,6 +273,16 @@ design merged in PR #10. Re-titled and re-scoped issues #3/#6 on GitHub first.
   project verify skill at `.claude/skills/verify/SKILL.md` (includes the local .NET 8
   vs 10 gotcha: use `~/.dotnet8` for tests, not `DOTNET_ROLL_FORWARD`).
 
-Remaining before Sprint 1 closes: none for the defined scope — issues #2–#6 can be
-closed once this lands on `master`. Sprint 2 next: PIN lifecycle + lockout, mug-earned
-notification, admin confirmation audit/correction.
+**Where this stands / resume here:**
+- Branch `feat/sprint1-mug-club-core`, commit `aba0319`, pushed —
+  [PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11) open to `master`,
+  **CI green** (backend 43s, frontend 14s).
+- **Next action: merge PR #11** (auto-closes issues #2–#6), close the Sprint 1 milestone,
+  then groom Sprint 2 (Mug Club Completion) into GitHub issues: PIN lockout (the
+  `FailedAttempts`/`LockedUntil` columns already exist on `StaffPin`, unused), PIN
+  lifecycle in user management, "mug earned" notification, admin confirmation
+  audit/correction with reason notes.
+- To try it locally: `cd beer-app && docker compose up -d --build` → sign up at
+  `localhost:3001`, open a beer, "Confirm with bartender", PIN `123456`.
+- Tooling gotcha for next session: run backend tests with the .NET 8 SDK at `~/.dotnet8`,
+  NOT `DOTNET_ROLL_FORWARD` — full recipe in `.claude/skills/verify/SKILL.md`.

@@ -63,18 +63,30 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
   `Admin`/`Bartender`/`Customer` roles plus sample beers (`beer-app/backend/Data/SeedData.cs`)
 - **Note:** the auth/roles/migrations/seed work above is merged to `master` (via `harden-foundation`,
   [PR #7](https://github.com/pmconnolly80/FinalCapstone/pull/7)).
+- **Sprint 1: Mug Club Core** (2026-07-14, [PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11)
+  — open with CI green at time of writing; merging it closes issues #2–#6):
+  - `Tavern`, `BeerConfirmation` (unique per customer+beer), `StaffPin` entities +
+    `AddMugClubCore` migration (`beer-app/backend/Models/`, `Migrations/`)
+  - `POST /api/confirmations {beerId, pin}` — authenticated as the *customer*, bartender
+    resolved server-side from their hashed 6-digit PIN
+    (`beer-app/backend/Controllers/ConfirmationsController.cs`)
+  - `GET /api/me/progress` (`beer-app/backend/Controllers/MeController.cs`)
+  - Confirmation PIN Pad (`beer-app/frontend/src/components/ConfirmPinPad.jsx`, launched
+    from beer detail) and My Progress page (`beer-app/frontend/src/pages/MyProgress.jsx`,
+    route `/progress`)
+  - Seed adds "The Tavern" + a dev bartender: `bartender@example.com` / `Bartender1!`,
+    PIN `123456` (dev bootstrap only — real PIN lifecycle is Sprint 2 scope)
 
-**Not built** — the primary MVP driver per the planning docs, and the active work: Sprint 1 in
-`EPICS_AND_SPRINTS.md` (GitHub issues [#2](https://github.com/pmconnolly80/FinalCapstone/issues/2)–[#6](https://github.com/pmconnolly80/FinalCapstone/issues/6)):
-- No `BeerConfirmation` or `Tavern`/`Location` entity
-- No bartender confirm-a-beer-for-a-customer flow
-- No customer "X of 200" progress view or "mug earned" milestone
-- No admin UI to assign roles (currently DB-manual only) or audit/correct confirmations
+**Not built** — next up per `EPICS_AND_SPRINTS.md`:
+- Sprint 2 (Mug Club Completion, not yet ticketed): PIN lockout behavior (`StaffPin`
+  already has `FailedAttempts`/`LockedUntil` columns, unused), PIN lifecycle UI
+  (issue/reset/deactivate), "mug earned" notification, admin confirmation audit/correction
+- No admin UI to assign roles (currently DB-manual only)
 - No Open Brewery DB API integration — scoped in the 2026-07-13 planning session: OBDB is
   breweries-only (no beer-level endpoint), so it enriches beer details with brewery info and
   powers admin brewery autocomplete; the tavern's list stays the source of truth for beers.
-  See `MOBILE_FIRST_PRODUCT_OUTLINE.md` §2 and the `epic:phone-experience` entry in
-  `EPICS_AND_SPRINTS.md`.
+  Catalog.beer researched 2026-07-14 as the beer-level pre-fill candidate (hit-rate spike
+  first). See `TECHNICAL_ARCHITECTURE_PLAN.md` §6.
 
 ## Testing policy (TDD)
 
@@ -115,12 +127,20 @@ Manual (no Docker): `dotnet run` in `beer-app/backend/`, and
 
 ## Likely next steps
 
-The foundation (migrations, seed data, role-based auth) is hardened and merged to `master`.
-Current active work is **Sprint 1: Mug Club Core** (the actual product differentiator, per
-`EPICS_AND_SPRINTS.md`): work GitHub issues
-[#2](https://github.com/pmconnolly80/FinalCapstone/issues/2)–[#6](https://github.com/pmconnolly80/FinalCapstone/issues/6)
-in order — data model, bartender confirm endpoint, customer progress endpoint, then the two
-matching UI screens. **Note (July 2026):** issues #3 and #6 need re-scoping to the one-device
-model before implementation — the endpoint is `POST /api/confirmations {beerId, pin}`
-authenticated as the customer, and #6's screen is the Confirmation PIN Pad on the customer's
-phone, not a bartender screen (see the flagged note in `EPICS_AND_SPRINTS.md` Sprint 1).
+**Sprint 1 (Mug Club Core) is code complete** on `feat/sprint1-mug-club-core` —
+[PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), CI green, verified live
+against Docker Postgres. Issues #3/#6 were re-scoped on GitHub to the one-device model
+before implementation. In order:
+
+1. **Merge PR #11** if not yet merged (auto-closes issues #2–#6, completing the Sprint 1
+   milestone), then close the milestone on GitHub.
+2. **Groom Sprint 2 (Mug Club Completion) into GitHub issues** — per the grooming rule in
+   `EPICS_AND_SPRINTS.md`, it's now "next up": PIN lockout (columns already exist on
+   `StaffPin`), PIN lifecycle in user management, "mug earned" notification, admin
+   confirmation audit/correction with reason notes.
+3. Then the named later sprints: Customer Phone Experience (search/availability/OBDB),
+   Auth II (social sign-in), Admin Experience, Engagement/Retention/Social.
+
+Local tooling note: only the .NET 10 SDK is on PATH but the projects target net8.0 — run
+backend tests with the SDK at `~/.dotnet8` (see `.claude/skills/verify/SKILL.md` for the
+exact commands, the curl drive loop, and the dev bartender PIN).
