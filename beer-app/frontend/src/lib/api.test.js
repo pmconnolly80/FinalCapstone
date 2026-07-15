@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fetchBeer, fetchBeers, login, register, saveBeer } from './api';
+import { confirmBeer, fetchBeer, fetchBeers, fetchMyProgress, login, register, saveBeer } from './api';
 
 function mockFetchOnce(ok, body) {
   global.fetch = vi.fn().mockResolvedValue({
@@ -77,5 +77,43 @@ describe('api', () => {
     mockFetchOnce(false, {});
 
     await expect(register('a@example.com', 'password')).rejects.toThrow('Registration failed');
+  });
+
+  it('confirmBeer POSTs the beer id and PIN with the Authorization header', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    mockFetchOnce(true, { confirmedCount: 1, goal: 200, mugEarned: false });
+
+    const result = await confirmBeer(7, '123456');
+
+    const [url, init] = global.fetch.mock.calls[0];
+    expect(url).toContain('/api/confirmations');
+    expect(init.method).toBe('POST');
+    expect(init.headers.Authorization).toBe('Bearer abc123');
+    expect(JSON.parse(init.body)).toEqual({ beerId: 7, pin: '123456' });
+    expect(result.confirmedCount).toBe(1);
+  });
+
+  it('confirmBeer surfaces the API error message when the response is not ok', async () => {
+    mockFetchOnce(false, { message: 'Invalid PIN.' });
+
+    await expect(confirmBeer(7, '000000')).rejects.toThrow('Invalid PIN.');
+  });
+
+  it('fetchMyProgress GETs with the Authorization header and resolves the body', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    mockFetchOnce(true, { confirmedCount: 3, goal: 200, mugEarned: false, confirmations: [] });
+
+    const result = await fetchMyProgress();
+
+    const [url, init] = global.fetch.mock.calls[0];
+    expect(url).toContain('/api/me/progress');
+    expect(init.headers.Authorization).toBe('Bearer abc123');
+    expect(result.confirmedCount).toBe(3);
+  });
+
+  it('fetchMyProgress throws when the response is not ok', async () => {
+    mockFetchOnce(false, {});
+
+    await expect(fetchMyProgress()).rejects.toThrow('Failed to load progress');
   });
 });

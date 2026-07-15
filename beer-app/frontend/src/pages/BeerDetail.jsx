@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchBeer } from '../lib/api';
+import ConfirmPinPad from '../components/ConfirmPinPad';
 
 function BeerDetail() {
   const { id } = useParams();
   const [beer, setBeer] = useState(null);
+  const [confirming, setConfirming] = useState(false);
+  const hasToken = Boolean(localStorage.getItem('beer-token'));
 
   useEffect(() => {
     fetchBeer(id)
@@ -20,7 +23,16 @@ function BeerDetail() {
       <p><strong>Brewery:</strong> {beer.brewery}</p>
       <p><strong>Style:</strong> {beer.style}</p>
       <p>{beer.description}</p>
+      {hasToken && (
+        <button
+          onClick={() => setConfirming(true)}
+          style={{ display: 'block', width: '100%', padding: '14px 20px', fontSize: 16, marginBottom: 16 }}
+        >
+          Confirm with bartender
+        </button>
+      )}
       <Link to="/beers">Back to list</Link>
+      {confirming && <ConfirmPinPad beer={beer} onClose={() => setConfirming(false)} />}
     </div>
   );
 }

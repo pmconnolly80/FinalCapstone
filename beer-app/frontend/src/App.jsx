@@ -3,6 +3,7 @@ import BeerList from './pages/BeerList';
 import BeerDetail from './pages/BeerDetail';
 import BeerForm from './pages/BeerForm';
 import AuthPage from './pages/AuthPage';
+import MyProgress from './pages/MyProgress';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <nav style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <Link to="/">Home</Link>
           <Link to="/beers">Beers</Link>
+          <Link to="/progress">My Progress</Link>
           <Link to="/beers/new">Add Beer</Link>
           <Link to="/auth">Sign in</Link>
         </nav>
@@ -26,6 +28,7 @@ function App() {
         <Route path="/beers/:id" element={<BeerDetail />} />
         <Route path="/beers/new" element={<BeerForm />} />
         <Route path="/beers/:id/edit" element={<BeerForm />} />
+        <Route path="/progress" element={<MyProgress />} />
         <Route path="/auth" element={<AuthPage />} />
       </Routes>
     </div>

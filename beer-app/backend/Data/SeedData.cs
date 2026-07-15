@@ -7,6 +7,15 @@ public static class SeedData
 {
     private static readonly string[] Roles = { "Admin", "Bartender", "Customer" };
 
+    public const string TavernName = "The Tavern";
+
+    // Dev-only bootstrap so the confirmation flow is usable out of the box: a bartender
+    // account with a known PIN. Real staff onboarding (owner-issued PINs, forced change on
+    // first use) is Sprint 2 / Deployment & Hardening scope.
+    public const string DevBartenderEmail = "bartender@example.com";
+    public const string DevBartenderPassword = "Bartender1!";
+    public const string DevBartenderPin = "123456";
+
     private static readonly Beer[] SampleBeers =
     {
         new() { Name = "Pale Ale", Brewery = "Sierra Nevada", Style = "American Pale Ale", Description = "Piney, citrusy hop character with a caramel malt backbone." },
@@ -34,6 +43,32 @@ public static class SeedData
         if (!db.Beers.Any())
         {
             db.Beers.AddRange(SampleBeers);
+            await db.SaveChangesAsync();
+        }
+
+        if (!db.Taverns.Any())
+        {
+            db.Taverns.Add(new Tavern { Name = TavernName });
+            await db.SaveChangesAsync();
+        }
+
+        var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
+        var bartender = await userManager.FindByEmailAsync(DevBartenderEmail);
+        if (bartender == null)
+        {
+            bartender = new IdentityUser { UserName = DevBartenderEmail, Email = DevBartenderEmail };
+            await userManager.CreateAsync(bartender, DevBartenderPassword);
+            await userManager.AddToRoleAsync(bartender, "Bartender");
+        }
+
+        if (!db.StaffPins.Any(p => p.UserId == bartender.Id))
+        {
+            var hasher = new PasswordHasher<IdentityUser>();
+            db.StaffPins.Add(new StaffPin
+            {
+                UserId = bartender.Id,
+                PinHash = hasher.HashPassword(bartender, DevBartenderPin),
+            });
             await db.SaveChangesAsync();
         }
     }
