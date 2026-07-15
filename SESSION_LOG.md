@@ -237,3 +237,52 @@ loop, Terri's demand signals, new want-list cross-persona flow).
 No product code changed this session — docs only. Committed and pushed to
 `docs/phone-first-replan` per owner request (together with the 2026-07-13/14 planning
 sessions' doc changes).
+
+## 2026-07-14 — Sprint 1 implementation: mug-club core loop (issues #2–#6)
+
+**Epic:** Mug Club Progress & Bartender Confirmation (`epic:mug-club`), Sprint 1
+
+First product-code session of Sprint 1 — the whole core loop, built to the one-device
+design merged in PR #10. Re-titled and re-scoped issues #3/#6 on GitHub first.
+
+- **#2 Data model:** `Tavern`, `BeerConfirmation` (unique per customer+beer, FKs
+  restrict), and `StaffPin` (hashed PIN, `IsActive`, lockout columns schema-ahead for
+  Sprint 2). Migration `AddMugClubCore`; seed adds the tavern and a dev bartender
+  (`bartender@example.com`, PIN `123456` — dev bootstrap only, real PIN lifecycle is
+  Sprint 2/hardening scope).
+- **#3 Confirm endpoint:** `POST /api/confirmations {beerId, pin}` authenticated as the
+  *customer*; PIN resolves server-side to an active Bartender/Admin staff pin (Identity
+  `PasswordHasher` verify) and stamps `ConfirmedByUserId`. 400 malformed PIN, 401
+  generic "Invalid PIN.", 404 unknown beer, 409 already-confirmed, 201 with
+  `{confirmedCount, goal, mugEarned}`.
+- **#4 Progress endpoint:** `GET /api/me/progress` — count, goal (200), mugEarned, and
+  the confirmed list (beer name/brewery/style + date, newest first).
+- **#5 My Progress screen:** `/progress` route — X of 200, progress bar, mug-earned
+  state, confirmed-beers list, sign-in prompt when logged out.
+- **#6 Confirmation PIN Pad:** full-screen takeover from "Confirm with bartender" on
+  beer detail (shown only when signed in): beer name large, masked digits-only 6-digit
+  input, error + retry, success state with updated count and mug-earned celebration.
+- **Tests (TDD Definition of Done):** 10 new backend tests (unit: ConfirmationsController
+  incl. wrong/inactive/non-staff PIN and mug-earned threshold; MeController ordering and
+  goal; integration: full register→confirm→progress loop over HTTP with the seeded PIN)
+  — 37/37 green; 16 new frontend tests (api.js, ConfirmPinPad, MyProgress, BeerDetail
+  confirm-button visibility) — 38/38 green.
+- **Verified live** (not just tests): rebuilt the compose stack; `AddMugClubCore`
+  applied onto the existing Postgres volume; drove the loop with curl — 401 no-token,
+  401 wrong PIN, 400 malformed, 201 confirm, 409 duplicate, 200 progress. Captured a
+  project verify skill at `.claude/skills/verify/SKILL.md` (includes the local .NET 8
+  vs 10 gotcha: use `~/.dotnet8` for tests, not `DOTNET_ROLL_FORWARD`).
+
+**Where this stands / resume here:**
+- Branch `feat/sprint1-mug-club-core`, commit `aba0319`, pushed —
+  [PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11) open to `master`,
+  **CI green** (backend 43s, frontend 14s).
+- **Next action: merge PR #11** (auto-closes issues #2–#6), close the Sprint 1 milestone,
+  then groom Sprint 2 (Mug Club Completion) into GitHub issues: PIN lockout (the
+  `FailedAttempts`/`LockedUntil` columns already exist on `StaffPin`, unused), PIN
+  lifecycle in user management, "mug earned" notification, admin confirmation
+  audit/correction with reason notes.
+- To try it locally: `cd beer-app && docker compose up -d --build` → sign up at
+  `localhost:3001`, open a beer, "Confirm with bartender", PIN `123456`.
+- Tooling gotcha for next session: run backend tests with the .NET 8 SDK at `~/.dotnet8`,
+  NOT `DOTNET_ROLL_FORWARD` — full recipe in `.claude/skills/verify/SKILL.md`.

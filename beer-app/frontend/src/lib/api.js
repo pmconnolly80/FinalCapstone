@@ -27,6 +27,34 @@ export async function saveBeer(beer, id) {
   return response.json();
 }
 
+export async function confirmBeer(beerId, pin) {
+  const token = localStorage.getItem('beer-token');
+  const response = await fetch(`${API_BASE_URL}/api/confirmations`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ beerId, pin }),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || 'Failed to confirm beer');
+  }
+  return response.json();
+}
+
+export async function fetchMyProgress() {
+  const token = localStorage.getItem('beer-token');
+  const response = await fetch(`${API_BASE_URL}/api/me/progress`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  if (!response.ok) throw new Error('Failed to load progress');
+  return response.json();
+}
+
 export async function login(email, password) {
   const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
     method: 'POST',

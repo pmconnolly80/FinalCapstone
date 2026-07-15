@@ -38,7 +38,7 @@ live and how to run them locally.
 |---|---|---|
 | Core Catalog (browse/detail/CRUD) | `epic:core-catalog` | ✅ Done — pre-dates formal sprint tracking |
 | Auth & Roles | `epic:auth` | ✅ Done for password auth ([PR #7](https://github.com/pmconnolly80/FinalCapstone/pull/7)) — **new scope added July 2026, not yet ticketed**: social sign-in (Google/Facebook/Apple via Identity external providers) + marketing-consent capture, see `TECHNICAL_ARCHITECTURE_PLAN.md` §4.6 |
-| **Mug Club Progress & Bartender Confirmation** | `epic:mug-club` | 🔵 In progress — Sprint 1 open. The actual product driver (see `PROJECT_PLAN.md` §1). **July 2026 decision reshapes it**: one-device rule — confirmation happens on the customer's phone, sealed by the bartender's personal 6-digit PIN |
+| **Mug Club Progress & Bartender Confirmation** | `epic:mug-club` | 🔵 In progress — **Sprint 1 code complete** ([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), CI green; merging closes #2–#6). Built to the one-device rule: confirmation on the customer's phone, sealed by the bartender's personal 6-digit PIN. Sprint 2 (completion) is next to groom |
 | Customer Phone Experience (search-first UX, availability states for the rotating inventory, Open Brewery DB brewery enrichment, mobile repair) | `epic:phone-experience` | ⬜ Not started — planned July 2026, see `MOBILE_FIRST_PRODUCT_OUTLINE.md` |
 | Admin Experience (dashboard + anomaly panel, user/role/PIN mgmt UI, full data correction with audit, catalog bulk-add guardrail) | `epic:admin` | ⬜ Not started |
 | Engagement, Retention & Social (badges, push notifications + owner composer, My Beers — ratings/want list/personal stats viz, social feed/cheers/leaderboard, journal, owner analytics) | `epic:retention` | ⬜ Not started — the business-owner payoff, see `FEATURE_MAP.md` and `PERSONAS_AND_USAGE.md` |
@@ -47,11 +47,18 @@ live and how to run them locally.
 
 ## Sprints
 
-### Sprint 1: Mug Club Core — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/1) (open)
+### Sprint 1: Mug Club Core — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/1) (code complete — PR open)
 
 The core mug-club loop end to end: a bartender can confirm a beer for a customer, and that
 customer can see their progress. This alone delivers the primary MVP driver described in
 `PROJECT_PLAN.md` and `FEATURE_MAP.md`.
+
+> **Status (2026-07-14):** all five stories implemented on `feat/sprint1-mug-club-core` —
+> [PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), CI green (37 backend /
+> 38 frontend tests), verified live against Docker Postgres (see `SESSION_LOG.md`).
+> #3/#6 were re-titled on GitHub to the one-device PIN design before implementation.
+> **Merging PR #11 auto-closes #2–#6 and completes this sprint** — then close the
+> milestone and groom Sprint 2 below into issues.
 
 1. [#2 Add Tavern and BeerConfirmation entities + migration](https://github.com/pmconnolly80/FinalCapstone/issues/2)
 2. [#3 API: bartender confirm-beer-for-customer endpoint](https://github.com/pmconnolly80/FinalCapstone/issues/3)

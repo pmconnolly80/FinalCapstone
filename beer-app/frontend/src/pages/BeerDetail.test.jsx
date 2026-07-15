@@ -45,4 +45,24 @@ describe('BeerDetail', () => {
     expect(screen.getByText('Belgian Strong Golden Ale')).toBeInTheDocument();
     expect(fetchBeer).toHaveBeenCalledWith('1');
   });
+
+  it('hides the confirm action when the customer is not signed in', async () => {
+    localStorage.clear();
+    fetchBeer.mockResolvedValue({ id: 1, name: 'Duvel', brewery: 'Duvel Moortgat', style: 'Ale' });
+
+    renderBeerDetail('1');
+
+    expect(await screen.findByText('Duvel')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Confirm with bartender' })).not.toBeInTheDocument();
+  });
+
+  it('shows the confirm action for a signed-in customer', async () => {
+    localStorage.setItem('beer-token', 'abc');
+    fetchBeer.mockResolvedValue({ id: 1, name: 'Duvel', brewery: 'Duvel Moortgat', style: 'Ale' });
+
+    renderBeerDetail('1');
+
+    expect(await screen.findByRole('button', { name: 'Confirm with bartender' })).toBeInTheDocument();
+    localStorage.clear();
+  });
 });
