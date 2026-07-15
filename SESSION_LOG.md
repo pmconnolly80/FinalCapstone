@@ -319,3 +319,36 @@ design merged in PR #10. Re-titled and re-scoped issues #3/#6 on GitHub first.
 first — it hardens the already-live confirm endpoint; UI story depends on #15's API).
 TDD per Definition of Done. Backend tests need the .NET 8 SDK at `~/.dotnet8` — recipe in
 `.claude/skills/verify/SKILL.md`.
+
+## 2026-07-14 — Live testing found three issues; triaged, two Sprint 2 interrupts filed
+
+**Sprint/story:** Sprint 2 interrupts — `epic:auth` (bug #17) + `epic:phone-experience` (#18);
+plus grooming/process updates.
+
+Peter navigated the running app as a user and hit three problems: no social sign-in on the
+auth screens, registration failing with no explanation, and a placeholder-grade landing page.
+Triage outcome, one item per bucket:
+
+- **Registration failure → [#17](https://github.com/pmconnolly80/FinalCapstone/issues/17)**
+  (`bug` + `epic:auth`, pulled into the Sprint 2 milestone as an interrupt). Root cause
+  diagnosed by static trace: `register()`/`login()` in `frontend/src/lib/api.js` throw a
+  generic message without reading the response body, so the backend's real errors (Identity
+  default password rules rejecting casual passwords; duplicate-email 409) never reach the
+  user. CI never caught it because every auth test uses the compliant `Passw0rd!`. This also
+  established the project's bug convention — new "Bugs" section in `EPICS_AND_SPRINTS.md`.
+  **Not fixed this session** — it's first in the Sprint 2 working order.
+- **Landing page → [#18](https://github.com/pmconnolly80/FinalCapstone/issues/18)**
+  (`epic:phone-experience`, label created; Sprint 2 interrupt). Deliberately small scope:
+  adopt Tailwind, extract `/` into a real `Home.jsx`, restyle the app shell. The full
+  progress-as-home screen stays in the Customer Phone Experience sprint. Implemented this
+  session (see branch `feat/landing-page-facelift`).
+- **Social sign-in → no ticket.** Already a named later sprint (Auth II) under `epic:auth`;
+  per the "only the next sprint gets ticketed" rule it stays prose-only. Epics table now
+  notes the gap was re-confirmed by live testing.
+
+Also: blog post "Live Testing and Triage" drafted for peterconnolly-website with the matching
+Projects-page updates entry (same-commit rule).
+
+**Resume here:** fix #17 first (it blocks account creation for all Sprint 2 testing), then
+#12 → #13 → #14 → #15 → #16. TDD per Definition of Done. Backend tests need the .NET 8 SDK
+at `~/.dotnet8` — recipe in `.claude/skills/verify/SKILL.md`.

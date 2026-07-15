@@ -32,14 +32,23 @@ backend (`dotnet test`) and frontend (`npm test`) suites on every push/PR to `ma
 is enforced, not just stated. See `CLAUDE.md`'s "Testing policy (TDD)" section for where tests
 live and how to run them locally.
 
+## Bugs
+
+Defects against already-shipped work are filed as issues with the `bug` label plus the owning
+`epic:*` label. A bug that blocks the current sprint's work (or blocks basic use of the
+product) gets pulled into the open sprint milestone as an **interrupt**; otherwise it waits
+for grooming like any other story. Bug fixes follow the same TDD Definition of Done — the fix
+ships with a test that would have caught it. (Convention established 2026-07-14 when live
+testing found the registration flow broken, see #17.)
+
 ## Epics
 
 | Epic | Label | Status |
 |---|---|---|
 | Core Catalog (browse/detail/CRUD) | `epic:core-catalog` | ✅ Done — pre-dates formal sprint tracking |
-| Auth & Roles | `epic:auth` | ✅ Done for password auth ([PR #7](https://github.com/pmconnolly80/FinalCapstone/pull/7)) — **new scope added July 2026, not yet ticketed**: social sign-in (Google/Facebook/Apple via Identity external providers) + marketing-consent capture, see `TECHNICAL_ARCHITECTURE_PLAN.md` §4.6 |
+| Auth & Roles | `epic:auth` | ✅ Done for password auth ([PR #7](https://github.com/pmconnolly80/FinalCapstone/pull/7)) — **one open bug** ([#17](https://github.com/pmconnolly80/FinalCapstone/issues/17), registration fails silently, pulled into Sprint 2) — **new scope added July 2026, not yet ticketed**: social sign-in (Google/Facebook/Apple via Identity external providers) + marketing-consent capture, see `TECHNICAL_ARCHITECTURE_PLAN.md` §4.6; the gap was re-confirmed by 2026-07-14 live testing (no ticket yet per the grooming rule) |
 | **Mug Club Progress & Bartender Confirmation** | `epic:mug-club` | 🔵 In progress — **Sprint 1 done** ([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11) merged 2026-07-14, milestone closed). Built to the one-device rule: confirmation on the customer's phone, sealed by the bartender's personal 6-digit PIN. **Sprint 2 groomed 2026-07-14 into issues #12–#16** — next up to implement |
-| Customer Phone Experience (search-first UX, availability states for the rotating inventory, Open Brewery DB brewery enrichment, mobile repair) | `epic:phone-experience` | ⬜ Not started — planned July 2026, see `MOBILE_FIRST_PRODUCT_OUTLINE.md` |
+| Customer Phone Experience (search-first UX, availability states for the rotating inventory, Open Brewery DB brewery enrichment, mobile repair) | `epic:phone-experience` | ⬜ Not started — planned July 2026, see `MOBILE_FIRST_PRODUCT_OUTLINE.md`. First slice pulled forward 2026-07-14 as a Sprint 2 interrupt ([#18](https://github.com/pmconnolly80/FinalCapstone/issues/18), landing-page facelift) |
 | Admin Experience (dashboard + anomaly panel, user/role/PIN mgmt UI, full data correction with audit, catalog bulk-add guardrail) | `epic:admin` | ⬜ Not started |
 | Engagement, Retention & Social (badges, push notifications + owner composer, My Beers — ratings/want list/personal stats viz, social feed/cheers/leaderboard, journal, owner analytics) | `epic:retention` | ⬜ Not started — the business-owner payoff, see `FEATURE_MAP.md` and `PERSONAS_AND_USAGE.md` |
 | Deployment & Hardening (AWS, CI/CD) | `epic:deployment` | ⬜ Not started |
@@ -80,6 +89,15 @@ admin fix path for at-the-bar mistakes (the first slice of admin edit-everything
 
 Push notifications and badges are explicitly *not* here — they stay in the Engagement,
 Retention & Social epic; #14 is the durable flag + in-app surfacing only.
+
+**Interrupts (added 2026-07-14, from live testing):**
+
+- [#17 Bug: registration fails silently — API error discarded, password rules unhinted](https://github.com/pmconnolly80/FinalCapstone/issues/17)
+  (`bug` + `epic:auth`) — blocks creating the accounts every Sprint 2 story needs for testing,
+  so it jumps the queue: **work it first, before #12**
+- [#18 UI: landing page facelift — adopt Tailwind, restyle app shell + home](https://github.com/pmconnolly80/FinalCapstone/issues/18)
+  (`epic:phone-experience`) — deliberately small first-impression fix; the full progress-as-home
+  screen and app-wide restyle stay in the Customer Phone Experience sprint
 
 ### Later sprints (named only — groomed into issues when they're next up)
 
