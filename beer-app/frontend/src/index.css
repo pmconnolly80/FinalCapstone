@@ -1,14 +1,34 @@
+@import "tailwindcss";
+
 :root {
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: #111827;
   background: #f8fafc;
 }
 
-* { box-sizing: border-box; }
-body { margin: 0; background: #f8fafc; }
-a { color: inherit; text-decoration: none; }
-button, input, textarea { font: inherit; }
+body { background: #f8fafc; }
 
-@media (min-width: 768px) {
-  .app-shell { padding: 32px; }
+/* Tailwind's preflight strips the browser defaults the pre-Tailwind pages still rely on
+   (heading scale, paragraph spacing, input borders, button chrome). Restore sane defaults
+   here; pages restyled with utilities override them. */
+@layer base {
+  h1 { font-size: 1.5rem; font-weight: 700; margin: 0.5rem 0; }
+  h2 { font-size: 1.25rem; font-weight: 700; margin: 0.5rem 0; }
+  h3 { font-size: 1.125rem; font-weight: 600; margin: 0.5rem 0; }
+  p { margin: 0.5rem 0; }
+
+  input, textarea, select {
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: #fff;
+  }
+
+  button {
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 6px 12px;
+    background: #fff;
+    cursor: pointer;
+  }
 }
