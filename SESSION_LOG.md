@@ -378,3 +378,21 @@ live verification due to usage limits. What's on the branch:
    `.claude/skills/verify/SKILL.md`.
 2. Open PR from `fix/17-registration-errors` with "Closes #17", confirm CI green, merge.
 3. Then Sprint 2 proper: #12 → #13 → #14 → #15 → #16.
+
+## 2026-07-14 — #17 finished and merged; both Sprint 2 interrupts cleared
+
+**Sprint/story:** Sprint 2 interrupt [#17](https://github.com/pmconnolly80/FinalCapstone/issues/17) — `epic:auth`.
+
+Picked up from the previous entry's resume notes. Live verification against the rebuilt
+Docker stack passed all four scenarios (`beer123` → 400 with the length message,
+`beer1234` → 200 + token — the original silent failure, duplicate email → 409, wrong
+login password → 401 "Invalid credentials.").
+[PR #20](https://github.com/pmconnolly80/FinalCapstone/pull/20) merged with CI green
+(backend 41/41, frontend 45/45); #17 auto-closed. Earlier the same day
+[PR #19](https://github.com/pmconnolly80/FinalCapstone/pull/19) closed #18 (landing-page
+facelift, Tailwind v4 adopted). Sprint 2: 2 of 7 done.
+
+**Resume here:** Sprint 2 proper, in order: #12 (PIN lockout) → #13 → #14 → #15 → #16.
+TDD per Definition of Done. Backend tests: .NET 8 SDK at `~/.dotnet8`
+(`.claude/skills/verify/SKILL.md`). Note for future auth work: password policy is now
+explicit length-only min 8 (`Program.cs`), kept in sync with the AuthPage hint.

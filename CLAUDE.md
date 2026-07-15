@@ -16,7 +16,9 @@ flow, not the other way around. See `PROJECT_PLAN.md` section 1 for the full fra
     Identity, JWT bearer auth, Swashbuckle/Swagger.
   - `BeerApi.Tests/` — xUnit test project (unit tests against EF Core's InMemory provider,
     plus `WebApplicationFactory<Program>` integration tests covering role-based authorization).
-  - `frontend/` — React 18 + Vite 5 + react-router-dom 6, inline styles (no UI framework).
+  - `frontend/` — React 18 + Vite 5 + react-router-dom 6, **Tailwind CSS v4**
+    (`@tailwindcss/vite`, adopted 2026-07-14 in PR #19; Home + app shell use it, the older
+    pages are still inline-styled until the Customer Phone Experience sprint).
     Vitest + React Testing Library for tests, colocated as `*.test.jsx`/`*.test.js`.
   - `docker-compose.yml` — `db` (postgres:16-alpine), `api`, `web` services.
   - `infra/aws-architecture.md` — deployment design doc only, no actual IaC yet.
@@ -76,6 +78,15 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     route `/progress`)
   - Seed adds "The Tavern" + a dev bartender: `bartender@example.com` / `Bartender1!`,
     PIN `123456` (dev bootstrap only — real PIN lifecycle is Sprint 2 scope)
+- **Sprint 2 interrupts** (2026-07-14 live testing, both merged same day — see the bug
+  convention now in `EPICS_AND_SPRINTS.md`):
+  - [PR #19](https://github.com/pmconnolly80/FinalCapstone/pull/19) (#18): **Tailwind CSS v4**
+    adopted (`@tailwindcss/vite`); `/` is a real `Home.jsx`; app shell restyled; `index.css`
+    has a compatibility base layer restoring browser defaults preflight strips (old pages are
+    still inline-styled — full restyle is Customer Phone Experience scope)
+  - [PR #20](https://github.com/pmconnolly80/FinalCapstone/pull/20) (#17): `register()`/`login()`
+    in `api.js` surface the API's `message`; **password policy is explicit length-only min 8**
+    (`Program.cs`, kept in sync with the AuthPage hint + client-side check)
 
 **Not built** — next up per `EPICS_AND_SPRINTS.md`:
 - Sprint 2 (Mug Club Completion, groomed 2026-07-14 into issues #12–#16,
@@ -131,8 +142,10 @@ Manual (no Docker): `dotnet run` in `beer-app/backend/`, and
 
 **Sprint 1 (Mug Club Core) is done** — [PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11)
 merged 2026-07-14, issues #2–#6 and the milestone closed. **Sprint 2 (Mug Club Completion)
-is groomed** into issues [#12–#16](https://github.com/pmconnolly80/FinalCapstone/milestone/2)
-(see `EPICS_AND_SPRINTS.md` and the 2026-07-14 `SESSION_LOG.md` entry). In order:
+is groomed** into issues [#12–#16](https://github.com/pmconnolly80/FinalCapstone/milestone/2),
+and its two live-testing interrupts **#17/#18 are already done** (PRs #19/#20, merged
+2026-07-14 — Sprint 2 sits at 2 of 7). See `EPICS_AND_SPRINTS.md` and the 2026-07-14
+`SESSION_LOG.md` entries. In order:
 
 1. **Implement Sprint 2**, suggested order #12 (PIN lockout — hardens the already-live
    confirm endpoint) → #13 (PIN lifecycle) → #14 (durable mug-earned) → #15 (admin

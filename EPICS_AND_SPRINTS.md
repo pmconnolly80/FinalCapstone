@@ -46,7 +46,7 @@ testing found the registration flow broken, see #17.)
 | Epic | Label | Status |
 |---|---|---|
 | Core Catalog (browse/detail/CRUD) | `epic:core-catalog` | ✅ Done — pre-dates formal sprint tracking |
-| Auth & Roles | `epic:auth` | ✅ Done for password auth ([PR #7](https://github.com/pmconnolly80/FinalCapstone/pull/7)) — **one open bug** ([#17](https://github.com/pmconnolly80/FinalCapstone/issues/17), registration fails silently, pulled into Sprint 2) — **new scope added July 2026, not yet ticketed**: social sign-in (Google/Facebook/Apple via Identity external providers) + marketing-consent capture, see `TECHNICAL_ARCHITECTURE_PLAN.md` §4.6; the gap was re-confirmed by 2026-07-14 live testing (no ticket yet per the grooming rule) |
+| Auth & Roles | `epic:auth` | ✅ Done for password auth ([PR #7](https://github.com/pmconnolly80/FinalCapstone/pull/7); registration bug [#17](https://github.com/pmconnolly80/FinalCapstone/issues/17) fixed in [PR #20](https://github.com/pmconnolly80/FinalCapstone/pull/20) — password policy now explicit length-only min 8) — **new scope added July 2026, not yet ticketed**: social sign-in (Google/Facebook/Apple via Identity external providers) + marketing-consent capture, see `TECHNICAL_ARCHITECTURE_PLAN.md` §4.6; the gap was re-confirmed by 2026-07-14 live testing (no ticket yet per the grooming rule) |
 | **Mug Club Progress & Bartender Confirmation** | `epic:mug-club` | 🔵 In progress — **Sprint 1 done** ([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11) merged 2026-07-14, milestone closed). Built to the one-device rule: confirmation on the customer's phone, sealed by the bartender's personal 6-digit PIN. **Sprint 2 groomed 2026-07-14 into issues #12–#16** — next up to implement |
 | Customer Phone Experience (search-first UX, availability states for the rotating inventory, Open Brewery DB brewery enrichment, mobile repair) | `epic:phone-experience` | ⬜ Not started — planned July 2026, see `MOBILE_FIRST_PRODUCT_OUTLINE.md`. First slice pulled forward 2026-07-14 as a Sprint 2 interrupt ([#18](https://github.com/pmconnolly80/FinalCapstone/issues/18), landing-page facelift) |
 | Admin Experience (dashboard + anomaly panel, user/role/PIN mgmt UI, full data correction with audit, catalog bulk-add guardrail) | `epic:admin` | ⬜ Not started |
@@ -90,14 +90,15 @@ admin fix path for at-the-bar mistakes (the first slice of admin edit-everything
 Push notifications and badges are explicitly *not* here — they stay in the Engagement,
 Retention & Social epic; #14 is the durable flag + in-app surfacing only.
 
-**Interrupts (added 2026-07-14, from live testing):**
+**Interrupts (added 2026-07-14 from live testing — both ✅ done same day):**
 
 - [#17 Bug: registration fails silently — API error discarded, password rules unhinted](https://github.com/pmconnolly80/FinalCapstone/issues/17)
-  (`bug` + `epic:auth`) — blocks creating the accounts every Sprint 2 story needs for testing,
-  so it jumps the queue: **work it first, before #12**
+  (`bug` + `epic:auth`) — ✅ [PR #20](https://github.com/pmconnolly80/FinalCapstone/pull/20):
+  auth API errors surfaced in the UI, password policy now explicit length-only min 8
 - [#18 UI: landing page facelift — adopt Tailwind, restyle app shell + home](https://github.com/pmconnolly80/FinalCapstone/issues/18)
-  (`epic:phone-experience`) — deliberately small first-impression fix; the full progress-as-home
-  screen and app-wide restyle stay in the Customer Phone Experience sprint
+  (`epic:phone-experience`) — ✅ [PR #19](https://github.com/pmconnolly80/FinalCapstone/pull/19):
+  Tailwind v4 adopted, real Home page; the full progress-as-home screen and app-wide restyle
+  stay in the Customer Phone Experience sprint
 
 ### Later sprints (named only — groomed into issues when they're next up)
 
