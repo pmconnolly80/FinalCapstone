@@ -352,3 +352,29 @@ Projects-page updates entry (same-commit rule).
 **Resume here:** fix #17 first (it blocks account creation for all Sprint 2 testing), then
 #12 → #13 → #14 → #15 → #16. TDD per Definition of Done. Backend tests need the .NET 8 SDK
 at `~/.dotnet8` — recipe in `.claude/skills/verify/SKILL.md`.
+
+## 2026-07-14 — #17 in progress: code complete on `fix/17-registration-errors`, live verify pending
+
+**Sprint/story:** Sprint 2 interrupt [#17](https://github.com/pmconnolly80/FinalCapstone/issues/17) — `epic:auth`.
+
+TDD done and both suites green (backend 41/41, frontend 45/45); session paused before
+live verification due to usage limits. What's on the branch:
+
+- Tests written first: 4 backend (`AuthControllerTests` — `beer1234` registers OK,
+  `beer123` → 400 containing "at least 8 characters", duplicate email → 409 with message,
+  wrong password → 401 "Invalid credentials.") and 5 frontend (api.test.js: register/login
+  surface `body.message`; AuthPage.test.jsx: hint visible in register mode, short password
+  blocked client-side without calling the API, API error message displayed).
+- Implementation: `Program.cs` — explicit length-only password policy (min 8, all
+  composition flags off; NIST-style, one explainable rule); `api.js` — `register()`/`login()`
+  parse the error body like `confirmBeer()`; `AuthPage.jsx` — hint text
+  "Passwords need at least 8 characters." in register mode + client-side length check
+  ("Password is too short.").
+
+**Resume here (remaining steps for #17):**
+1. Live verify: `cd beer-app && docker compose up -d --build api web`, then curl
+   `/api/auth/register` with `beer123` (expect 400 + message), `beer1234` + fresh email
+   (expect 200 + token), same email twice (expect 409 + message). See
+   `.claude/skills/verify/SKILL.md`.
+2. Open PR from `fix/17-registration-errors` with "Closes #17", confirm CI green, merge.
+3. Then Sprint 2 proper: #12 → #13 → #14 → #15 → #16.

@@ -71,4 +71,45 @@ describe('AuthPage', () => {
     expect(register).toHaveBeenCalledWith('new@example.com', 'Passw0rd!');
     expect(await screen.findByText('Registered successfully.')).toBeInTheDocument();
   });
+
+  it('shows the password requirement in register mode before submitting', async () => {
+    const user = userEvent.setup();
+    render(<AuthPage />);
+
+    expect(
+      screen.queryByText('Passwords need at least 8 characters.')
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Register' }));
+
+    expect(screen.getByText('Passwords need at least 8 characters.')).toBeInTheDocument();
+  });
+
+  it('blocks registration with a short password without calling the API', async () => {
+    const user = userEvent.setup();
+    render(<AuthPage />);
+
+    await user.click(screen.getByRole('button', { name: 'Register' }));
+    await user.type(screen.getByPlaceholderText('Email'), 'new@example.com');
+    await user.type(screen.getByPlaceholderText('Password'), 'beer123');
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+
+    expect(register).not.toHaveBeenCalled();
+    expect(await screen.findByText('Password is too short.')).toBeInTheDocument();
+  });
+
+  it('shows the API error message when registration fails', async () => {
+    register.mockRejectedValue(new Error('A user with that email already exists.'));
+    const user = userEvent.setup();
+
+    render(<AuthPage />);
+    await user.click(screen.getByRole('button', { name: 'Register' }));
+    await user.type(screen.getByPlaceholderText('Email'), 'dup@example.com');
+    await user.type(screen.getByPlaceholderText('Password'), 'Passw0rd!');
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+
+    expect(
+      await screen.findByText('A user with that email already exists.')
+    ).toBeInTheDocument();
+  });
 });
