@@ -1,29 +1,45 @@
 import { Routes, Route, Link } from 'react-router-dom';
+import Home from './pages/Home';
 import BeerList from './pages/BeerList';
 import BeerDetail from './pages/BeerDetail';
 import BeerForm from './pages/BeerForm';
 import AuthPage from './pages/AuthPage';
 import MyProgress from './pages/MyProgress';
 
+const navLinkClass =
+  'rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 hover:text-gray-900';
+
 function App() {
   return (
-    <div className="app-shell" style={{ maxWidth: 980, margin: '0 auto', padding: 16 }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+    <div className="mx-auto max-w-5xl p-4 md:p-8">
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 style={{ margin: 0 }}>Beer App</h1>
-          <p style={{ margin: '4px 0 0', color: '#4b5563' }}>Mobile-first beer catalog</p>
+          <h1 className="m-0 text-2xl font-bold tracking-tight">Beer App</h1>
+          <p className="m-0 mt-1 text-sm text-gray-600">
+            The tavern&apos;s 200 club, on your phone
+          </p>
         </div>
-        <nav style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <Link to="/">Home</Link>
-          <Link to="/beers">Beers</Link>
-          <Link to="/progress">My Progress</Link>
-          <Link to="/beers/new">Add Beer</Link>
-          <Link to="/auth">Sign in</Link>
+        <nav className="flex flex-wrap gap-1">
+          <Link className={navLinkClass} to="/">
+            Home
+          </Link>
+          <Link className={navLinkClass} to="/beers">
+            Beers
+          </Link>
+          <Link className={navLinkClass} to="/progress">
+            My Progress
+          </Link>
+          <Link className={navLinkClass} to="/beers/new">
+            Add Beer
+          </Link>
+          <Link className={navLinkClass} to="/auth">
+            Sign in
+          </Link>
         </nav>
       </header>
 
       <Routes>
-        <Route path="/" element={<div style={{ background: '#fff', borderRadius: 16, padding: 20, boxShadow: '0 10px 30px rgba(0,0,0,0.06)' }}><h2>Start exploring beers</h2><p>Browse your catalog on the go.</p></div>} />
+        <Route path="/" element={<Home />} />
         <Route path="/beers" element={<BeerList />} />
         <Route path="/beers/:id" element={<BeerDetail />} />
         <Route path="/beers/new" element={<BeerForm />} />
