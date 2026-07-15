@@ -62,7 +62,10 @@ export async function login(email, password) {
     body: JSON.stringify({ email, password }),
   });
 
-  if (!response.ok) throw new Error('Login failed');
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || 'Login failed');
+  }
   return response.json();
 }
 
@@ -73,6 +76,9 @@ export async function register(email, password) {
     body: JSON.stringify({ email, password }),
   });
 
-  if (!response.ok) throw new Error('Registration failed');
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || 'Registration failed');
+  }
   return response.json();
 }

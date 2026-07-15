@@ -79,6 +79,20 @@ describe('api', () => {
     await expect(register('a@example.com', 'password')).rejects.toThrow('Registration failed');
   });
 
+  it('register surfaces the API error message when the response is not ok', async () => {
+    mockFetchOnce(false, { message: 'Passwords must be at least 8 characters.' });
+
+    await expect(register('a@example.com', 'beer123')).rejects.toThrow(
+      'Passwords must be at least 8 characters.'
+    );
+  });
+
+  it('login surfaces the API error message when the response is not ok', async () => {
+    mockFetchOnce(false, { message: 'Invalid credentials.' });
+
+    await expect(login('a@example.com', 'wrong')).rejects.toThrow('Invalid credentials.');
+  });
+
   it('confirmBeer POSTs the beer id and PIN with the Authorization header', async () => {
     localStorage.setItem('beer-token', 'abc123');
     mockFetchOnce(true, { confirmedCount: 1, goal: 200, mugEarned: false });

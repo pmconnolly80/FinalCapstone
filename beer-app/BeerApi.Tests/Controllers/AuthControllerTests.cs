@@ -83,5 +83,58 @@ public class AuthControllerTests : IDisposable
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    // #17: the paper-sheet crowd types passwords like "beer1234", not "Passw0rd!".
+    // Policy is length-only (min 8) so the one rule we enforce is the one we can explain.
+    [Fact]
+    public async Task Register_WithCasualPasswordMeetingLength_Succeeds()
+    {
+        var response = await _client.PostAsJsonAsync("/api/auth/register",
+            new RegisterRequest("casual.password@example.com", "beer1234"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<AuthResponse>();
+        Assert.False(string.IsNullOrWhiteSpace(body?.Token));
+    }
+
+    [Fact]
+    public async Task Register_WithShortPassword_ReturnsBadRequest_WithExplanation()
+    {
+        var response = await _client.PostAsJsonAsync("/api/auth/register",
+            new RegisterRequest("short.password@example.com", "beer123"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.Contains("at least 8 characters", body?.Message);
+    }
+
+    [Fact]
+    public async Task Register_WithExistingEmail_ReturnsConflict_WithExplanation()
+    {
+        var request = new RegisterRequest("duplicate.message@example.com", "Passw0rd!");
+        await _client.PostAsJsonAsync("/api/auth/register", request);
+
+        var response = await _client.PostAsJsonAsync("/api/auth/register", request);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.Equal("A user with that email already exists.", body?.Message);
+    }
+
+    [Fact]
+    public async Task Login_WithWrongPassword_ReturnsGenericMessage()
+    {
+        await _client.PostAsJsonAsync("/api/auth/register",
+            new RegisterRequest("login.message@example.com", "Passw0rd!"));
+
+        var response = await _client.PostAsJsonAsync("/api/auth/login",
+            new LoginRequest("login.message@example.com", "WrongPassword!"));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.Equal("Invalid credentials.", body?.Message);
+    }
+
     public void Dispose() => _factory.Dispose();
+
+    private sealed record ErrorResponse(string Message);
 }

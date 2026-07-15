@@ -9,6 +9,10 @@ function AuthPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (mode === 'register' && password.length < 8) {
+      setMessage('Password is too short.');
+      return;
+    }
     try {
       const result = mode === 'login'
         ? await login(email, password)
@@ -31,6 +35,11 @@ function AuthPage() {
       <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 12 }}>
         <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" />
+        {mode === 'register' && (
+          <p style={{ margin: 0, fontSize: 13, color: '#6b7280' }}>
+            Passwords need at least 8 characters.
+          </p>
+        )}
         <button type="submit">{mode === 'login' ? 'Continue' : 'Create account'}</button>
       </form>
       {message && <p>{message}</p>}
