@@ -117,7 +117,9 @@ Retention & Social epic; #14 is the durable flag + in-app surfacing only.
 - **Auth II: Social Sign-in** — Google/Facebook/Apple via ASP.NET Core Identity external
   login providers (researched July 2026, `TECHNICAL_ARCHITECTURE_PLAN.md` §4.6),
   account linking on verified email, marketing-consent capture, privacy policy +
-  data-deletion path
+  data-deletion path. **Password reset** (added to scope 2026-07-14): Identity's built-in
+  reset tokens + a "forgot password" flow; brings in the app's first email-sender
+  dependency (SMTP/SES) — see `IMPLEMENTATION_BACKLOG.md` Phase 3
 - **Admin Experience** — admin dashboard with anomaly panel (bulk beer-add alerts to
   owner+admin, confirmation velocity spikes, off-hours activity), beer management table
   (catalog CRUD's new home, with OBDB brewery autocomplete and inline availability),

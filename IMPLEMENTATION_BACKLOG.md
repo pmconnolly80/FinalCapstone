@@ -45,6 +45,11 @@
 - Account-linking UI (multiple providers → one member, progress never forks)
 - Marketing-consent checkbox at signup, stored per member; privacy policy page and
   data-deletion path (required for Facebook app review)
+- Password reset (added 2026-07-14): "forgot password" flow using Identity's built-in
+  reset tokens (`GeneratePasswordResetTokenAsync`/`ResetPasswordAsync`); needs an email
+  sender (SMTP/SES) the app doesn't have yet — first email-delivery dependency, shared
+  with the later push/notification work. Reset form enforces the same length-only min-8
+  policy as registration
 
 ## Phase 3.5 — Mug club progress and bartender confirmation
 
