@@ -55,6 +55,23 @@ export async function fetchMyProgress() {
   return response.json();
 }
 
+export async function setMyPin(pin) {
+  const token = localStorage.getItem('beer-token');
+  const response = await fetch(`${API_BASE_URL}/api/staff-pins/me`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ pin }),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || 'Failed to set PIN');
+  }
+}
+
 export async function login(email, password) {
   const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
     method: 'POST',
