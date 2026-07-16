@@ -188,4 +188,117 @@ public class ConfirmationsControllerTests
         Assert.Equal(ConfirmationsController.MugGoal, response.ConfirmedCount);
         Assert.True(response.MugEarned);
     }
+
+    // --- #12 PIN lockout ---
+
+    [Fact]
+    public async Task PostConfirmation_AfterMaxWrongPins_LocksPin_EvenCorrectPinIsRejected()
+    {
+        using var context = CreateContext();
+        var beer = await SeedWorldAsync(context);
+        var guesser = CreateController(context);
+        for (var i = 0; i < ConfirmationsController.MaxPinFailures; i++)
+        {
+            await guesser.PostConfirmation(new ConfirmationRequest(beer.Id, "000000"));
+        }
+
+        // A different customer, so only the per-PIN axis can be what rejects here.
+        var otherCustomer = CreateController(context, userId: "customer-2");
+        var result = await otherCustomer.PostConfirmation(new ConfirmationRequest(beer.Id, BartenderPin));
+
+        Assert.IsType<UnauthorizedObjectResult>(result);
+        Assert.Empty(context.BeerConfirmations);
+        var pin = Assert.Single(context.StaffPins);
+        Assert.Equal(ConfirmationsController.MaxPinFailures, pin.FailedAttempts);
+        Assert.NotNull(pin.LockedUntil);
+    }
+
+    [Fact]
+    public async Task PostConfirmation_LockedPinRejection_LooksIdenticalToWrongPin()
+    {
+        using var context = CreateContext();
+        var beer = await SeedWorldAsync(context);
+        var controller = CreateController(context);
+        var wrongPin = await controller.PostConfirmation(new ConfirmationRequest(beer.Id, "000000"));
+
+        var pin = Assert.Single(context.StaffPins);
+        pin.FailedAttempts = ConfirmationsController.MaxPinFailures;
+        pin.LockedUntil = DateTime.UtcNow.AddMinutes(10);
+        await context.SaveChangesAsync();
+
+        var lockedCorrectPin = await controller.PostConfirmation(new ConfirmationRequest(beer.Id, BartenderPin));
+
+        // No lockout oracle: same status, same body as a plain wrong guess.
+        var wrongBody = Assert.IsType<UnauthorizedObjectResult>(wrongPin).Value!.ToString();
+        var lockedBody = Assert.IsType<UnauthorizedObjectResult>(lockedCorrectPin).Value!.ToString();
+        Assert.Equal(wrongBody, lockedBody);
+    }
+
+    [Fact]
+    public async Task PostConfirmation_ExpiredLock_AcceptsCorrectPin_AndResetsCounters()
+    {
+        using var context = CreateContext();
+        var beer = await SeedWorldAsync(context);
+        var pin = Assert.Single(context.StaffPins);
+        pin.FailedAttempts = ConfirmationsController.MaxPinFailures;
+        pin.LockedUntil = DateTime.UtcNow.AddMinutes(-1);
+        await context.SaveChangesAsync();
+        var controller = CreateController(context);
+
+        var result = await controller.PostConfirmation(new ConfirmationRequest(beer.Id, BartenderPin));
+
+        var created = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status201Created, created.StatusCode);
+        Assert.Equal(0, pin.FailedAttempts);
+        Assert.Null(pin.LockedUntil);
+    }
+
+    [Fact]
+    public async Task PostConfirmation_SuccessfulConfirm_ResetsPinCounter_AndCustomerWindow()
+    {
+        using var context = CreateContext();
+        var beer = await SeedWorldAsync(context);
+        var controller = CreateController(context);
+        for (var i = 0; i < ConfirmationsController.MaxPinFailures - 1; i++)
+        {
+            await controller.PostConfirmation(new ConfirmationRequest(beer.Id, "000000"));
+        }
+
+        var result = await controller.PostConfirmation(new ConfirmationRequest(beer.Id, BartenderPin));
+
+        var created = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status201Created, created.StatusCode);
+        var pin = Assert.Single(context.StaffPins);
+        Assert.Equal(0, pin.FailedAttempts);
+        Assert.Null(pin.LockedUntil);
+        Assert.Empty(context.FailedConfirmationAttempts.Where(a => a.CustomerId == CustomerId));
+    }
+
+    [Fact]
+    public async Task PostConfirmation_CustomerExceedingFailureWindow_IsBlockedOnTheirOwnAxis()
+    {
+        using var context = CreateContext();
+        var beer = await SeedWorldAsync(context);
+        var abuser = CreateController(context);
+        for (var i = 0; i < ConfirmationsController.MaxCustomerFailures; i++)
+        {
+            await abuser.PostConfirmation(new ConfirmationRequest(beer.Id, "000000"));
+        }
+
+        // Clear the per-PIN axis so only the customer's own record can reject them —
+        // this is the account-level block that spreading guesses across PINs can't dodge.
+        var pin = Assert.Single(context.StaffPins);
+        pin.FailedAttempts = 0;
+        pin.LockedUntil = null;
+        await context.SaveChangesAsync();
+
+        var blocked = await abuser.PostConfirmation(new ConfirmationRequest(beer.Id, BartenderPin));
+        Assert.IsType<UnauthorizedObjectResult>(blocked);
+
+        // An innocent customer confirms with the same PIN, same moment: only the abuser is blocked.
+        var innocent = CreateController(context, userId: "customer-2");
+        var ok = await innocent.PostConfirmation(new ConfirmationRequest(beer.Id, BartenderPin));
+        var created = Assert.IsType<ObjectResult>(ok);
+        Assert.Equal(StatusCodes.Status201Created, created.StatusCode);
+    }
 }

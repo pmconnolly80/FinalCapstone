@@ -15,6 +15,7 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
     public DbSet<Tavern> Taverns => Set<Tavern>();
     public DbSet<BeerConfirmation> BeerConfirmations => Set<BeerConfirmation>();
     public DbSet<StaffPin> StaffPins => Set<StaffPin>();
+    public DbSet<FailedConfirmationAttempt> FailedConfirmationAttempts => Set<FailedConfirmationAttempt>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -43,5 +44,9 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
         builder.Entity<StaffPin>()
             .HasIndex(p => p.UserId)
             .IsUnique();
+
+        // The per-customer lockout check is a count over a recent time window.
+        builder.Entity<FailedConfirmationAttempt>()
+            .HasIndex(a => new { a.CustomerId, a.AttemptedAt });
     }
 }
