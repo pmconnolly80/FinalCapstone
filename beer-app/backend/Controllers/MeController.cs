@@ -39,13 +39,18 @@ public class MeController : ControllerBase
                 c.ConfirmedAt))
             .ToListAsync();
 
+        // Earned status is the stored award (#14), not the live count — it survives
+        // catalog churn and confirmation corrections.
+        var award = await _context.MugAwards.FirstOrDefaultAsync(a => a.CustomerId == customerId);
+
         return new ProgressResponse(
             confirmations.Count,
             ConfirmationsController.MugGoal,
-            confirmations.Count >= ConfirmationsController.MugGoal,
+            award != null,
+            award?.EarnedAt,
             confirmations);
     }
 }
 
 public record ConfirmedBeer(int BeerId, string Name, string Brewery, string Style, DateTime ConfirmedAt);
-public record ProgressResponse(int ConfirmedCount, int Goal, bool MugEarned, IReadOnlyList<ConfirmedBeer> Confirmations);
+public record ProgressResponse(int ConfirmedCount, int Goal, bool MugEarned, DateTime? MugEarnedAt, IReadOnlyList<ConfirmedBeer> Confirmations);

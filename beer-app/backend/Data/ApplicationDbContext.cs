@@ -16,6 +16,7 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
     public DbSet<BeerConfirmation> BeerConfirmations => Set<BeerConfirmation>();
     public DbSet<StaffPin> StaffPins => Set<StaffPin>();
     public DbSet<FailedConfirmationAttempt> FailedConfirmationAttempts => Set<FailedConfirmationAttempt>();
+    public DbSet<MugAward> MugAwards => Set<MugAward>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -48,5 +49,10 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
         // The per-customer lockout check is a count over a recent time window.
         builder.Entity<FailedConfirmationAttempt>()
             .HasIndex(a => new { a.CustomerId, a.AttemptedAt });
+
+        // One mug per customer, ever — the exactly-once stamp is a hard invariant.
+        builder.Entity<MugAward>()
+            .HasIndex(a => a.CustomerId)
+            .IsUnique();
     }
 }

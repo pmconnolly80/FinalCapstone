@@ -189,6 +189,53 @@ public class ConfirmationsControllerTests
         Assert.True(response.MugEarned);
     }
 
+    // --- #14 durable mug award ---
+
+    [Fact]
+    public async Task PostConfirmation_ReachingGoal_StampsMugAwardExactlyOnce()
+    {
+        using var context = CreateContext();
+        var beer = await SeedWorldAsync(context);
+        var extraBeer = new Beer { Name = "Orval", Brewery = "Brasserie d'Orval", Style = "Belgian Pale Ale" };
+        context.Beers.Add(extraBeer);
+        for (var i = 0; i < ConfirmationsController.MugGoal - 1; i++)
+        {
+            context.BeerConfirmations.Add(new BeerConfirmation
+            {
+                CustomerId = CustomerId,
+                BeerId = 1000 + i,
+                TavernId = 1,
+                ConfirmedByUserId = BartenderId,
+            });
+        }
+        await context.SaveChangesAsync();
+        var controller = CreateController(context);
+
+        await controller.PostConfirmation(new ConfirmationRequest(beer.Id, BartenderPin));
+
+        var award = Assert.Single(context.MugAwards);
+        Assert.Equal(CustomerId, award.CustomerId);
+        var stampedAt = award.EarnedAt;
+
+        // Beer 201 must not re-stamp the milestone.
+        await controller.PostConfirmation(new ConfirmationRequest(extraBeer.Id, BartenderPin));
+
+        award = Assert.Single(context.MugAwards);
+        Assert.Equal(stampedAt, award.EarnedAt);
+    }
+
+    [Fact]
+    public async Task PostConfirmation_BelowGoal_StampsNoAward()
+    {
+        using var context = CreateContext();
+        var beer = await SeedWorldAsync(context);
+        var controller = CreateController(context);
+
+        await controller.PostConfirmation(new ConfirmationRequest(beer.Id, BartenderPin));
+
+        Assert.Empty(context.MugAwards);
+    }
+
     // --- #12 PIN lockout ---
 
     [Fact]
