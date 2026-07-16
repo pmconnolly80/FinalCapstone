@@ -5,6 +5,7 @@ import BeerDetail from './pages/BeerDetail';
 import BeerForm from './pages/BeerForm';
 import AuthPage from './pages/AuthPage';
 import MyProgress from './pages/MyProgress';
+import MyPin from './pages/MyPin';
 
 const navLinkClass =
   'rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 hover:text-gray-900';
@@ -32,6 +33,9 @@ function App() {
           <Link className={navLinkClass} to="/beers/new">
             Add Beer
           </Link>
+          <Link className={navLinkClass} to="/my-pin">
+            My PIN
+          </Link>
           <Link className={navLinkClass} to="/auth">
             Sign in
           </Link>
@@ -45,6 +49,7 @@ function App() {
         <Route path="/beers/new" element={<BeerForm />} />
         <Route path="/beers/:id/edit" element={<BeerForm />} />
         <Route path="/progress" element={<MyProgress />} />
+        <Route path="/my-pin" element={<MyPin />} />
         <Route path="/auth" element={<AuthPage />} />
       </Routes>
     </div>

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { confirmBeer, fetchBeer, fetchBeers, fetchMyProgress, login, register, saveBeer } from './api';
+import { confirmBeer, fetchBeer, fetchBeers, fetchMyProgress, login, register, saveBeer, setMyPin } from './api';
 
 function mockFetchOnce(ok, body) {
   global.fetch = vi.fn().mockResolvedValue({
@@ -129,5 +129,26 @@ describe('api', () => {
     mockFetchOnce(false, {});
 
     await expect(fetchMyProgress()).rejects.toThrow('Failed to load progress');
+  });
+
+  it('setMyPin PUTs the pin with the Authorization header', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    mockFetchOnce(true, null);
+
+    await setMyPin('654321');
+
+    const [url, init] = global.fetch.mock.calls[0];
+    expect(url).toContain('/api/staff-pins/me');
+    expect(init.method).toBe('PUT');
+    expect(init.headers.Authorization).toBe('Bearer abc123');
+    expect(JSON.parse(init.body)).toEqual({ pin: '654321' });
+  });
+
+  it('setMyPin surfaces the API error message when the response is not ok', async () => {
+    mockFetchOnce(false, { message: 'That PIN is already in use by another staff member.' });
+
+    await expect(setMyPin('654321')).rejects.toThrow(
+      'That PIN is already in use by another staff member.'
+    );
   });
 });

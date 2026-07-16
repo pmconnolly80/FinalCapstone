@@ -413,3 +413,20 @@ pin-locked / customer-blocked) server-side. Live-verified against Docker (lock t
 correct PIN rejected generically, reasons recorded); dev DB lock state reset afterwards.
 
 **Resume here:** #13 (PIN lifecycle) → #14 → #15 → #16.
+
+## 2026-07-15 — Sprint 2 #13 shipped: PIN lifecycle
+
+**Sprint/story:** [#13](https://github.com/pmconnolly80/FinalCapstone/issues/13) — `epic:mug-club`.
+
+TDD: 13 controller unit tests + 4 HTTP lifecycle/role tests + 6 frontend tests written
+first; suites 65/65 backend, 51/51 frontend. New `StaffPinsController`:
+`PUT /api/staff-pins/me` (Bartender/Admin change their own PIN),
+`PUT /api/staff-pins/{userId}` (admin issue/reset), `DELETE /api/staff-pins/{userId}`
+(admin deactivate). PINs hashed at rest, 6-digit validated, unique among *active* pins
+(verified against each active hash; re-using your own is allowed); setting a PIN clears
+lock state. Minimal staff "My PIN" screen at `/my-pin` (`MyPin.jsx`, Tailwind), customers
+get the API's 403. Live-verified: own-PIN change flips the confirm flow old→new, customer
+403, dev PIN restored to `123456`. Admin lifecycle is API-first per grooming — the
+user-management table stays in the Admin Experience epic.
+
+**Resume here:** #14 (durable mug-earned) → #15 → #16.
