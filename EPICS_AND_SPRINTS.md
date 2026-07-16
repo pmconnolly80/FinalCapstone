@@ -47,9 +47,9 @@ testing found the registration flow broken, see #17.)
 |---|---|---|
 | Core Catalog (browse/detail/CRUD) | `epic:core-catalog` | ✅ Done — pre-dates formal sprint tracking |
 | Auth & Roles | `epic:auth` | ✅ Done for password auth ([PR #7](https://github.com/pmconnolly80/FinalCapstone/pull/7); registration bug [#17](https://github.com/pmconnolly80/FinalCapstone/issues/17) fixed in [PR #20](https://github.com/pmconnolly80/FinalCapstone/pull/20) — password policy now explicit length-only min 8) — **new scope added July 2026, not yet ticketed**: social sign-in (Google/Facebook/Apple via Identity external providers) + marketing-consent capture, see `TECHNICAL_ARCHITECTURE_PLAN.md` §4.6; the gap was re-confirmed by 2026-07-14 live testing (no ticket yet per the grooming rule) |
-| **Mug Club Progress & Bartender Confirmation** | `epic:mug-club` | 🔵 In progress — **Sprint 1 done** ([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11) merged 2026-07-14, milestone closed). Built to the one-device rule: confirmation on the customer's phone, sealed by the bartender's personal 6-digit PIN. **Sprint 2 groomed 2026-07-14 into issues #12–#16** — next up to implement |
+| **Mug Club Progress & Bartender Confirmation** | `epic:mug-club` | ✅ **Done** — Sprint 1 ([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), 2026-07-14) + Sprint 2 (PRs [#21](https://github.com/pmconnolly80/FinalCapstone/pull/21)–[#25](https://github.com/pmconnolly80/FinalCapstone/pull/25), closed 2026-07-15). Built to the one-device rule: confirmation on the customer's phone, sealed by the bartender's personal 6-digit PIN, hardened with two-axis lockout, real PIN lifecycle, durable mug awards, and the admin correction path |
 | Customer Phone Experience (search-first UX, availability states for the rotating inventory, Open Brewery DB brewery enrichment, mobile repair) | `epic:phone-experience` | ⬜ Not started — planned July 2026, see `MOBILE_FIRST_PRODUCT_OUTLINE.md`. First slice pulled forward 2026-07-14 as a Sprint 2 interrupt ([#18](https://github.com/pmconnolly80/FinalCapstone/issues/18), landing-page facelift) |
-| Admin Experience (dashboard + anomaly panel, user/role/PIN mgmt UI, full data correction with audit, catalog bulk-add guardrail) | `epic:admin` | ⬜ Not started |
+| Admin Experience (dashboard + anomaly panel, user/role/PIN mgmt UI, full data correction with audit, catalog bulk-add guardrail) | `epic:admin` | 🔵 First slice shipped with Sprint 2 (confirmation audit/correction API + screen #15/#16, admin PIN issue/reset/deactivate API #13, mug-earner list #14) — dashboard, anomaly panel, and user/role management UI still to come |
 | Engagement, Retention & Social (badges, push notifications + owner composer, My Beers — ratings/want list/personal stats viz, social feed/cheers/leaderboard, journal, owner analytics) | `epic:retention` | ⬜ Not started — the business-owner payoff, see `FEATURE_MAP.md` and `PERSONAS_AND_USAGE.md` |
 | Deployment & Hardening (AWS, CI/CD) | `epic:deployment` | ⬜ Not started |
 | Future Enhancements (public reviews, images, recommendations) | `epic:future-enhancements` | ⬜ Backlog, unscheduled |
@@ -74,11 +74,20 @@ customer can see their progress. This alone delivers the primary MVP driver desc
 4. [#5 UI: customer "My Progress" screen](https://github.com/pmconnolly80/FinalCapstone/issues/5)
 5. [#6 UI: Confirmation PIN Pad on the customer's phone](https://github.com/pmconnolly80/FinalCapstone/issues/6)
 
-### Sprint 2: Mug Club Completion — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/2) (groomed 2026-07-14, up next)
+### Sprint 2: Mug Club Completion — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/2) (✅ complete — closed 2026-07-15)
 
 Finishes the epic on top of Sprint 1's verified core loop: brute-force protection for the
 PIN-on-customer's-phone model, real PIN lifecycle, a durable mug-earned milestone, and the
 admin fix path for at-the-bar mistakes (the first slice of admin edit-everything):
+
+> **Status (2026-07-15):** all 7 items done — #12 ([PR #21](https://github.com/pmconnolly80/FinalCapstone/pull/21)),
+> #13 ([PR #22](https://github.com/pmconnolly80/FinalCapstone/pull/22)), #14
+> ([PR #23](https://github.com/pmconnolly80/FinalCapstone/pull/23)), #15
+> ([PR #24](https://github.com/pmconnolly80/FinalCapstone/pull/24)), #16
+> ([PR #25](https://github.com/pmconnolly80/FinalCapstone/pull/25)) plus interrupts
+> #17/#18 (PRs #20/#19). Suites at close: backend 85/85, frontend 61/61, CI green on
+> every merge; each story live-verified against the Docker stack. Milestone closed.
+> Mug-earned permanence decision documented in `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1.
 
 1. [#12 API: PIN lockout — per-PIN and per-customer failed-attempt lockout](https://github.com/pmconnolly80/FinalCapstone/issues/12)
    — wires up the `FailedAttempts`/`LockedUntil` columns `StaffPin` shipped with

@@ -87,14 +87,23 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
   - [PR #20](https://github.com/pmconnolly80/FinalCapstone/pull/20) (#17): `register()`/`login()`
     in `api.js` surface the API's `message`; **password policy is explicit length-only min 8**
     (`Program.cs`, kept in sync with the AuthPage hint + client-side check)
+- **Sprint 2: Mug Club Completion** (closed 2026-07-15, PRs #21–#25 — mug-club epic done):
+  - #12 PIN lockout, two axes: per-PIN (`StaffPin.FailedAttempts`/`LockedUntil`, 5 fails →
+    15 min) + per-customer rolling window (`FailedConfirmationAttempt` table); all
+    rejections are the same generic 401, real reasons recorded server-side
+  - #13 PIN lifecycle: `StaffPinsController` — staff `PUT /api/staff-pins/me`, admin
+    `PUT`/`DELETE /api/staff-pins/{userId}`; unique among active PINs; "My PIN" screen at
+    `/my-pin`
+  - #14 durable mug-earned: `MugAward` stamped exactly once at the 200th confirmation;
+    progress reads the award, never the count; `GET /api/mug-awards` (Admin) earner list
+  - #15/#16 admin correction: `AdminConfirmationsController` (filterable list, audits,
+    `POST {id}/void` with **required reason**; void frees the beer for re-confirmation,
+    award never revoked — see `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1) + the
+    `/admin/confirmations` screen (two-step void guard, role-aware nav via
+    `getRolesFromToken()`)
 
 **Not built** — next up per `EPICS_AND_SPRINTS.md`:
-- Sprint 2 (Mug Club Completion, groomed 2026-07-14 into issues #12–#16,
-  [milestone 2](https://github.com/pmconnolly80/FinalCapstone/milestone/2)): PIN lockout
-  (#12 — `StaffPin` already has `FailedAttempts`/`LockedUntil` columns, unused), PIN
-  lifecycle (#13), durable "mug earned" milestone (#14), admin confirmation
-  audit/correction API + screen (#15/#16)
-- No admin UI to assign roles (currently DB-manual only)
+- No admin UI to assign roles (currently DB-manual only; PIN management API exists)
 - No Open Brewery DB API integration — scoped in the 2026-07-13 planning session: OBDB is
   breweries-only (no beer-level endpoint), so it enriches beer details with brewery info and
   powers admin brewery autocomplete; the tavern's list stays the source of truth for beers.
@@ -140,19 +149,17 @@ Manual (no Docker): `dotnet run` in `beer-app/backend/`, and
 
 ## Likely next steps
 
-**Sprint 1 (Mug Club Core) is done** — [PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11)
-merged 2026-07-14, issues #2–#6 and the milestone closed. **Sprint 2 (Mug Club Completion)
-is groomed** into issues [#12–#16](https://github.com/pmconnolly80/FinalCapstone/milestone/2),
-and its two live-testing interrupts **#17/#18 are already done** (PRs #19/#20, merged
-2026-07-14 — Sprint 2 sits at 2 of 7). See `EPICS_AND_SPRINTS.md` and the 2026-07-14
-`SESSION_LOG.md` entries. In order:
+**Sprints 1 and 2 are both done and the Mug Club epic is complete** — Sprint 1
+([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), 2026-07-14) and Sprint 2
+(PRs #19–#25, milestone closed 2026-07-15; suites at close: backend 85/85, frontend 61/61).
+See `EPICS_AND_SPRINTS.md` and the 2026-07-15 `SESSION_LOG.md` entries. In order:
 
-1. **Implement Sprint 2**, suggested order #12 (PIN lockout — hardens the already-live
-   confirm endpoint) → #13 (PIN lifecycle) → #14 (durable mug-earned) → #15 (admin
-   audit/correction API) → #16 (admin correction screen, depends on #15). TDD per the
-   Definition of Done.
-2. Then the named later sprints: Customer Phone Experience (search/availability/OBDB),
-   Auth II (social sign-in), Admin Experience, Engagement/Retention/Social.
+1. **Groom the Customer Phone Experience sprint into issues** (it's the next named sprint:
+   search-first list, availability states, OBDB brewery enrichment + Catalog.beer hit-rate
+   spike, progress-centric home, auth-aware nav, mobile repair) — per the "only the next
+   sprint gets ticketed" rule it has no issues yet.
+2. Then the remaining named sprints: Auth II (social sign-in + password reset), Admin
+   Experience, Engagement/Retention/Social, Deployment & Hardening.
 
 Local tooling note: only the .NET 10 SDK is on PATH but the projects target net8.0 — run
 backend tests with the SDK at `~/.dotnet8` (see `.claude/skills/verify/SKILL.md` for the
