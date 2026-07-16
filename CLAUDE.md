@@ -128,12 +128,10 @@ before it's considered done, not backfilled after. See `EPICS_AND_SPRINTS.md`'s
 
 ## Known doc inconsistencies (flagged, not yet fixed)
 
-- Root `README.md` still describes a plain CRUD app and doesn't mention the mug-club
-  reframing that the other docs already reflect.
-- Frontend port mismatch: `beer-app/README.md` says `:3000`, historical Docker runs exposed
-  it at `:3001` — worth double-checking against current `docker-compose.yml` if it matters.
-- Root `README.md` is UTF-16 encoded — plain `cat`/grep will show garbled output; use
-  `iconv -f UTF-16 -t UTF-8` or an editor that auto-detects encoding.
+- None currently. (The three long-standing ones — root `README.md` describing the old CRUD
+  app, its UTF-16 encoding, and the `:3000`/`:3001` port mismatch in `beer-app/README.md` —
+  were all fixed 2026-07-15: the root README is now UTF-8 and mug-club-framed, and both
+  READMEs state the real port mapping: `:3001` via Docker, `:3000` via `npm run dev`.)
 
 ## Running it locally
 
@@ -141,7 +139,7 @@ before it's considered done, not backfilled after. See `EPICS_AND_SPRINTS.md`'s
 cd beer-app
 docker compose up --build
 ```
-Frontend: `http://localhost:3000` (or `:3001` per Docker stack, see port mismatch above) ·
+Frontend: `http://localhost:3001` via Docker (`npm run dev` outside Docker serves `:3000`) ·
 API + Swagger: `http://localhost:5153/swagger` · DB: `localhost:5432`
 
 Manual (no Docker): `dotnet run` in `beer-app/backend/`, and

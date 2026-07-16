@@ -8,7 +8,7 @@
 docker compose up --build
 ```
 
-- Frontend: http://localhost:3000
+- Frontend: http://localhost:3001 (Docker maps 3001 → the container's 3000; `npm run dev` outside Docker serves on 3000)
 - API: http://localhost:5153/swagger
 - Database: localhost:5432
 
