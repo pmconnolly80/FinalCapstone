@@ -446,3 +446,20 @@ Live-verified: simulated 199 confirmations, landed the 200th through the real AP
 the stamp; cleaned up after. Push/badges stay in the Retention epic per grooming.
 
 **Resume here:** #15 (admin confirmation audit & correction API) → #16 (its screen).
+
+## 2026-07-15 — Sprint 2 #15 shipped: admin confirmation audit & correction API
+
+**Sprint/story:** [#15](https://github.com/pmconnolly80/FinalCapstone/issues/15) — `epic:mug-club` + `epic:admin`.
+
+TDD: 8 unit + 3 HTTP tests written first; backend 85/85. New `AdminConfirmationsController`
+(Admin-only): `GET /api/admin/confirmations` (filters: customer, bartender, beer, date
+range), `GET .../audits`, `POST .../{id}/void` with a **required** reason. A void
+hard-deletes the confirmation (freeing the customer+beer slot so the right beer can be
+re-confirmed) and writes a `ConfirmationAudit` row in the same save — actor, timestamp,
+reason, and the original record's data including the beer name at void time
+(`AddConfirmationAudit` migration). **Mug-earned edge decided and documented in
+`TECHNICAL_ARCHITECTURE_PLAN.md` §4.1: earned is permanent once stamped** — voids never
+revoke the award. Live-verified end to end (400 without reason, void, progress drops to 0,
+re-confirm 201, audit row readable, customer 403).
+
+**Resume here:** #16 (the admin correction screen on this API) — last story in Sprint 2.
