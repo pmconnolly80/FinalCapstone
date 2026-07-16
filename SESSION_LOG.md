@@ -463,3 +463,20 @@ revoke the award. Live-verified end to end (400 without reason, void, progress d
 re-confirm 201, audit row readable, customer 403).
 
 **Resume here:** #16 (the admin correction screen on this API) — last story in Sprint 2.
+
+## 2026-07-15 — Sprint 2 #16 shipped: admin correction screen — sprint complete
+
+**Sprint/story:** [#16](https://github.com/pmconnolly80/FinalCapstone/issues/16) — `epic:mug-club` + `epic:admin`.
+
+TDD: 5 api-client tests + 6 RTL page tests written first; frontend 61/61. New
+`/admin/confirmations` route (`AdminConfirmations.jsx`, Tailwind): filterable confirmation
+history (client-side text filter over customer/bartender/beer), **two-step void guard**
+(Void reveals a reason field + Confirm void; empty reason blocked client-side and 400
+server-side), audit trail rendered in place (who voided, when, why), API errors surfaced.
+Nav gets an "Admin" link only when the JWT carries the Admin role
+(`getRolesFromToken()` in `api.js` — client convenience; the API enforces Admin
+server-side regardless). **This closes Sprint 2: all 7 items done (#12–#16 + interrupts
+#17/#18).**
+
+**Resume here:** Sprint 2 close-out done — next sprint to groom: Customer Phone
+Experience (see EPICS_AND_SPRINTS.md "Later sprints").
