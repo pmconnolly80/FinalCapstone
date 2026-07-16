@@ -46,7 +46,11 @@ function MyProgress() {
         />
       </div>
       {progress.mugEarned && (
-        <p style={{ fontSize: 20, marginTop: 12 }}>🏆 Mug earned — congratulations!</p>
+        <p style={{ fontSize: 20, marginTop: 12 }}>
+          🏆 Mug earned
+          {progress.mugEarnedAt ? ` on ${new Date(progress.mugEarnedAt).toLocaleDateString()}` : ''} —
+          congratulations!
+        </p>
       )}
 
       <h3 style={{ marginBottom: 8 }}>Confirmed beers</h3>

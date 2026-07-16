@@ -48,7 +48,27 @@ public class MeControllerTests
         Assert.Equal(0, progress.ConfirmedCount);
         Assert.Equal(ConfirmationsController.MugGoal, progress.Goal);
         Assert.False(progress.MugEarned);
+        Assert.Null(progress.MugEarnedAt);
         Assert.Empty(progress.Confirmations);
+    }
+
+    // #14: earned status comes from the stored award, not the live count — it must
+    // survive catalog churn and confirmation corrections.
+    [Fact]
+    public async Task GetProgress_WithAward_ReportsEarnedDate_IndependentOfLiveCount()
+    {
+        using var context = CreateContext();
+        var earnedAt = new DateTime(2026, 7, 15, 21, 0, 0, DateTimeKind.Utc);
+        context.MugAwards.Add(new MugAward { CustomerId = CustomerId, TavernId = 1, EarnedAt = earnedAt });
+        await context.SaveChangesAsync();
+        var controller = CreateController(context);
+
+        var result = await controller.GetProgress();
+
+        var progress = Assert.IsType<ProgressResponse>(result.Value);
+        Assert.Equal(0, progress.ConfirmedCount);
+        Assert.True(progress.MugEarned);
+        Assert.Equal(earnedAt, progress.MugEarnedAt);
     }
 
     [Fact]
@@ -75,7 +95,10 @@ public class MeControllerTests
     }
 
     [Fact]
-    public async Task GetProgress_AtGoal_ReportsMugEarned()
+    // #14 changed the contract: earned status comes from the stored award, never the
+    // count. An at-goal count with no award (the stamp happens in the confirmation
+    // flow) reports not-earned — count alone grants nothing.
+    public async Task GetProgress_AtGoalWithoutAward_ReportsNotEarned()
     {
         using var context = CreateContext();
         for (var i = 0; i < ConfirmationsController.MugGoal; i++)
@@ -97,6 +120,7 @@ public class MeControllerTests
 
         var progress = Assert.IsType<ProgressResponse>(result.Value);
         Assert.Equal(ConfirmationsController.MugGoal, progress.ConfirmedCount);
-        Assert.True(progress.MugEarned);
+        Assert.False(progress.MugEarned);
+        Assert.Null(progress.MugEarnedAt);
     }
 }

@@ -430,3 +430,19 @@ get the API's 403. Live-verified: own-PIN change flips the confirm flow old→ne
 user-management table stays in the Admin Experience epic.
 
 **Resume here:** #14 (durable mug-earned) → #15 → #16.
+
+## 2026-07-15 — Sprint 2 #14 shipped: durable mug-earned milestone
+
+**Sprint/story:** [#14](https://github.com/pmconnolly80/FinalCapstone/issues/14) — `epic:mug-club`.
+
+TDD: new `MugAward` entity (`AddMugAward` migration, unique per customer) stamped exactly
+once when the 200th confirmation lands; earned status now reads from the stored award
+everywhere — never recomputed from the live count — so it survives catalog churn and
+future admin corrections (#15). `ProgressResponse` gained `mugEarnedAt`; My Progress shows
+the earned date; `GET /api/mug-awards` (Admin) lists earners oldest-first for the physical
+mug handover. One pre-existing test updated to the new contract (at-goal count without an
+award = not earned — that's the point of the story). Suites 73/73 backend, 51/51 frontend.
+Live-verified: simulated 199 confirmations, landed the 200th through the real API, watched
+the stamp; cleaned up after. Push/badges stay in the Retention epic per grooming.
+
+**Resume here:** #15 (admin confirmation audit & correction API) → #16 (its screen).

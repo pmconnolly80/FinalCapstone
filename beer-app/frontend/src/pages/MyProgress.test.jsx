@@ -51,18 +51,20 @@ describe('MyProgress', () => {
     expect(screen.queryByText(/Mug earned/)).not.toBeInTheDocument();
   });
 
-  it('shows the mug-earned state at the goal', async () => {
+  it('shows the mug-earned state with the earned date', async () => {
     localStorage.setItem('beer-token', 'abc');
     fetchMyProgress.mockResolvedValue({
       confirmedCount: 200,
       goal: 200,
       mugEarned: true,
+      mugEarnedAt: '2026-07-15T21:00:00Z',
       confirmations: [],
     });
 
     renderMyProgress();
 
-    expect(await screen.findByText(/Mug earned — congratulations!/)).toBeInTheDocument();
+    expect(await screen.findByText(/Mug earned/)).toBeInTheDocument();
+    expect(screen.getByText(/7\/15\/2026/)).toBeInTheDocument();
   });
 
   it('shows an empty-state nudge when nothing is confirmed yet', async () => {

@@ -112,13 +112,24 @@ public class ConfirmationsController : ControllerBase
 
         var confirmedCount = await _context.BeerConfirmations.CountAsync(c => c.CustomerId == customerId);
 
+        // Durable milestone (#14): stamp the award exactly once, at the moment the goal
+        // is reached. Earned status is read from this record from then on, never
+        // recomputed from the live count.
+        var award = await _context.MugAwards.FirstOrDefaultAsync(a => a.CustomerId == customerId);
+        if (award == null && confirmedCount >= MugGoal)
+        {
+            award = new MugAward { CustomerId = customerId, TavernId = tavern.Id };
+            _context.MugAwards.Add(award);
+            await _context.SaveChangesAsync();
+        }
+
         return StatusCode(StatusCodes.Status201Created, new ConfirmationResponse(
             beer.Id,
             beer.Name,
             confirmation.ConfirmedAt,
             confirmedCount,
             MugGoal,
-            confirmedCount >= MugGoal));
+            award != null));
     }
 
     // Persists any staged StaffPin counter changes alongside the failure record, then
