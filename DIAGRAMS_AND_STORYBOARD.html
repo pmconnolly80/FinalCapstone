@@ -273,6 +273,7 @@
     text-align: center;
     width: 100%;
   }
+  .branch-card.built { border: 1.5px solid var(--copper); }
   .branch-card.sprint1 { border: 1.5px solid var(--verdigris); }
   .branch-card.sprint2 { border: 1.5px dashed var(--verdigris); opacity: 0.88; }
   .branch-title { font-weight: 600; font-size: 0.92rem; margin-bottom: 0.2rem; }
@@ -374,9 +375,7 @@
       customer, not generic catalog browsing.
     </p>
     <div class="legend">
-      <span class="chip built">● built — merged to master</span>
-      <span class="chip sprint1">◐ sprint 1 — in progress</span>
-      <span class="chip sprint2">○ sprint 2+ — planned, unticketed</span>
+      <span class="chip built">● built — merged to master (everything shown; Sprints 1 + 2 closed 2026-07-15, see EPICS_AND_SPRINTS.md)</span>
     </div>
   </header>
 
@@ -472,16 +471,16 @@
 
       <div class="model-group">
         <div class="model-group-label">
-          <span class="chip sprint1">◐ sprint 1</span>
+          <span class="chip built">● built</span>
           <span class="label-text">issue #2 — Tavern + BeerConfirmation entities and migration</span>
         </div>
         <div class="model-cards">
-          <div class="entity-card status-sprint1">
+          <div class="entity-card status-built">
             <div class="entity-head">Tavern</div>
             <div class="field-row"><span class="field-name">Id</span><span class="field-type">int</span></div>
             <div class="field-row"><span class="field-name">Name</span><span class="field-type">string</span></div>
           </div>
-          <div class="entity-card status-sprint1">
+          <div class="entity-card status-built">
             <div class="entity-head">BeerConfirmation</div>
             <div class="field-row"><span class="field-name">Id</span><span class="field-type">int</span></div>
             <div class="field-row"><span class="field-name">CustomerId</span><span class="field-type field-fk">→ User</span></div>
@@ -557,16 +556,16 @@
         <div class="fork-branches">
           <div class="fork-branch">
             <div class="fork-stem"></div>
-            <div class="branch-card sprint1">
+            <div class="branch-card built">
               <div class="branch-title">Progress updates</div>
-              <div class="branch-note">"X of 200" — sprint 1 · #5</div>
+              <div class="branch-note">"X of 200" — built · #5</div>
             </div>
           </div>
           <div class="fork-branch">
             <div class="fork-stem"></div>
-            <div class="branch-card sprint2">
+            <div class="branch-card built">
               <div class="branch-title">Mug-earned milestone</div>
-              <div class="branch-note">celebratory flag — sprint 2, unticketed</div>
+              <div class="branch-note">durable MugAward, stamped once — built · #14</div>
             </div>
           </div>
         </div>
@@ -649,7 +648,7 @@
 
         <div class="frame-card">
           <div class="frame-num">2.1</div>
-          <div class="frame-screen status-sprint1">
+          <div class="frame-screen status-built">
             <div class="mock-bar">Confirm Beer</div>
             <div class="mock-line w40"></div>
             <div class="mock-input"></div>
@@ -659,13 +658,13 @@
           </div>
           <div class="frame-caption">
             <div class="title">Bartender confirms</div>
-            <div class="status sprint1">sprint 1 · #6</div>
+            <div class="status built">built · #6</div>
           </div>
         </div>
 
         <div class="frame-card">
           <div class="frame-num">2.2</div>
-          <div class="frame-screen status-sprint1">
+          <div class="frame-screen status-built">
             <div class="ledger-mock">
               <div class="ledger-line"><span class="k">customer</span><span class="v">j.rivera</span></div>
               <div class="ledger-line"><span class="k">beer</span><span class="v">#118</span></div>
@@ -675,7 +674,7 @@
           </div>
           <div class="frame-caption">
             <div class="title">BeerConfirmation record</div>
-            <div class="status sprint1">sprint 1 · #2 #3</div>
+            <div class="status built">built · #2 #3</div>
           </div>
         </div>
 
@@ -691,7 +690,7 @@
 
         <div class="frame-card">
           <div class="frame-num">3.1</div>
-          <div class="frame-screen status-sprint1">
+          <div class="frame-screen status-built">
             <div class="mock-bar">My Progress</div>
             <div class="mock-progress"><div style="width:64%"></div></div>
             <div class="mock-line w40"></div>
@@ -700,13 +699,13 @@
           </div>
           <div class="frame-caption">
             <div class="title">128 / 200 confirmed</div>
-            <div class="status sprint1">sprint 1 · #4 #5</div>
+            <div class="status built">built · #4 #5</div>
           </div>
         </div>
 
         <div class="frame-card">
           <div class="frame-num">3.2</div>
-          <div class="frame-screen status-sprint2">
+          <div class="frame-screen status-built">
             <div class="mock-fill">
               <div>
                 <div class="mock-num">200 / 200</div>
@@ -716,7 +715,7 @@
           </div>
           <div class="frame-caption">
             <div class="title">Mug earned</div>
-            <div class="status sprint2">sprint 2 · planned</div>
+            <div class="status built">built · #14</div>
           </div>
         </div>
 

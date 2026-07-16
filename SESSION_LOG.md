@@ -480,3 +480,14 @@ server-side regardless). **This closes Sprint 2: all 7 items done (#12–#16 + i
 
 **Resume here:** Sprint 2 close-out done — next sprint to groom: Customer Phone
 Experience (see EPICS_AND_SPRINTS.md "Later sprints").
+
+## 2026-07-15 — Sprint 2 close-out addendum
+
+Post-close documentation sweep: sprint-close blog post published on peterconnolly-website
+("Sprint 2 Closes and the Mug Club Epic Is Done", with the Projects-page updates entry in
+the same commit per standing rule). `DIAGRAMS_AND_STORYBOARD.html` refreshed per its
+snapshot rule — every sprint 1/sprint 2 element flipped to built (legend now single-state),
+matching the closed milestone. All tracking docs verified current: `EPICS_AND_SPRINTS.md`,
+`CLAUDE.md`, `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1, this log.
+
+**Resume here:** groom the Customer Phone Experience sprint into issues.
