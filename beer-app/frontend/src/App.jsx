@@ -1,5 +1,7 @@
 import { Routes, Route, Link } from 'react-router-dom';
+import { getRolesFromToken } from './lib/api';
 import Home from './pages/Home';
+import AdminConfirmations from './pages/AdminConfirmations';
 import BeerList from './pages/BeerList';
 import BeerDetail from './pages/BeerDetail';
 import BeerForm from './pages/BeerForm';
@@ -36,6 +38,11 @@ function App() {
           <Link className={navLinkClass} to="/my-pin">
             My PIN
           </Link>
+          {getRolesFromToken().includes('Admin') && (
+            <Link className={navLinkClass} to="/admin/confirmations">
+              Admin
+            </Link>
+          )}
           <Link className={navLinkClass} to="/auth">
             Sign in
           </Link>
@@ -50,6 +57,7 @@ function App() {
         <Route path="/beers/:id/edit" element={<BeerForm />} />
         <Route path="/progress" element={<MyProgress />} />
         <Route path="/my-pin" element={<MyPin />} />
+        <Route path="/admin/confirmations" element={<AdminConfirmations />} />
         <Route path="/auth" element={<AuthPage />} />
       </Routes>
     </div>

@@ -1,5 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { confirmBeer, fetchBeer, fetchBeers, fetchMyProgress, login, register, saveBeer, setMyPin } from './api';
+import {
+  confirmBeer,
+  fetchAdminConfirmations,
+  fetchBeer,
+  fetchBeers,
+  fetchConfirmationAudits,
+  fetchMyProgress,
+  getRolesFromToken,
+  login,
+  register,
+  saveBeer,
+  setMyPin,
+  voidConfirmation,
+} from './api';
+
+function fakeJwt(payload) {
+  return `header.${btoa(JSON.stringify(payload))}.signature`;
+}
 
 function mockFetchOnce(ok, body) {
   global.fetch = vi.fn().mockResolvedValue({
@@ -150,5 +167,64 @@ describe('api', () => {
     await expect(setMyPin('654321')).rejects.toThrow(
       'That PIN is already in use by another staff member.'
     );
+  });
+
+  it('fetchAdminConfirmations GETs with the Authorization header', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    mockFetchOnce(true, [{ id: 1, beerName: 'Duvel' }]);
+
+    const rows = await fetchAdminConfirmations();
+
+    const [url, init] = global.fetch.mock.calls[0];
+    expect(url).toContain('/api/admin/confirmations');
+    expect(init.headers.Authorization).toBe('Bearer abc123');
+    expect(rows[0].beerName).toBe('Duvel');
+  });
+
+  it('fetchConfirmationAudits GETs the audits list', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    mockFetchOnce(true, [{ id: 1, reason: 'wrong beer' }]);
+
+    const audits = await fetchConfirmationAudits();
+
+    const [url] = global.fetch.mock.calls[0];
+    expect(url).toContain('/api/admin/confirmations/audits');
+    expect(audits[0].reason).toBe('wrong beer');
+  });
+
+  it('voidConfirmation POSTs the reason and surfaces API errors', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    mockFetchOnce(true, null);
+
+    await voidConfirmation(7, 'wrong customer');
+
+    const [url, init] = global.fetch.mock.calls[0];
+    expect(url).toContain('/api/admin/confirmations/7/void');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body)).toEqual({ reason: 'wrong customer' });
+
+    mockFetchOnce(false, { message: 'A reason is required to void a confirmation.' });
+    await expect(voidConfirmation(7, '')).rejects.toThrow(
+      'A reason is required to void a confirmation.'
+    );
+  });
+
+  it('getRolesFromToken reads the role claim, tolerating strings, arrays, and junk', () => {
+    const roleClaim = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
+
+    localStorage.setItem('beer-token', fakeJwt({ [roleClaim]: 'Admin' }));
+    expect(getRolesFromToken()).toEqual(['Admin']);
+
+    localStorage.setItem('beer-token', fakeJwt({ [roleClaim]: ['Bartender', 'Admin'] }));
+    expect(getRolesFromToken()).toEqual(['Bartender', 'Admin']);
+
+    localStorage.setItem('beer-token', fakeJwt({}));
+    expect(getRolesFromToken()).toEqual([]);
+
+    localStorage.setItem('beer-token', 'not-a-jwt');
+    expect(getRolesFromToken()).toEqual([]);
+
+    localStorage.removeItem('beer-token');
+    expect(getRolesFromToken()).toEqual([]);
   });
 });
