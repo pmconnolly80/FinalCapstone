@@ -68,6 +68,30 @@ public class ConfirmationsFlowTests : IDisposable
         Assert.Equal(beer.Name, Assert.Single(progress.Confirmations).Name);
     }
 
+    // #12: through the real pipeline, a locked-out correct PIN must be indistinguishable
+    // from a plain wrong guess — same status, byte-identical body.
+    [Fact]
+    public async Task Lockout_AfterRepeatedWrongPins_CorrectPinRejectedWithGenericBody()
+    {
+        var token = await RegisterCustomerAsync("bruteforcer@example.com");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var beers = await _client.GetFromJsonAsync<List<Beer>>("/api/beers");
+        var beer = beers![0];
+
+        string wrongBody = string.Empty;
+        for (var i = 0; i < ConfirmationsController.MaxPinFailures; i++)
+        {
+            var wrong = await _client.PostAsJsonAsync("/api/confirmations", new ConfirmationRequest(beer.Id, "000000"));
+            Assert.Equal(HttpStatusCode.Unauthorized, wrong.StatusCode);
+            wrongBody = await wrong.Content.ReadAsStringAsync();
+        }
+
+        var locked = await _client.PostAsJsonAsync("/api/confirmations", new ConfirmationRequest(beer.Id, SeedData.DevBartenderPin));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, locked.StatusCode);
+        Assert.Equal(wrongBody, await locked.Content.ReadAsStringAsync());
+    }
+
     private async Task<string> RegisterCustomerAsync(string email)
     {
         var response = await _client.PostAsJsonAsync("/api/auth/register", new RegisterRequest(email, "Passw0rd!"));

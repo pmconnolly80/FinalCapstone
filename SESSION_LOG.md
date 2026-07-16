@@ -396,3 +396,20 @@ facelift, Tailwind v4 adopted). Sprint 2: 2 of 7 done.
 TDD per Definition of Done. Backend tests: .NET 8 SDK at `~/.dotnet8`
 (`.claude/skills/verify/SKILL.md`). Note for future auth work: password policy is now
 explicit length-only min 8 (`Program.cs`), kept in sync with the AuthPage hint.
+
+## 2026-07-15 — Sprint 2 #12 shipped: PIN lockout on both axes
+
+**Sprint/story:** [#12](https://github.com/pmconnolly80/FinalCapstone/issues/12) — `epic:mug-club`.
+
+TDD: 6 new tests written first (5 controller unit + 1 HTTP flow), backend suite 47/47.
+Per-PIN axis wires up the schema-ahead `FailedAttempts`/`LockedUntil` columns: a wrong
+guess counts against every unlocked active PIN (a candidate is equidistant from all of
+them), 5 consecutive failures lock a PIN for 15 min, expired locks reset lazily, success
+resets that PIN. Per-customer axis is a new `FailedConfirmationAttempt` table
+(`AddPinLockout` migration): 5 failures in a rolling 15-min window block the account
+before PIN verification; a successful confirm clears the window. Every rejection is the
+same generic 401 "Invalid PIN." — the attempt rows keep the real reason (wrong-pin /
+pin-locked / customer-blocked) server-side. Live-verified against Docker (lock trips,
+correct PIN rejected generically, reasons recorded); dev DB lock state reset afterwards.
+
+**Resume here:** #13 (PIN lifecycle) → #14 → #15 → #16.
