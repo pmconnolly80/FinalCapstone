@@ -90,6 +90,15 @@ initialing the customer's own paper sheet.
 - **Lifecycle**: owner/admin issues and resets PINs from user management; staff change
   their own PIN from their own account on first use; deactivating a staff account
   deactivates the PIN everywhere, instantly.
+- **Corrections and the mug (decided 2026-07-15, #15)**: an admin void removes the
+  confirmation (freeing the beer to be confirmed again) and writes a `ConfirmationAudit`
+  row — actor, timestamp, required reason, and the original record's data including the
+  beer name at void time. No silent deletes. **Mug-earned is permanent once stamped**: a
+  correction that drops an earned customer back below 200 does not revoke the
+  `MugAward` — the award is written exactly once (#14) and never recomputed from counts.
+  Rationale: the physical mug may already be in the customer's hands, and revoking a
+  milestone over a staff data-entry fix punishes the wrong person. A formal revoke path
+  (fraud cases) is Admin Experience scope if it's ever needed.
 - **Alternatives explored** (all customer-phone-only, documented in
   `PERSONAS_AND_USAGE.md` §6): TOTP-style rotating bartender code (stronger, but
   reintroduces a bartender device to read); bartender-approves-from-own-phone queue

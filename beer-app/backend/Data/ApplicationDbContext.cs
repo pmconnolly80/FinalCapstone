@@ -17,6 +17,7 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
     public DbSet<StaffPin> StaffPins => Set<StaffPin>();
     public DbSet<FailedConfirmationAttempt> FailedConfirmationAttempts => Set<FailedConfirmationAttempt>();
     public DbSet<MugAward> MugAwards => Set<MugAward>();
+    public DbSet<ConfirmationAudit> ConfirmationAudits => Set<ConfirmationAudit>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
