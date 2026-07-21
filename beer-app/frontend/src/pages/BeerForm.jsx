@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { fetchBeer, saveBeer, searchBreweries, searchCatalogBeer } from '../lib/api';
+import { fetchBeer, getRolesFromToken, saveBeer, searchBreweries, searchCatalogBeer } from '../lib/api';
 
+// Beer CRUD is admin-only (#32) — the API already enforced this server-side, but the
+// customer-facing surface shouldn't render a form that can only ever fail to save.
 function BeerForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = Boolean(id);
+  const isAdmin = getRolesFromToken().includes('Admin');
 
   const [form, setForm] = useState({
     name: '',
@@ -23,14 +26,15 @@ function BeerForm() {
   const [nameDirty, setNameDirty] = useState(false);
   const [catalogSuggestions, setCatalogSuggestions] = useState([]);
   const [catalogBeerApplied, setCatalogBeerApplied] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!isEdit) return;
+    if (!isEdit || !isAdmin) return;
 
     fetchBeer(id)
       .then((data) => setForm(data))
-      .catch((err) => console.error(err));
-  }, [id, isEdit]);
+      .catch(() => setError('Could not load this beer. Try again.'));
+  }, [id, isEdit, isAdmin]);
 
   // Autocomplete against Open Brewery DB (#30) — a quick-fill, not a requirement; the
   // brewery field stays a plain text input the admin can always type into by hand.
@@ -117,6 +121,7 @@ function BeerForm() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setError('');
 
     const payload = {
       ...form,
@@ -130,10 +135,19 @@ function BeerForm() {
     try {
       await saveBeer(payload, id);
       navigate('/beers');
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      setError(err.message);
     }
   };
+
+  if (!isAdmin) {
+    return (
+      <section className="rounded-2xl bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
+        <h2 className="m-0 text-xl font-bold">{isEdit ? 'Edit Beer' : 'Add Beer'}</h2>
+        <p className="mt-2 text-gray-600">Sign in with an admin account to add or edit beers.</p>
+      </section>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 12, background: '#fff', borderRadius: 16, padding: 20, boxShadow: '0 10px 30px rgba(0,0,0,0.06)' }}>
@@ -144,6 +158,7 @@ function BeerForm() {
           placeholder="Name"
           value={form.name}
           autoComplete="off"
+          required
           onChange={(e) => handleNameChange(e.target.value)}
         />
         {catalogSuggestions.length > 0 && (
@@ -171,6 +186,7 @@ function BeerForm() {
           placeholder="Brewery"
           value={form.brewery}
           autoComplete="off"
+          required
           onChange={(e) => handleBreweryChange(e.target.value)}
         />
         {brewerySuggestions.length > 0 && (
@@ -191,7 +207,7 @@ function BeerForm() {
         )}
       </div>
 
-      <input placeholder="Style" value={form.style} onChange={(e) => setForm({ ...form, style: e.target.value })} />
+      <input placeholder="Style" required value={form.style} onChange={(e) => setForm({ ...form, style: e.target.value })} />
       <textarea placeholder="Description" value={form.description || ''} onChange={(e) => setForm({ ...form, description: e.target.value })} />
 
       <fieldset style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(2, 1fr)', border: 0, padding: 0, margin: 0 }}>
@@ -230,6 +246,8 @@ function BeerForm() {
           (CC BY 4.0) — verify before saving.
         </p>
       )}
+
+      {error && <p style={{ margin: 0, color: '#b91c1c' }}>{error}</p>}
 
       <button type="submit" style={{ padding: '10px 16px', border: 'none', borderRadius: 999, background: '#111827', color: '#fff' }}>Save</button>
     </form>

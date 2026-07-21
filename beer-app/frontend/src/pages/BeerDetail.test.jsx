@@ -127,4 +127,12 @@ describe('BeerDetail', () => {
     expect(await screen.findByText('Duvel')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Visit website' })).not.toBeInTheDocument();
   });
+
+  it('shows a visible error message when the beer fails to load', async () => {
+    fetchBeer.mockRejectedValue(new Error('nope'));
+
+    renderBeerDetail('1');
+
+    expect(await screen.findByText('Could not load this beer. Try again.')).toBeInTheDocument();
+  });
 });

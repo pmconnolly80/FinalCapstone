@@ -709,3 +709,55 @@ the blank-query short-circuit.
 **Resume here:** #32 (mobile UX repair bundle) — the last story in Sprint 3: progress-
 centric home, auth-aware nav, CRUD off the customer surface, hardcoded-localhost fix,
 loading/error states.
+
+## 2026-07-21 — Sprint 3 #32 shipped: mobile UX repair — Sprint 3 closed
+
+**Sprint/story:** [#32](https://github.com/pmconnolly80/FinalCapstone/issues/32) — `epic:phone-experience`. Last story in Sprint 3.
+
+TDD throughout: new `App.test.jsx` (5 tests), 5 new `Home.test.jsx` tests (replacing the
+2 that assumed a single signed-out-only experience), 1 new `BeerDetail.test.jsx` test, and
+6 new `BeerForm.test.jsx` tests (error message, edit-load error, required fields, plus 2
+admin-gate tests), all written first; frontend 99/99 (was 84/84).
+
+Six independent fixes bundled per the issue:
+
+- **Hardcoded API URL**: `api.js`'s `API_BASE_URL` now falls back to
+  `${window.location.protocol}//${window.location.hostname}:5153` instead of a literal
+  `http://localhost:5153`, and `docker-compose.yml` no longer overrides it with that same
+  literal — a phone opening the app at the host machine's LAN IP now reaches the API there
+  instead of at itself. Live-verified over the host's actual LAN IP, not just `localhost`.
+- **Auth-aware, reactive nav**: same-tab login/register/logout previously left `App.jsx`'s
+  nav stale until a manual reload, since it read `getRolesFromToken()` once at initial
+  render with no subscription to anything. New `AUTH_CHANGED_EVENT`/`logout()` in `api.js`
+  — a `window` custom event dispatched on any auth change (the browser's own `storage`
+  event only fires in *other* tabs) — that `App.jsx` now listens for for. Nav shows "Sign
+  out" once signed in and gates "Add Beer" to Admins.
+- **Progress-centric home**: `Home.jsx` fetches and renders the signed-in customer's actual
+  X-of-200 progress + mug-earned state (same data shape as `MyProgress.jsx`) instead of
+  always showing the generic mug-club pitch; anonymous visitors still see that pitch
+  unchanged.
+- **Beer CRUD actually off the customer surface**: hiding "Add Beer" from nav wasn't
+  enough — a customer who typed `/beers/new` directly still saw a live (if uselessly
+  fail-server-side) form. `BeerForm.jsx` now gates its own content the same way
+  `AdminConfirmations.jsx`/`MyPin.jsx` already do, rendering an "admin account required"
+  message for non-admins instead of the form.
+- **Visible error states**: `BeerForm.jsx`'s edit-mode load failure and save failure, and
+  `BeerDetail.jsx`'s load failure, were the last `console.error`-only paths in the app
+  (`BeerList.jsx`/`MyProgress.jsx` already surfaced errors from earlier stories) — now all
+  show a message the customer can actually see.
+- **Form usability**: Name/Brewery/Style are `required`; `AuthPage.jsx`'s email/password
+  inputs gained `type="email"` and `autoComplete` hints, plus real `<label>` elements
+  instead of placeholder-only.
+
+Live-verified against Docker: dynamic hostname derivation confirmed served, both the web
+page and the API reachable over the actual LAN IP (not just `localhost`), a full register/
+login round trip, and the new admin-gate/error-state code paths confirmed present in the
+served bundle. Backend untouched (131/131 still green).
+
+**This closes Sprint 3 — the Customer Phone Experience epic is done** (issues #26–#32,
+PRs #33–#39, groomed 2026-07-20, closed 2026-07-21). Suites at close: backend 131/131,
+frontend 99/99.
+
+**Resume here:** groom the next named sprint into issues — **Auth II: Social Sign-in**
+(Google/Facebook/Apple, account linking, marketing consent, privacy/data-deletion, and
+password reset) is next per the "only the next sprint gets ticketed" rule.

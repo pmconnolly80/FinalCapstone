@@ -27,8 +27,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    environment:
-      VITE_API_URL: http://localhost:5153
+    # No VITE_API_URL override: the frontend derives the API host from whatever host the
+    # page itself was loaded from (see api.js), so both http://localhost:3001 and a real
+    # phone opening http://<lan-ip>:3001 reach the API at the same host on :5153. Set
+    # VITE_API_URL explicitly only for a real deployment where the API lives elsewhere.
     depends_on:
       - api
     ports:

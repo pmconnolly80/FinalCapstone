@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  AUTH_CHANGED_EVENT,
   confirmBeer,
   fetchAdminConfirmations,
   fetchBeer,
@@ -7,6 +8,7 @@ import {
   fetchMyProgress,
   getRolesFromToken,
   login,
+  logout,
   register,
   saveBeer,
   searchBeers,
@@ -277,6 +279,18 @@ describe('api', () => {
     mockFetchOnce(false, {});
 
     await expect(searchCatalogBeer('duvel')).rejects.toThrow('Failed to search Catalog.beer');
+  });
+
+  it('logout removes the token and dispatches the auth-changed event', () => {
+    localStorage.setItem('beer-token', 'abc123');
+    const handler = vi.fn();
+    window.addEventListener(AUTH_CHANGED_EVENT, handler);
+
+    logout();
+
+    expect(localStorage.getItem('beer-token')).toBeNull();
+    expect(handler).toHaveBeenCalledTimes(1);
+    window.removeEventListener(AUTH_CHANGED_EVENT, handler);
   });
 
   it('getRolesFromToken reads the role claim, tolerating strings, arrays, and junk', () => {

@@ -6,14 +6,26 @@ import ConfirmPinPad from '../components/ConfirmPinPad';
 function BeerDetail() {
   const { id } = useParams();
   const [beer, setBeer] = useState(null);
+  const [error, setError] = useState('');
   const [confirming, setConfirming] = useState(false);
   const hasToken = Boolean(localStorage.getItem('beer-token'));
 
   useEffect(() => {
     fetchBeer(id)
       .then((data) => setBeer(data))
-      .catch((err) => console.error(err));
+      .catch(() => setError('Could not load this beer. Try again.'));
   }, [id]);
+
+  if (error) {
+    return (
+      <div className="rounded-2xl bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
+        <p className="m-0 text-red-700">{error}</p>
+        <Link to="/beers" className="mt-4 inline-block text-gray-600">
+          Back to list
+        </Link>
+      </div>
+    );
+  }
 
   if (!beer) return <p>Loading...</p>;
 
