@@ -311,6 +311,26 @@ needs a "Beer data from Catalog.beer" credit line where its data appears).
   likely misses), the integration isn't worth its complexity and admin entry stays manual
   with OBDB brewery autocomplete only.
 
+> **Spike result (2026-07-21, #31) — GO.** Ran the real Catalog.beer API (an account was
+> created for this spike; the key lives only in an untracked `.env` / `CATALOG_BEER_API_KEY`,
+> never committed) against the 8 beers in the tavern's seeded list, combining beer name +
+> brewery name per query (the same shape an admin add-beer search naturally produces):
+> **6/8 clear name+brewery matches** (60 Minute IPA/Dogfish Head, Guinness Draught/Guinness,
+> Fat Tire/New Belgium, Pilsner Urquell/Plzeňský Prazdroj, Duvel/Duvel Moortgat, Pale Ale/
+> Sierra Nevada), **1/8 close-but-not-exact** (Hefeweizen/Weihenstephaner — the brewery's
+> real entry is filed as "Hefeweissbier," a recognizable synonym an admin would confirm),
+> and **1/8 clean miss** (Oatmeal Stout/Samuel Smith — the brewery exists in the dataset,
+> that specific beer doesn't). Interestingly the misses were well-known European breweries
+> rather than the "small/local" ones this doc predicted — Catalog.beer's coverage skews
+> American craft/macro, but is broad enough that most real-world beer names resolve.
+> `cb_verified` was `false` on every result in this sample (a home-cooked, unmoderated
+> catalog — verification is the exception, not the norm; treat it as a nice-to-have sort
+> signal, not a quality gate). **Decision: integrate.** `ICatalogBeerService` (server-side
+> cached, same pattern as OBDB) added in the same story; `BeerForm.jsx`'s Name field
+> triggers a debounced Catalog.beer search, and selecting a result pre-fills style/ABV/
+> IBU/style-family/class/description with a CC BY 4.0 attribution line — the admin verifies
+> and can always override, per the auto-enrich-first/manual-fallback principle above.
+
 ### beer.db / openbeer.github.io (researched July 2026 — rejected)
 
 Public-domain beer/brewery dataset with the right shape on paper (beer name, ABV, style,

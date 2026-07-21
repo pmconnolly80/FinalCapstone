@@ -137,9 +137,18 @@ spike, and the mobile UX blockers found in the July 2026 code audit.
 > `BeerForm.jsx`'s Brewery field is now a debounced autocomplete — selecting a suggestion
 > fills the field and stores `ObdbBreweryId`, typing further by hand clears it so manual
 > entry always overrides. Live-verified against real OBDB search results plus the
-> 401/403/200 role gating. Backend 119/119, frontend 81/81. Along the way (#28), corrected
-> the `verify` skill's stale claim that the frontend container is volume-mounted — it
-> isn't, so frontend edits need `docker compose up -d --build web` like backend ones do.
+> 401/403/200 role gating. #31: hit-rate spike against the real Catalog.beer API (an
+> account created for the spike; key lives only in an untracked `.env`, never committed)
+> — **GO**: 6/8 clear hits, 1/8 close (recognizable synonym), 1/8 miss on the tavern's
+> seeded list, see `TECHNICAL_ARCHITECTURE_PLAN.md` §6 for the full finding. Same story
+> also wires the integration per the acceptance criteria: `ICatalogBeerService` (same
+> caching pattern as OBDB, cb_verified-first sort), Admin-only `CatalogBeerController` at
+> `GET /api/catalog-beer/search`, and `BeerForm.jsx`'s Name field triggers a debounced
+> search that pre-fills style/ABV/IBU/style-family/class/description with CC BY 4.0
+> attribution. Live-verified against the real API including role gating and cache-hit
+> timing. Backend 131/131, frontend 84/84. Along the way (#28), corrected the `verify`
+> skill's stale claim that the frontend container is volume-mounted — it isn't, so
+> frontend edits need `docker compose up -d --build web` like backend ones do.
 
 1. [#26 Data: Beer.Availability state (on tap / available / out of stock / retired)](https://github.com/pmconnolly80/FinalCapstone/issues/26)
    — ✅ done 2026-07-21
@@ -152,6 +161,7 @@ spike, and the mobile UX blockers found in the July 2026 code audit.
 5. [#30 Admin: Open Brewery DB brewery autocomplete in beer add/edit form](https://github.com/pmconnolly80/FinalCapstone/issues/30)
    — ✅ done 2026-07-21
 6. [#31 Catalog.beer beer-level pre-fill spike (hit-rate spike, go/no-go, admin pre-fill if go)](https://github.com/pmconnolly80/FinalCapstone/issues/31)
+   — ✅ done 2026-07-21 (go)
 7. [#32 Mobile UX repair: progress-centric home, auth-aware nav, remove customer CRUD, fix hardcoded API URL, error/loading states](https://github.com/pmconnolly80/FinalCapstone/issues/32)
 
 OBDB is breweries-only (no beer-level endpoint) — the tavern's list stays the source of

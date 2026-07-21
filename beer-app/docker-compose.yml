@@ -17,6 +17,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=beerdb;Username=beeruser;Password=beerpass
+      CatalogBeer__ApiKey: ${CATALOG_BEER_API_KEY:-}
     depends_on:
       - db
     ports:

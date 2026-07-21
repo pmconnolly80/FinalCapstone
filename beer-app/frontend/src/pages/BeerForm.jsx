@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { fetchBeer, saveBeer, searchBreweries } from '../lib/api';
+import { fetchBeer, saveBeer, searchBreweries, searchCatalogBeer } from '../lib/api';
 
 function BeerForm() {
   const navigate = useNavigate();
@@ -20,6 +20,9 @@ function BeerForm() {
   });
   const [breweryDirty, setBreweryDirty] = useState(false);
   const [brewerySuggestions, setBrewerySuggestions] = useState([]);
+  const [nameDirty, setNameDirty] = useState(false);
+  const [catalogSuggestions, setCatalogSuggestions] = useState([]);
+  const [catalogBeerApplied, setCatalogBeerApplied] = useState(false);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -54,6 +57,32 @@ function BeerForm() {
     return () => clearTimeout(timer);
   }, [form.brewery, breweryDirty]);
 
+  // Catalog.beer beer-level pre-fill (#31, go decision — TECHNICAL_ARCHITECTURE_PLAN.md
+  // §6): pre-fills style/ABV/IBU/style-family/class/description for the admin to verify,
+  // never a source of truth. CC BY 4.0 requires attribution wherever its data appears.
+  useEffect(() => {
+    if (!nameDirty) {
+      setCatalogSuggestions([]);
+      return;
+    }
+    const query = form.name.trim();
+    if (query.length < 2) {
+      setCatalogSuggestions([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const results = await searchCatalogBeer(query);
+        setCatalogSuggestions(results || []);
+      } catch {
+        setCatalogSuggestions([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [form.name, nameDirty]);
+
   const handleBreweryChange = (value) => {
     setBreweryDirty(true);
     setForm((f) => ({ ...f, brewery: value, obdbBreweryId: null }));
@@ -63,6 +92,27 @@ function BeerForm() {
     setForm((f) => ({ ...f, brewery: suggestion.name, obdbBreweryId: suggestion.id }));
     setBrewerySuggestions([]);
     setBreweryDirty(false);
+  };
+
+  const handleNameChange = (value) => {
+    setNameDirty(true);
+    setForm((f) => ({ ...f, name: value }));
+  };
+
+  const selectCatalogSuggestion = (suggestion) => {
+    setForm((f) => ({
+      ...f,
+      name: suggestion.name,
+      style: suggestion.style || f.style,
+      abv: suggestion.abv ?? f.abv,
+      ibu: suggestion.ibu ?? f.ibu,
+      styleFamily: suggestion.styleFamily || f.styleFamily,
+      class: suggestion.class || f.class,
+      description: suggestion.description || f.description,
+    }));
+    setCatalogSuggestions([]);
+    setNameDirty(false);
+    setCatalogBeerApplied(true);
   };
 
   const handleSubmit = async (event) => {
@@ -88,7 +138,33 @@ function BeerForm() {
   return (
     <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 12, background: '#fff', borderRadius: 16, padding: 20, boxShadow: '0 10px 30px rgba(0,0,0,0.06)' }}>
       <h2>{isEdit ? 'Edit Beer' : 'Add Beer'}</h2>
-      <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+
+      <div style={{ position: 'relative' }}>
+        <input
+          placeholder="Name"
+          value={form.name}
+          autoComplete="off"
+          onChange={(e) => handleNameChange(e.target.value)}
+        />
+        {catalogSuggestions.length > 0 && (
+          <ul style={{ position: 'absolute', zIndex: 1, listStyle: 'none', margin: 0, padding: 4, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, width: '100%' }}>
+            {catalogSuggestions.map((suggestion) => (
+              <li key={suggestion.id}>
+                <button
+                  type="button"
+                  onClick={() => selectCatalogSuggestion(suggestion)}
+                  style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', background: 'none', padding: '6px 8px' }}
+                >
+                  {suggestion.name}
+                  {suggestion.brewerName ? ` — ${suggestion.brewerName}` : ''}
+                  {suggestion.style ? ` (${suggestion.style})` : ''}
+                  {suggestion.cbVerified ? ' ✓ Verified' : ''}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <div style={{ position: 'relative' }}>
         <input
@@ -147,6 +223,13 @@ function BeerForm() {
           </select>
         </label>
       </fieldset>
+
+      {catalogBeerApplied && (
+        <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>
+          Style, ABV, IBU, style family, class, and description pre-filled from Catalog.beer
+          (CC BY 4.0) — verify before saving.
+        </p>
+      )}
 
       <button type="submit" style={{ padding: '10px 16px', border: 'none', borderRadius: 999, background: '#111827', color: '#fff' }}>Save</button>
     </form>

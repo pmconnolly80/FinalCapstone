@@ -661,3 +661,51 @@ blank-query short-circuit never hitting the network.
 
 **Resume here:** #31 (Catalog.beer beer-level pre-fill spike) — the hit-rate spike against
 the tavern's real list, go/no-go decision, then (if go) admin pre-fill wiring.
+
+## 2026-07-21 — Sprint 3 #31 shipped: Catalog.beer pre-fill spike — GO, integration wired
+
+**Sprint/story:** [#31](https://github.com/pmconnolly80/FinalCapstone/issues/31) — `epic:phone-experience`.
+
+The spike needed a real Catalog.beer API key, which requires an account with email
+verification — not something obtainable autonomously. Asked the user; they signed up and
+provided the key. **The key never touched a committed file at any point**: it's read from
+`CatalogBeer:ApiKey` config (empty string in the committed `appsettings.json`),
+overridable via `CatalogBeer__ApiKey` in `docker-compose.yml` from `${CATALOG_BEER_API_KEY}`,
+sourced from a new `beer-app/.env` — added `.env`/`.env.*` to `.gitignore` *before* creating
+that file, and double-checked with `git check-ignore -v` and `git status` before doing
+anything else with it.
+
+Ran the real API (via a throwaway shell variable, never a script argument that could land
+in shell history review or a file) against the 8 beers in the seeded catalog, searching
+"name + brewery" combined (matching how an admin would naturally search). Result:
+**6/8 clear hits, 1/8 close** (Weihenstephaner's Hefeweizen is filed as "Hefeweissbier" —
+a recognizable synonym), **1/8 miss** (Samuel Smith's Oatmeal Stout — brewery present,
+that specific beer isn't). Notably the misses were well-known European breweries, not the
+"small/local" ones `TECHNICAL_ARCHITECTURE_PLAN.md` §6 had predicted — logged as a
+correction to that prediction. `cb_verified` was `false` on every result in this sample;
+recorded as a signal to weight lightly, not gate on. **Decision: GO** — documented in
+§6 with the full per-beer breakdown.
+
+Per the story's acceptance criteria ("if go: pre-fill wired... attribution present"), built
+the integration in the same story rather than a follow-up: TDD, 7 `CatalogBeerService`
+tests (mapped fields, `cb_verified`-first sort, Basic-auth header construction, caching by
+query, graceful failure/unreachable/no-key/blank-query handling) + 2 controller tests + 3
+HTTP role-gating tests, all written first; backend 131/131. `ICatalogBeerService`/
+`CatalogBeerService` mirrors #29/#30's OBDB pattern (typed `HttpClient`, `IMemoryCache`,
+never throws) but needs the API key at request time rather than HttpClient-creation time,
+so the Basic auth header is built per-request from `IConfiguration` rather than set as a
+`HttpClient` default header. New Admin-only `CatalogBeerController` at
+`GET /api/catalog-beer/search`.
+
+`BeerForm.jsx`'s Name field is now a second debounced autocomplete (independent of the
+Brewery/OBDB one from #30): selecting a Catalog.beer suggestion pre-fills style, ABV, IBU,
+style family, class, and description — mapping `class`/`parent` straight onto the
+`Class`/`StyleFamily` fields #29 added, a nice fit with existing scope — and shows a CC BY
+4.0 attribution line. Frontend 84/84 (2 new tests: pre-fill-and-attribution, plus the
+existing suite untouched). Live-verified against Docker with the real key: role gating
+(401/403/200), a live "duvel" search returning real pre-fill data, cache-hit timing, and
+the blank-query short-circuit.
+
+**Resume here:** #32 (mobile UX repair bundle) — the last story in Sprint 3: progress-
+centric home, auth-aware nav, CRUD off the customer surface, hardcoded-localhost fix,
+loading/error states.
