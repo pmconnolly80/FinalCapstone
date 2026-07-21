@@ -1,6 +1,8 @@
+using System.Security.Claims;
 using BeerApi.Controllers;
 using BeerApi.Data;
 using BeerApi.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -9,12 +11,29 @@ namespace BeerApi.Tests.Controllers;
 
 public class BeersControllerTests
 {
+    private const string CustomerId = "customer-1";
+
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new ApplicationDbContext(options);
+    }
+
+    private static BeersController CreateController(ApplicationDbContext context, string? userId = null)
+    {
+        var identity = userId == null
+            ? new ClaimsIdentity()
+            : new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, userId) }, "Test");
+
+        return new BeersController(context)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) },
+            },
+        };
     }
 
     [Fact]
@@ -25,12 +44,189 @@ public class BeersControllerTests
             new Beer { Name = "Zythos", Brewery = "Brewery Z", Style = "IPA" },
             new Beer { Name = "Ale", Brewery = "Brewery A", Style = "Pale Ale" });
         await context.SaveChangesAsync();
-        var controller = new BeersController(context);
+        var controller = CreateController(context);
 
         var result = await controller.GetBeers();
 
-        var beers = Assert.IsAssignableFrom<IEnumerable<Beer>>(result.Value).ToList();
-        Assert.Equal(new[] { "Ale", "Zythos" }, beers.Select(b => b.Name));
+        var response = Assert.IsType<BeerSearchResponse>(result.Value);
+        Assert.Equal(new[] { "Ale", "Zythos" }, response.Items.Select(b => b.Name));
+        Assert.Equal(2, response.TotalCount);
+    }
+
+    [Fact]
+    public async Task GetBeers_WithNoAvailabilityFilter_DefaultsToInStock()
+    {
+        using var context = CreateContext();
+        context.Beers.AddRange(
+            new Beer { Name = "On Tap Beer", Brewery = "B", Style = "S", Availability = BeerAvailability.OnTap },
+            new Beer { Name = "Available Beer", Brewery = "B", Style = "S", Availability = BeerAvailability.Available },
+            new Beer { Name = "Out Beer", Brewery = "B", Style = "S", Availability = BeerAvailability.OutOfStock },
+            new Beer { Name = "Retired Beer", Brewery = "B", Style = "S", Availability = BeerAvailability.Retired });
+        await context.SaveChangesAsync();
+        var controller = CreateController(context);
+
+        var result = await controller.GetBeers();
+
+        var response = Assert.IsType<BeerSearchResponse>(result.Value);
+        Assert.Equal(new[] { "Available Beer", "On Tap Beer" }, response.Items.Select(b => b.Name).OrderBy(n => n));
+    }
+
+    [Fact]
+    public async Task GetBeers_WithAvailabilityAll_IncludesEveryState()
+    {
+        using var context = CreateContext();
+        context.Beers.AddRange(
+            new Beer { Name = "Available Beer", Brewery = "B", Style = "S", Availability = BeerAvailability.Available },
+            new Beer { Name = "Retired Beer", Brewery = "B", Style = "S", Availability = BeerAvailability.Retired });
+        await context.SaveChangesAsync();
+        var controller = CreateController(context);
+
+        var result = await controller.GetBeers(availability: "all");
+
+        var response = Assert.IsType<BeerSearchResponse>(result.Value);
+        Assert.Equal(2, response.TotalCount);
+    }
+
+    [Fact]
+    public async Task GetBeers_WithSpecificAvailability_FiltersToThatState()
+    {
+        using var context = CreateContext();
+        context.Beers.AddRange(
+            new Beer { Name = "Available Beer", Brewery = "B", Style = "S", Availability = BeerAvailability.Available },
+            new Beer { Name = "Out Beer", Brewery = "B", Style = "S", Availability = BeerAvailability.OutOfStock });
+        await context.SaveChangesAsync();
+        var controller = CreateController(context);
+
+        var result = await controller.GetBeers(availability: "OutOfStock");
+
+        var response = Assert.IsType<BeerSearchResponse>(result.Value);
+        Assert.Equal(new[] { "Out Beer" }, response.Items.Select(b => b.Name));
+    }
+
+    [Fact]
+    public async Task GetBeers_WithUnknownAvailability_ReturnsBadRequest()
+    {
+        using var context = CreateContext();
+        var controller = CreateController(context);
+
+        var result = await controller.GetBeers(availability: "sparkling");
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task GetBeers_WithSearchTerm_MatchesNameBreweryOrStyle_CaseInsensitive()
+    {
+        using var context = CreateContext();
+        context.Beers.AddRange(
+            new Beer { Name = "Duvel", Brewery = "Duvel Moortgat", Style = "Belgian Strong Golden Ale" },
+            new Beer { Name = "60 Minute IPA", Brewery = "Dogfish Head", Style = "IPA" },
+            new Beer { Name = "Guinness Draught", Brewery = "Guinness", Style = "Irish Dry Stout" });
+        await context.SaveChangesAsync();
+        var controller = CreateController(context);
+
+        var byName = await controller.GetBeers(search: "duv");
+        var byBrewery = await controller.GetBeers(search: "DOGFISH");
+        var byStyle = await controller.GetBeers(search: "stout");
+
+        Assert.Equal(new[] { "Duvel" }, Assert.IsType<BeerSearchResponse>(byName.Value).Items.Select(b => b.Name));
+        Assert.Equal(new[] { "60 Minute IPA" }, Assert.IsType<BeerSearchResponse>(byBrewery.Value).Items.Select(b => b.Name));
+        Assert.Equal(new[] { "Guinness Draught" }, Assert.IsType<BeerSearchResponse>(byStyle.Value).Items.Select(b => b.Name));
+    }
+
+    [Fact]
+    public async Task GetBeers_WithHadStatusAndNoAuthenticatedUser_ReturnsUnauthorized()
+    {
+        using var context = CreateContext();
+        var controller = CreateController(context, userId: null);
+
+        var result = await controller.GetBeers(hadStatus: "had");
+
+        Assert.IsType<UnauthorizedResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task GetBeers_WithUnknownHadStatus_ReturnsBadRequest()
+    {
+        using var context = CreateContext();
+        var controller = CreateController(context, userId: CustomerId);
+
+        var result = await controller.GetBeers(hadStatus: "maybe");
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task GetBeers_WithHadStatusHad_ReturnsOnlyConfirmedBeers()
+    {
+        using var context = CreateContext();
+        var had = new Beer { Name = "Had Beer", Brewery = "B", Style = "S" };
+        var notHad = new Beer { Name = "Not Had Beer", Brewery = "B", Style = "S" };
+        context.Beers.AddRange(had, notHad);
+        await context.SaveChangesAsync();
+        context.BeerConfirmations.Add(new BeerConfirmation { CustomerId = CustomerId, BeerId = had.Id, TavernId = 1, ConfirmedByUserId = "b1" });
+        await context.SaveChangesAsync();
+        var controller = CreateController(context, userId: CustomerId);
+
+        var result = await controller.GetBeers(hadStatus: "had");
+
+        var response = Assert.IsType<BeerSearchResponse>(result.Value);
+        Assert.Equal(new[] { "Had Beer" }, response.Items.Select(b => b.Name));
+        Assert.True(response.Items.Single().Confirmed);
+    }
+
+    [Fact]
+    public async Task GetBeers_WithHadStatusNotHad_ReturnsOnlyUnconfirmedBeers()
+    {
+        using var context = CreateContext();
+        var had = new Beer { Name = "Had Beer", Brewery = "B", Style = "S" };
+        var notHad = new Beer { Name = "Not Had Beer", Brewery = "B", Style = "S" };
+        context.Beers.AddRange(had, notHad);
+        await context.SaveChangesAsync();
+        context.BeerConfirmations.Add(new BeerConfirmation { CustomerId = CustomerId, BeerId = had.Id, TavernId = 1, ConfirmedByUserId = "b1" });
+        await context.SaveChangesAsync();
+        var controller = CreateController(context, userId: CustomerId);
+
+        var result = await controller.GetBeers(hadStatus: "nothad");
+
+        var response = Assert.IsType<BeerSearchResponse>(result.Value);
+        Assert.Equal(new[] { "Not Had Beer" }, response.Items.Select(b => b.Name));
+        Assert.False(response.Items.Single().Confirmed);
+    }
+
+    [Fact]
+    public async Task GetBeers_ForAnonymousCaller_NeverMarksConfirmed()
+    {
+        using var context = CreateContext();
+        var beer = new Beer { Name = "Some Beer", Brewery = "B", Style = "S" };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        var controller = CreateController(context, userId: null);
+
+        var result = await controller.GetBeers();
+
+        var response = Assert.IsType<BeerSearchResponse>(result.Value);
+        Assert.False(response.Items.Single().Confirmed);
+    }
+
+    [Fact]
+    public async Task GetBeers_Pagination_ReturnsRequestedPageAndTotalCount()
+    {
+        using var context = CreateContext();
+        for (var i = 0; i < 5; i++)
+        {
+            context.Beers.Add(new Beer { Name = $"Beer {i:D2}", Brewery = "B", Style = "S" });
+        }
+        await context.SaveChangesAsync();
+        var controller = CreateController(context);
+
+        var result = await controller.GetBeers(page: 2, pageSize: 2);
+
+        var response = Assert.IsType<BeerSearchResponse>(result.Value);
+        Assert.Equal(new[] { "Beer 02", "Beer 03" }, response.Items.Select(b => b.Name));
+        Assert.Equal(2, response.Page);
+        Assert.Equal(2, response.PageSize);
+        Assert.Equal(5, response.TotalCount);
     }
 
     [Fact]
@@ -40,7 +236,7 @@ public class BeersControllerTests
         var beer = new Beer { Name = "Hefeweizen", Brewery = "Weihenstephaner", Style = "Wheat" };
         context.Beers.Add(beer);
         await context.SaveChangesAsync();
-        var controller = new BeersController(context);
+        var controller = CreateController(context);
 
         var result = await controller.GetBeer(beer.Id);
 
@@ -51,7 +247,7 @@ public class BeersControllerTests
     public async Task GetBeer_WithUnknownId_ReturnsNotFound()
     {
         using var context = CreateContext();
-        var controller = new BeersController(context);
+        var controller = CreateController(context);
 
         var result = await controller.GetBeer(999);
 
@@ -62,7 +258,7 @@ public class BeersControllerTests
     public async Task PostBeer_AddsBeer_AndReturnsCreatedAtAction()
     {
         using var context = CreateContext();
-        var controller = new BeersController(context);
+        var controller = CreateController(context);
         var beer = new Beer { Name = "Duvel", Brewery = "Duvel Moortgat", Style = "Belgian Strong Golden Ale" };
 
         var result = await controller.PostBeer(beer);
@@ -84,7 +280,7 @@ public class BeersControllerTests
     public async Task PostBeer_PersistsExplicitAvailability()
     {
         using var context = CreateContext();
-        var controller = new BeersController(context);
+        var controller = CreateController(context);
         var beer = new Beer
         {
             Name = "Winter Bock",
@@ -103,7 +299,7 @@ public class BeersControllerTests
     public async Task PutBeer_WithMismatchedId_ReturnsBadRequest()
     {
         using var context = CreateContext();
-        var controller = new BeersController(context);
+        var controller = CreateController(context);
         var beer = new Beer { Id = 1, Name = "Fat Tire", Brewery = "New Belgium", Style = "Amber Ale" };
 
         var result = await controller.PutBeer(2, beer);
@@ -120,7 +316,7 @@ public class BeersControllerTests
         await context.SaveChangesAsync();
         context.Entry(beer).State = EntityState.Detached;
 
-        var controller = new BeersController(context);
+        var controller = CreateController(context);
         var updated = new Beer { Id = beer.Id, Name = "Fat Tire", Brewery = "New Belgium", Style = "Amber Ale (updated)" };
 
         var result = await controller.PutBeer(beer.Id, updated);
@@ -136,7 +332,7 @@ public class BeersControllerTests
         var beer = new Beer { Name = "Pilsner Urquell", Brewery = "Plzeňský Prazdroj", Style = "Czech Pilsner" };
         context.Beers.Add(beer);
         await context.SaveChangesAsync();
-        var controller = new BeersController(context);
+        var controller = CreateController(context);
 
         var result = await controller.DeleteBeer(beer.Id);
 
@@ -148,7 +344,7 @@ public class BeersControllerTests
     public async Task DeleteBeer_WithUnknownId_ReturnsNotFound()
     {
         using var context = CreateContext();
-        var controller = new BeersController(context);
+        var controller = CreateController(context);
 
         var result = await controller.DeleteBeer(999);
 

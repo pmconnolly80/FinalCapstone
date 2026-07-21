@@ -51,7 +51,7 @@ public class AdminConfirmationsTests : IDisposable
     {
         var customerToken = await RegisterCustomerAsync("void.flow@example.com");
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", customerToken);
-        var beers = await _client.GetFromJsonAsync<List<Beer>>("/api/beers");
+        var beers = (await _client.GetFromJsonAsync<BeerSearchResponse>("/api/beers"))!.Items;
         var confirm = await _client.PostAsJsonAsync("/api/confirmations",
             new ConfirmationRequest(beers![0].Id, SeedData.DevBartenderPin));
         Assert.Equal(HttpStatusCode.Created, confirm.StatusCode);

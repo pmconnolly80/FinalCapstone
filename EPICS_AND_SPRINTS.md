@@ -116,17 +116,20 @@ being an aspirational app shell. Search-first beer list, availability states for
 rotating inventory, beer-nerd stats, Open Brewery DB enrichment, a Catalog.beer pre-fill
 spike, and the mobile UX blockers found in the July 2026 code audit.
 
-> **Status (2026-07-21):** #26 done — `Beer.Availability` (`OnTap`/`Available`/`OutOfStock`/
-> `Retired`), `AddBeerAvailability` migration, defaults to `Available`, serialized as a
-> string via `[JsonConverter(typeof(JsonStringEnumConverter))]` on the enum itself (not a
-> global `Program.cs` registration — that only covers callers using the server's own
-> `JsonOptions`, and broke the test `HttpClient`'s default deserialization). Backend 88/88,
-> live-verified against Docker (search+PUT round-trip, seed backfill).
+> **Status (2026-07-21):** #26–#27 done. #26: `Beer.Availability` (`OnTap`/`Available`/
+> `OutOfStock`/`Retired`), `AddBeerAvailability` migration, defaults to `Available`,
+> serialized as a string via `[JsonConverter(typeof(JsonStringEnumConverter))]` on the enum
+> itself (not a global `Program.cs` registration — that only covers callers using the
+> server's own `JsonOptions`, and broke the test `HttpClient`'s default deserialization).
+> #27: `GET /api/beers` is now the search endpoint (search/availability/hadStatus/page/
+> pageSize, paginated envelope, per-item `confirmed` flag); `fetchBeers()` unwraps `.items`
+> so `BeerList.jsx` keeps working until #28's redesign. Backend 101/101, frontend 61/61,
+> live-verified against Docker.
 
 1. [#26 Data: Beer.Availability state (on tap / available / out of stock / retired)](https://github.com/pmconnolly80/FinalCapstone/issues/26)
    — ✅ done 2026-07-21
 2. [#27 API: beer search endpoint (name/brewery/style, paginated, availability + had/not-had filters)](https://github.com/pmconnolly80/FinalCapstone/issues/27)
-   — depends on #26
+   — ✅ done 2026-07-21
 3. [#28 UI: search-first beer list (autocomplete, filter chips, confirmed checkmark + availability badge)](https://github.com/pmconnolly80/FinalCapstone/issues/28)
    — depends on #27
 4. [#29 Beer detail: beer-nerd stats (ABV, IBU, style family/class) + Open Brewery DB brewery card](https://github.com/pmconnolly80/FinalCapstone/issues/29)

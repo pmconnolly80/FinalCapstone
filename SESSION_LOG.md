@@ -527,3 +527,32 @@ System.Text.Json's partial-property deserialization), PUT round-trips an explici
 
 **Resume here:** #27 (beer search endpoint — name/brewery/style, pagination, availability +
 had/not-had filters) — depends on #26.
+
+## 2026-07-21 — Sprint 3 #27 shipped: beer search endpoint
+
+**Sprint/story:** [#27](https://github.com/pmconnolly80/FinalCapstone/issues/27) — `epic:phone-experience`.
+
+TDD: 13 new unit tests (search/availability/hadStatus/pagination/confirmed-flag
+combinations) plus 2 integration tests written first; backend 101/101. `GET /api/beers`
+is now the search endpoint: `search` (case-insensitive substring over name/brewery/style),
+`availability` (a specific state, or `all`; omitted defaults to in-stock —
+`OnTap`/`Available` only, since the rotating inventory shouldn't surface out-of-stock/
+retired beers by default), `hadStatus` (`had`/`nothad`, computed against the authenticated
+customer's `BeerConfirmations` — 401 if no token), `page`/`pageSize` (default 200, since
+the tavern's real catalog runs to ~200 beers and this keeps today's UI on one page without
+behavior change). Response is a `BeerSearchResponse` envelope (`items`, `page`, `pageSize`,
+`totalCount`); each item carries a `confirmed` flag for the calling customer (false when
+anonymous) — #28's list screen needs this for its confirmed-checkmark requirement, not just
+the hadStatus filter.
+
+Design choice worth flagging: this changes `GET /api/beers`'s response shape from a bare
+array to the envelope, which breaks existing consumers. Rather than touch `BeerList.jsx`'s
+actual UI (that's #28's job — "rebuild the beer list screen"), `fetchBeers()` in `api.js`
+now unwraps `.items` so `BeerList.jsx` keeps rendering exactly as before; three integration
+test helpers (`AdminConfirmationsTests`, `ConfirmationsFlowTests`, `StaffPinLifecycleTests`)
+were updated the same way. Backend 101/101, frontend 61/61, live-verified against Docker:
+search, availability filter (including the 400 on garbage input), hadStatus's 401-when-
+anonymous and real confirm-then-filter round trip, and pagination.
+
+**Resume here:** #28 (search-first beer list UI) — depends on #27, the last piece before
+moving to #29 (beer-nerd stats + OBDB brewery card).

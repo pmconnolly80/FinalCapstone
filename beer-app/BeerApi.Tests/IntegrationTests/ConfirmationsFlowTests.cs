@@ -43,7 +43,7 @@ public class ConfirmationsFlowTests : IDisposable
         var token = await RegisterCustomerAsync("mugchaser@example.com");
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var beers = await _client.GetFromJsonAsync<List<Beer>>("/api/beers");
+        var beers = (await _client.GetFromJsonAsync<BeerSearchResponse>("/api/beers"))!.Items;
         var beer = beers![0];
 
         // Wrong PIN is rejected and records nothing.
@@ -75,7 +75,7 @@ public class ConfirmationsFlowTests : IDisposable
     {
         var token = await RegisterCustomerAsync("bruteforcer@example.com");
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        var beers = await _client.GetFromJsonAsync<List<Beer>>("/api/beers");
+        var beers = (await _client.GetFromJsonAsync<BeerSearchResponse>("/api/beers"))!.Items;
         var beer = beers![0];
 
         string wrongBody = string.Empty;

@@ -3,7 +3,8 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5153';
 export async function fetchBeers() {
   const response = await fetch(`${API_BASE_URL}/api/beers`);
   if (!response.ok) throw new Error('Failed to load beers');
-  return response.json();
+  const data = await response.json();
+  return data.items;
 }
 
 export async function fetchBeer(id) {

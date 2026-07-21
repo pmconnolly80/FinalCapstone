@@ -34,8 +34,8 @@ describe('api', () => {
     vi.restoreAllMocks();
   });
 
-  it('fetchBeers resolves with the response body on success', async () => {
-    mockFetchOnce(true, [{ id: 1, name: 'Pale Ale' }]);
+  it('fetchBeers resolves with the items from the paginated search response', async () => {
+    mockFetchOnce(true, { items: [{ id: 1, name: 'Pale Ale' }], page: 1, pageSize: 200, totalCount: 1 });
 
     const beers = await fetchBeers();
 
