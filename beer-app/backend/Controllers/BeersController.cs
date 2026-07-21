@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using BeerApi.Data;
 using BeerApi.Models;
+using BeerApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,10 +18,12 @@ public class BeersController : ControllerBase
     public const int MaxPageSize = 500;
 
     private readonly ApplicationDbContext _context;
+    private readonly IBreweryLookupService _breweryLookup;
 
-    public BeersController(ApplicationDbContext context)
+    public BeersController(ApplicationDbContext context, IBreweryLookupService breweryLookup)
     {
         _context = context;
+        _breweryLookup = breweryLookup;
     }
 
     [HttpGet]
@@ -104,7 +107,7 @@ public class BeersController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Beer>> GetBeer(int id)
+    public async Task<ActionResult<BeerDetailResponse>> GetBeer(int id)
     {
         var beer = await _context.Beers.FindAsync(id);
         if (beer == null)
@@ -112,7 +115,14 @@ public class BeersController : ControllerBase
             return NotFound();
         }
 
-        return beer;
+        var breweryInfo = beer.ObdbBreweryId == null
+            ? null
+            : await _breweryLookup.GetBreweryAsync(beer.ObdbBreweryId);
+
+        return new BeerDetailResponse(
+            beer.Id, beer.Name, beer.Brewery, beer.Style, beer.Description, beer.Availability,
+            beer.Abv, beer.Ibu, beer.StyleFamily, beer.Class, beer.ObdbBreweryId, beer.CreatedAt,
+            breweryInfo);
     }
 
     [Authorize(Roles = "Admin")]
@@ -172,3 +182,18 @@ public record BeerSearchResponse(
     int Page,
     int PageSize,
     int TotalCount);
+
+public record BeerDetailResponse(
+    int Id,
+    string Name,
+    string Brewery,
+    string Style,
+    string? Description,
+    BeerAvailability Availability,
+    double? Abv,
+    int? Ibu,
+    string? StyleFamily,
+    BeerClass? Class,
+    string? ObdbBreweryId,
+    DateTime CreatedAt,
+    BreweryInfo? BreweryInfo);

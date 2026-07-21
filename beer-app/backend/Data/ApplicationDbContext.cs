@@ -28,6 +28,10 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
             .Property(b => b.Availability)
             .HasConversion<string>();
 
+        builder.Entity<Beer>()
+            .Property(b => b.Class)
+            .HasConversion<string>();
+
         // A beer counts once per customer, ever — the paper sheet has one initial per line.
         builder.Entity<BeerConfirmation>()
             .HasIndex(c => new { c.CustomerId, c.BeerId })

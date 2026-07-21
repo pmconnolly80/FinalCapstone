@@ -1,4 +1,5 @@
 using BeerApi.Data;
+using BeerApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<IBreweryLookupService, OpenBreweryDbService>(client =>
+{
+    client.BaseAddress = new Uri("https://api.openbrewerydb.org/v1/");
+});
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? "Host=localhost;Port=5432;Database=beerdb;Username=beeruser;Password=beerpass";
