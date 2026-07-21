@@ -58,6 +58,15 @@ public class BeersAuthorizationTests : IDisposable
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
 
+    [Fact]
+    public async Task GetBeers_SerializesAvailabilityAsString()
+    {
+        var response = await _client.GetAsync("/api/beers");
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains("\"availability\":\"Available\"", body);
+    }
+
     private static Beer NewBeer() => new() { Name = "Test Beer", Brewery = "Test Brewery", Style = "Test Style" };
 
     private async Task<string> RegisterCustomerAsync(string email)

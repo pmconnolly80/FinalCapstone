@@ -491,3 +491,39 @@ matching the closed milestone. All tracking docs verified current: `EPICS_AND_SP
 `CLAUDE.md`, `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1, this log.
 
 **Resume here:** groom the Customer Phone Experience sprint into issues.
+
+## 2026-07-20 — Sprint 3 groomed: Customer Phone Experience
+
+Broke the Customer Phone Experience epic into [milestone #3](https://github.com/pmconnolly80/FinalCapstone/milestone/3)
+and 7 issues (#26–#32), mirroring the API/UI split style of Sprints 1–2: Beer.Availability
+data model (#26) → search API (#27, depends on #26) → search-first list UI (#28, depends
+on #27); beer-nerd stats + OBDB brewery card (#29) → admin OBDB autocomplete (#30, shares
+#29's caching service); the Catalog.beer pre-fill spike (#31, go/no-go against the tavern's
+real list); and the mobile UX repair bundle (#32: progress-centric home, auth-aware nav,
+CRUD off the customer surface, hardcoded-localhost fix, loading/error states). No code
+written this session — grooming only. `EPICS_AND_SPRINTS.md` updated with the new Sprint 3
+section and epic status.
+
+**Resume here:** #26 (Beer.Availability data model) — first story in Sprint 3, everything
+else in the search slice depends on it.
+
+## 2026-07-21 — Sprint 3 #26 shipped: Beer.Availability data model
+
+**Sprint/story:** [#26](https://github.com/pmconnolly80/FinalCapstone/issues/26) — `epic:phone-experience`.
+
+TDD: 3 new unit tests (model default, explicit-availability persistence) plus 1 integration
+test (JSON contract) written first; backend 88/88. Added `BeerAvailability` enum (`OnTap`,
+`Available`, `OutOfStock`, `Retired`) and `Beer.Availability` (defaults to `Available`),
+`AddBeerAvailability` migration storing it as text via `HasConversion<string>` (legible
+directly in the DB), backfilling existing rows to `Available`. Hit one wrinkle: registering
+`JsonStringEnumConverter` globally in `Program.cs` only affects callers that use the
+server's own `JsonOptions` — the integration test's plain `HttpClient` (representing any
+external System.Text.Json consumer) doesn't inherit it and failed to parse the string back
+into the enum. Fixed by putting `[JsonConverter(typeof(JsonStringEnumConverter))]` directly
+on the enum instead, which is caller-agnostic; dropped the now-redundant `Program.cs`
+registration. Live-verified against Docker: seed backfill correct, POST without an
+`availability` field still defaults to `Available` (object-initializer semantics survive
+System.Text.Json's partial-property deserialization), PUT round-trips an explicit value.
+
+**Resume here:** #27 (beer search endpoint — name/brewery/style, pagination, availability +
+had/not-had filters) — depends on #26.

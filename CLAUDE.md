@@ -101,6 +101,13 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     award never revoked — see `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1) + the
     `/admin/confirmations` screen (two-step void guard, role-aware nav via
     `getRolesFromToken()`)
+- **Sprint 3: Customer Phone Experience** (groomed 2026-07-20, milestone
+  [#3](https://github.com/pmconnolly80/FinalCapstone/milestone/3), in progress):
+  - #26 `Beer.Availability` (`OnTap`/`Available`/`OutOfStock`/`Retired`, `AddBeerAvailability`
+    migration, defaults to `Available`, stored as text via `HasConversion<string>`); the enum
+    carries `[JsonConverter(typeof(JsonStringEnumConverter))]` so the API always serializes it
+    as a string regardless of caller JSON options — no admin/search UI on top of it yet, that's
+    #27–#28
 
 **Not built** — next up per `EPICS_AND_SPRINTS.md`:
 - No admin UI to assign roles (currently DB-manual only; PIN management API exists)
@@ -150,13 +157,15 @@ Manual (no Docker): `dotnet run` in `beer-app/backend/`, and
 **Sprints 1 and 2 are both done and the Mug Club epic is complete** — Sprint 1
 ([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), 2026-07-14) and Sprint 2
 (PRs #19–#25, milestone closed 2026-07-15; suites at close: backend 85/85, frontend 61/61).
-See `EPICS_AND_SPRINTS.md` and the 2026-07-15 `SESSION_LOG.md` entries. In order:
+**Sprint 3: Customer Phone Experience** is groomed and underway (milestone
+[#3](https://github.com/pmconnolly80/FinalCapstone/milestone/3), issues #26–#32, groomed
+2026-07-20). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md`. In order:
 
-1. **Groom the Customer Phone Experience sprint into issues** (it's the next named sprint:
-   search-first list, availability states, OBDB brewery enrichment + Catalog.beer hit-rate
-   spike, progress-centric home, auth-aware nav, mobile repair) — per the "only the next
-   sprint gets ticketed" rule it has no issues yet.
-2. Then the remaining named sprints: Auth II (social sign-in + password reset), Admin
+1. #26 done (`Beer.Availability` data model) — backend 88/88. Next: #27 (beer search API,
+   depends on #26) → #28 (search-first list UI, depends on #27).
+2. Then #29 (beer-nerd stats + OBDB brewery card) → #30 (admin OBDB autocomplete, shares
+   #29's caching service), #31 (Catalog.beer pre-fill spike), #32 (mobile UX repair bundle).
+3. Then the remaining named sprints: Auth II (social sign-in + password reset), Admin
    Experience, Engagement/Retention/Social, Deployment & Hardening.
 
 Local tooling note: only the .NET 10 SDK is on PATH but the projects target net8.0 — run

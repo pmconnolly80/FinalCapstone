@@ -23,6 +23,11 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
     {
         base.OnModelCreating(builder);
 
+        // Stored as text so the rotating-inventory state is legible directly in the DB.
+        builder.Entity<Beer>()
+            .Property(b => b.Availability)
+            .HasConversion<string>();
+
         // A beer counts once per customer, ever — the paper sheet has one initial per line.
         builder.Entity<BeerConfirmation>()
             .HasIndex(c => new { c.CustomerId, c.BeerId })
