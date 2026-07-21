@@ -17,6 +17,10 @@ builder.Services.AddHttpClient<IBreweryLookupService, OpenBreweryDbService>(clie
 {
     client.BaseAddress = new Uri("https://api.openbrewerydb.org/v1/");
 });
+builder.Services.AddHttpClient<ICatalogBeerService, CatalogBeerService>(client =>
+{
+    client.BaseAddress = new Uri("https://api.catalog.beer/");
+});
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? "Host=localhost;Port=5432;Database=beerdb;Username=beeruser;Password=beerpass";

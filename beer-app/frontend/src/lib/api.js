@@ -93,6 +93,14 @@ export async function searchBreweries(query) {
   return response.json();
 }
 
+export async function searchCatalogBeer(query) {
+  const response = await fetch(`${API_BASE_URL}/api/catalog-beer/search?query=${encodeURIComponent(query)}`, {
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw new Error('Failed to search Catalog.beer');
+  return response.json();
+}
+
 export async function fetchAdminConfirmations() {
   const response = await fetch(`${API_BASE_URL}/api/admin/confirmations`, {
     headers: authHeaders(),

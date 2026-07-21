@@ -11,6 +11,7 @@ import {
   saveBeer,
   searchBeers,
   searchBreweries,
+  searchCatalogBeer,
   setMyPin,
   voidConfirmation,
 } from './api';
@@ -258,6 +259,24 @@ describe('api', () => {
     mockFetchOnce(false, {});
 
     await expect(searchBreweries('sierra')).rejects.toThrow('Failed to search breweries');
+  });
+
+  it('searchCatalogBeer GETs with the query string and Authorization header', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    mockFetchOnce(true, [{ id: 'cb-1', name: 'Duvel' }]);
+
+    const results = await searchCatalogBeer('duvel');
+
+    const [url, init] = global.fetch.mock.calls[0];
+    expect(url).toContain('/api/catalog-beer/search?query=duvel');
+    expect(init.headers.Authorization).toBe('Bearer abc123');
+    expect(results).toEqual([{ id: 'cb-1', name: 'Duvel' }]);
+  });
+
+  it('searchCatalogBeer throws when the response is not ok', async () => {
+    mockFetchOnce(false, {});
+
+    await expect(searchCatalogBeer('duvel')).rejects.toThrow('Failed to search Catalog.beer');
   });
 
   it('getRolesFromToken reads the role claim, tolerating strings, arrays, and junk', () => {

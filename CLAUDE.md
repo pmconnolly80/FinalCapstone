@@ -147,11 +147,23 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     city/state), selecting one fills the field and stores `ObdbBreweryId`; typing further
     by hand clears the stored id (manual entry always stays the override, never blocked by
     a stale link) — `searchBreweries(query)` added to `api.js`
+  - #31 Catalog.beer beer-level pre-fill (**spike result: GO** — 6/8 clear hits, 1/8 close,
+    1/8 miss on the seeded list; see `TECHNICAL_ARCHITECTURE_PLAN.md` §6 for the full
+    finding): new `ICatalogBeerService`/`CatalogBeerService` (Basic auth, API key as
+    username, same `IMemoryCache` pattern as OBDB, cb_verified-first sort) at
+    `beer-app/backend/Services/CatalogBeerService.cs`; `[Authorize(Roles = "Admin")]
+    CatalogBeerController` at `GET /api/catalog-beer/search`. **The API key is a real
+    secret — never committed.** It's read from `CatalogBeer:ApiKey` config (empty string
+    in the committed `appsettings.json`), overridable via `CatalogBeer__ApiKey`/
+    `CATALOG_BEER_API_KEY` in `docker-compose.yml`, sourced from an untracked `beer-app/.env`
+    (`.env`/`.env.*` added to `.gitignore`) — without a key configured, the service just
+    returns an empty list, so the feature silently no-ops rather than breaking. `BeerForm.jsx`'s
+    Name field triggers a debounced Catalog.beer search; selecting a result pre-fills style/
+    ABV/IBU/style-family/class/description (the admin verifies and can always override) with
+    a CC BY 4.0 attribution line — `searchCatalogBeer(query)` added to `api.js`
 
 **Not built** — next up per `EPICS_AND_SPRINTS.md`:
 - No admin UI to assign roles (currently DB-manual only; PIN management API exists)
-- No Catalog.beer integration — hit-rate spike (#31) not yet run. See
-  `TECHNICAL_ARCHITECTURE_PLAN.md` §6.
 
 ## Testing policy (TDD)
 
@@ -197,10 +209,10 @@ Manual (no Docker): `dotnet run` in `beer-app/backend/`, and
 [#3](https://github.com/pmconnolly80/FinalCapstone/milestone/3), issues #26–#32, groomed
 2026-07-20). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md`. In order:
 
-1. #26–#30 done (`Beer.Availability` data model, beer search API, search-first list UI,
-   beer-nerd stats + OBDB brewery card, admin OBDB brewery autocomplete) — backend
-   119/119, frontend 81/81. Next: #31 (Catalog.beer pre-fill spike).
-2. Then #32 (mobile UX repair bundle) — the last story in Sprint 3.
+1. #26–#31 done (`Beer.Availability` data model, beer search API, search-first list UI,
+   beer-nerd stats + OBDB brewery card, admin OBDB brewery autocomplete, Catalog.beer
+   pre-fill spike — GO) — backend 131/131, frontend 84/84. Next: #32 (mobile UX repair
+   bundle) — the last story in Sprint 3.
 3. Then the remaining named sprints: Auth II (social sign-in + password reset), Admin
    Experience, Engagement/Retention/Social, Deployment & Hardening.
 

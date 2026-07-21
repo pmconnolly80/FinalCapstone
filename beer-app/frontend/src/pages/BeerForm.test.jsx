@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import BeerForm from './BeerForm';
-import { fetchBeer, saveBeer, searchBreweries } from '../lib/api';
+import { fetchBeer, saveBeer, searchBreweries, searchCatalogBeer } from '../lib/api';
 
 vi.mock('../lib/api');
 
@@ -157,6 +157,53 @@ describe('BeerForm', () => {
 
     expect(saveBeer).toHaveBeenCalledWith(
       expect.objectContaining({ obdbBreweryId: null }),
+      undefined
+    );
+  });
+
+  it('selecting a Catalog.beer suggestion pre-fills nerd stats and shows CC BY attribution', async () => {
+    const user = userEvent.setup();
+    searchCatalogBeer.mockResolvedValue([
+      {
+        id: 'cb-1',
+        name: 'Duvel',
+        style: 'Belgian-Style Tripel',
+        styleFamily: 'Belgian Ale',
+        class: 'Ale',
+        description: 'Deceptively light-bodied with a dry, spicy finish.',
+        abv: 8.5,
+        ibu: null,
+        cbVerified: true,
+        brewerName: 'Duvel Moortgat',
+      },
+    ]);
+    saveBeer.mockResolvedValue({ id: 9 });
+
+    renderAt('/beers/new');
+    await user.type(screen.getByPlaceholderText('Name'), 'Duv');
+
+    const suggestion = await screen.findByRole('button', { name: /Duvel/ });
+    await user.click(suggestion);
+
+    expect(screen.getByPlaceholderText('Name')).toHaveValue('Duvel');
+    expect(screen.getByPlaceholderText('Style')).toHaveValue('Belgian-Style Tripel');
+    expect(screen.getByPlaceholderText('ABV %')).toHaveValue(8.5);
+    expect(screen.getByPlaceholderText('Style family')).toHaveValue('Belgian Ale');
+    expect(screen.getByLabelText('Class')).toHaveValue('Ale');
+    expect(screen.getByText(/Catalog\.beer/)).toBeInTheDocument();
+
+    await user.type(screen.getByPlaceholderText('Brewery'), 'Duvel Moortgat');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(saveBeer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Duvel',
+        style: 'Belgian-Style Tripel',
+        styleFamily: 'Belgian Ale',
+        class: 'Ale',
+        abv: 8.5,
+        description: 'Deceptively light-bodied with a dry, spicy finish.',
+      }),
       undefined
     );
   });
