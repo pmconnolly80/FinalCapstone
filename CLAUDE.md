@@ -161,6 +161,25 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     Name field triggers a debounced Catalog.beer search; selecting a result pre-fills style/
     ABV/IBU/style-family/class/description (the admin verifies and can always override) with
     a CC BY 4.0 attribution line — `searchCatalogBeer(query)` added to `api.js`
+  - #32 Mobile UX repair — **closes Sprint 3**: `api.js`'s API base URL now derives from
+    `window.location.hostname` instead of a literal `localhost` fallback, and
+    `docker-compose.yml` no longer overrides it with `VITE_API_URL: http://localhost:5153`
+    — a phone opening the app at the host machine's LAN IP now reaches the API there
+    instead of at itself (verified live over a LAN IP, not just `localhost`). Auth state is
+    now reactive: same-tab login/register/logout dispatch a `beer-auth-changed` window
+    event (`api.js`'s new `AUTH_CHANGED_EVENT`/`logout()`) that `App.jsx` listens for,
+    replacing the old render-once `getRolesFromToken()` call that went stale until a
+    manual reload; nav shows Sign out (not Sign in) once signed in, and Add Beer only for
+    Admins. `Home.jsx` is progress-centric for signed-in customers (fetches and renders
+    their actual X-of-200 + mug-earned state, reusing `MyProgress.jsx`'s data shape) and
+    keeps the existing mug-club pitch for anonymous visitors. Beer CRUD is now actually
+    gated off the customer surface: `BeerForm.jsx` renders an "admin account required"
+    message instead of the form for non-admins (previously only the nav link was hidden —
+    a customer who typed `/beers/new` directly still saw a form that could only ever fail
+    server-side). `BeerForm.jsx`/`BeerDetail.jsx`'s remaining `console.error`-only failure
+    paths now show a visible message; Name/Brewery/Style are `required`; `AuthPage.jsx`'s
+    inputs gained `type="email"`/`autoComplete` hints. New `App.test.jsx` (nav
+    auth-awareness, the reactive event).
 
 **Not built** — next up per `EPICS_AND_SPRINTS.md`:
 - No admin UI to assign roles (currently DB-manual only; PIN management API exists)
@@ -202,19 +221,19 @@ Manual (no Docker): `dotnet run` in `beer-app/backend/`, and
 
 ## Likely next steps
 
-**Sprints 1 and 2 are both done and the Mug Club epic is complete** — Sprint 1
-([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), 2026-07-14) and Sprint 2
-(PRs #19–#25, milestone closed 2026-07-15; suites at close: backend 85/85, frontend 61/61).
-**Sprint 3: Customer Phone Experience** is groomed and underway (milestone
-[#3](https://github.com/pmconnolly80/FinalCapstone/milestone/3), issues #26–#32, groomed
-2026-07-20). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md`. In order:
+**Sprints 1, 2, and 3 are all done.** Sprint 1
+([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), 2026-07-14), Sprint 2
+(PRs #19–#25, milestone closed 2026-07-15), and **Sprint 3: Customer Phone Experience**
+(PRs #33–#39, issues #26–#32, closed 2026-07-21; suites at close: backend 131/131,
+frontend 97/97). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md` for the full per-story
+history. In order:
 
-1. #26–#31 done (`Beer.Availability` data model, beer search API, search-first list UI,
-   beer-nerd stats + OBDB brewery card, admin OBDB brewery autocomplete, Catalog.beer
-   pre-fill spike — GO) — backend 131/131, frontend 84/84. Next: #32 (mobile UX repair
-   bundle) — the last story in Sprint 3.
-3. Then the remaining named sprints: Auth II (social sign-in + password reset), Admin
-   Experience, Engagement/Retention/Social, Deployment & Hardening.
+1. **Groom the next named sprint into issues** — per the "only the next sprint gets
+   ticketed" rule, **Auth II: Social Sign-in** (Google/Facebook/Apple via ASP.NET Core
+   Identity external login providers, account linking, marketing-consent capture, privacy
+   policy + data-deletion path, and password reset) has no issues yet.
+2. Then the remaining named sprints: Admin Experience, Engagement/Retention/Social,
+   Deployment & Hardening.
 
 Local tooling note: only the .NET 10 SDK is on PATH but the projects target net8.0 — run
 backend tests with the SDK at `~/.dotnet8` (see `.claude/skills/verify/SKILL.md` for the

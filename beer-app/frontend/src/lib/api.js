@@ -1,4 +1,17 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5153';
+// Defaults to whatever host the page itself was loaded from, so a phone on the tavern's
+// network that opens the app at the host machine's LAN IP still reaches the API there —
+// a literal 'localhost' fallback would instead point the phone at itself.
+const API_BASE_URL = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:5153`;
+
+// Same-tab auth state changes (login, register, logout) don't fire the browser's
+// 'storage' event — that only fires in *other* tabs. Dispatching this ourselves is what
+// lets App's nav react immediately instead of staying stale until a manual reload.
+export const AUTH_CHANGED_EVENT = 'beer-auth-changed';
+
+export function logout() {
+  localStorage.removeItem('beer-token');
+  window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
+}
 
 export async function searchBeers(params = {}) {
   const token = localStorage.getItem('beer-token');

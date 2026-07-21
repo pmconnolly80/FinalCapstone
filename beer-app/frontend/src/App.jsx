@@ -1,5 +1,6 @@
-import { Routes, Route, Link } from 'react-router-dom';
-import { getRolesFromToken } from './lib/api';
+import { useEffect, useState } from 'react';
+import { Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { AUTH_CHANGED_EVENT, getRolesFromToken, logout } from './lib/api';
 import Home from './pages/Home';
 import AdminConfirmations from './pages/AdminConfirmations';
 import BeerList from './pages/BeerList';
@@ -12,7 +13,31 @@ import MyPin from './pages/MyPin';
 const navLinkClass =
   'rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 hover:text-gray-900';
 
+function readAuthState() {
+  return { signedIn: Boolean(localStorage.getItem('beer-token')), roles: getRolesFromToken() };
+}
+
 function App() {
+  const navigate = useNavigate();
+  const [auth, setAuth] = useState(readAuthState);
+
+  // Same-tab login/register/logout don't fire the browser's 'storage' event (only other
+  // tabs get that), so the nav would otherwise stay stale until a manual reload.
+  useEffect(() => {
+    const onAuthChanged = () => setAuth(readAuthState());
+    window.addEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
+    window.addEventListener('storage', onAuthChanged);
+    return () => {
+      window.removeEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
+      window.removeEventListener('storage', onAuthChanged);
+    };
+  }, []);
+
+  const handleSignOut = () => {
+    logout();
+    navigate('/');
+  };
+
   return (
     <div className="mx-auto max-w-5xl p-4 md:p-8">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -32,20 +57,28 @@ function App() {
           <Link className={navLinkClass} to="/progress">
             My Progress
           </Link>
-          <Link className={navLinkClass} to="/beers/new">
-            Add Beer
-          </Link>
+          {auth.roles.includes('Admin') && (
+            <Link className={navLinkClass} to="/beers/new">
+              Add Beer
+            </Link>
+          )}
           <Link className={navLinkClass} to="/my-pin">
             My PIN
           </Link>
-          {getRolesFromToken().includes('Admin') && (
+          {auth.roles.includes('Admin') && (
             <Link className={navLinkClass} to="/admin/confirmations">
               Admin
             </Link>
           )}
-          <Link className={navLinkClass} to="/auth">
-            Sign in
-          </Link>
+          {auth.signedIn ? (
+            <button type="button" onClick={handleSignOut} className={navLinkClass}>
+              Sign out
+            </button>
+          ) : (
+            <Link className={navLinkClass} to="/auth">
+              Sign in
+            </Link>
+          )}
         </nav>
       </header>
 

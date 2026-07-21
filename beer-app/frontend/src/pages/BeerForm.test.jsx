@@ -1,11 +1,28 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import BeerForm from './BeerForm';
 import { fetchBeer, saveBeer, searchBreweries, searchCatalogBeer } from '../lib/api';
 
-vi.mock('../lib/api');
+// getRolesFromToken needs its real implementation — the admin-only gate (#32) is under
+// test here, so it must actually read the role out of whatever token is in localStorage.
+vi.mock('../lib/api', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    fetchBeer: vi.fn(),
+    saveBeer: vi.fn(),
+    searchBreweries: vi.fn(),
+    searchCatalogBeer: vi.fn(),
+  };
+});
+
+function fakeJwt(payload) {
+  return `header.${btoa(JSON.stringify(payload))}.signature`;
+}
+
+const roleClaim = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
 
 function renderAt(path) {
   return render(
@@ -20,8 +37,30 @@ function renderAt(path) {
 }
 
 describe('BeerForm', () => {
+  beforeEach(() => {
+    localStorage.setItem('beer-token', fakeJwt({ [roleClaim]: 'Admin' }));
+  });
+
   afterEach(() => {
     vi.resetAllMocks();
+    localStorage.clear();
+  });
+
+  it('shows an admin-only message and does not load anything for a signed-out visitor', () => {
+    localStorage.clear();
+
+    renderAt('/beers/new');
+
+    expect(screen.getByText(/sign in with an admin account/i)).toBeInTheDocument();
+    expect(fetchBeer).not.toHaveBeenCalled();
+  });
+
+  it('shows an admin-only message for a signed-in customer', () => {
+    localStorage.setItem('beer-token', fakeJwt({ [roleClaim]: 'Customer' }));
+
+    renderAt('/beers/new');
+
+    expect(screen.getByText(/sign in with an admin account/i)).toBeInTheDocument();
   });
 
   it('submits the entered values and navigates back to the list on success', async () => {
@@ -206,5 +245,36 @@ describe('BeerForm', () => {
       }),
       undefined
     );
+  });
+
+  it('shows a visible error message when saving fails', async () => {
+    const user = userEvent.setup();
+    saveBeer.mockRejectedValue(new Error('Failed to save beer'));
+
+    renderAt('/beers/new');
+    await user.type(screen.getByPlaceholderText('Name'), 'Duvel');
+    await user.type(screen.getByPlaceholderText('Brewery'), 'Duvel Moortgat');
+    await user.type(screen.getByPlaceholderText('Style'), 'Belgian Strong Golden Ale');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('Failed to save beer')).toBeInTheDocument();
+  });
+
+  it('shows a visible error message when loading the beer to edit fails', async () => {
+    fetchBeer.mockRejectedValue(new Error('nope'));
+
+    renderAt('/beers/42/edit');
+
+    expect(
+      await screen.findByText('Could not load this beer. Try again.')
+    ).toBeInTheDocument();
+  });
+
+  it('marks Name, Brewery, and Style as required', () => {
+    renderAt('/beers/new');
+
+    expect(screen.getByPlaceholderText('Name')).toBeRequired();
+    expect(screen.getByPlaceholderText('Brewery')).toBeRequired();
+    expect(screen.getByPlaceholderText('Style')).toBeRequired();
   });
 });
