@@ -108,6 +108,16 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     carries `[JsonConverter(typeof(JsonStringEnumConverter))]` so the API always serializes it
     as a string regardless of caller JSON options — no admin/search UI on top of it yet, that's
     #27–#28
+  - #27 `GET /api/beers` is now the search endpoint: `search` (name/brewery/style substring,
+    case-insensitive), `availability` (specific state, or `all` to bypass the default;
+    omitted defaults to in-stock — `OnTap`/`Available` only), `hadStatus` (`had`/`nothad`,
+    requires an authenticated customer or 401), `page`/`pageSize` (default 200, matching the
+    tavern's ~200-beer catalog so today's UI stays unpaginated in practice). Response is a
+    `BeerSearchResponse` envelope (`items`/`page`/`pageSize`/`totalCount`); each item carries
+    a `confirmed` flag for the calling customer, false if anonymous
+    (`beer-app/backend/Controllers/BeersController.cs`). `fetchBeers()` unwraps `.items` so
+    the existing `BeerList.jsx` keeps working unchanged until #28 rebuilds it around real
+    search/filter UI
 
 **Not built** — next up per `EPICS_AND_SPRINTS.md`:
 - No admin UI to assign roles (currently DB-manual only; PIN management API exists)
@@ -161,8 +171,8 @@ Manual (no Docker): `dotnet run` in `beer-app/backend/`, and
 [#3](https://github.com/pmconnolly80/FinalCapstone/milestone/3), issues #26–#32, groomed
 2026-07-20). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md`. In order:
 
-1. #26 done (`Beer.Availability` data model) — backend 88/88. Next: #27 (beer search API,
-   depends on #26) → #28 (search-first list UI, depends on #27).
+1. #26 and #27 done (`Beer.Availability` data model, beer search API) — backend 101/101,
+   frontend 61/61. Next: #28 (search-first list UI, depends on #27).
 2. Then #29 (beer-nerd stats + OBDB brewery card) → #30 (admin OBDB autocomplete, shares
    #29's caching service), #31 (Catalog.beer pre-fill spike), #32 (mobile UX repair bundle).
 3. Then the remaining named sprints: Auth II (social sign-in + password reset), Admin

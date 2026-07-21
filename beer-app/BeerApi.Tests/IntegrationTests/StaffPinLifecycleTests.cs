@@ -58,7 +58,7 @@ public class StaffPinLifecycleTests : IDisposable
 
         var customerToken = await RegisterCustomerAsync("own.pin.flow@example.com");
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", customerToken);
-        var beers = await _client.GetFromJsonAsync<List<Beer>>("/api/beers");
+        var beers = (await _client.GetFromJsonAsync<BeerSearchResponse>("/api/beers"))!.Items;
 
         var oldPin = await _client.PostAsJsonAsync("/api/confirmations",
             new ConfirmationRequest(beers![0].Id, SeedData.DevBartenderPin));
@@ -86,7 +86,7 @@ public class StaffPinLifecycleTests : IDisposable
 
         var customerToken = await RegisterCustomerAsync("admin.pin.flow@example.com");
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", customerToken);
-        var beers = await _client.GetFromJsonAsync<List<Beer>>("/api/beers");
+        var beers = (await _client.GetFromJsonAsync<BeerSearchResponse>("/api/beers"))!.Items;
         var confirmIssued = await _client.PostAsJsonAsync("/api/confirmations",
             new ConfirmationRequest(beers![0].Id, "222222"));
         Assert.Equal(HttpStatusCode.Created, confirmIssued.StatusCode);

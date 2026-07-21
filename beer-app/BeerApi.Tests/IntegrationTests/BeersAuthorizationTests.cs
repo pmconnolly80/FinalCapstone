@@ -67,6 +67,30 @@ public class BeersAuthorizationTests : IDisposable
         Assert.Contains("\"availability\":\"Available\"", body);
     }
 
+    [Fact]
+    public async Task GetBeers_SearchFiltersAcrossRealHttpRoundTrip()
+    {
+        var adminToken = await CreateAdminAndLoginAsync("search-admin@example.com", "AdminPassw0rd!");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+        await _client.PostAsJsonAsync("/api/beers", new Beer { Name = "Zzyzx Sour", Brewery = "Search Test Brewery", Style = "Sour" });
+        _client.DefaultRequestHeaders.Authorization = null;
+
+        var result = await _client.GetFromJsonAsync<BeerSearchResponse>("/api/beers?search=zzyzx");
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result!.TotalCount);
+        Assert.Equal("Zzyzx Sour", result.Items.Single().Name);
+        Assert.False(result.Items.Single().Confirmed);
+    }
+
+    [Fact]
+    public async Task GetBeers_WithHadStatusAndNoToken_ReturnsUnauthorized()
+    {
+        var response = await _client.GetAsync("/api/beers?hadStatus=had");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
     private static Beer NewBeer() => new() { Name = "Test Beer", Brewery = "Test Brewery", Style = "Test Style" };
 
     private async Task<string> RegisterCustomerAsync(string email)
