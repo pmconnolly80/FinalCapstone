@@ -48,7 +48,7 @@ testing found the registration flow broken, see #17.)
 | Core Catalog (browse/detail/CRUD) | `epic:core-catalog` | ✅ Done — pre-dates formal sprint tracking |
 | Auth & Roles | `epic:auth` | ✅ Done for password auth ([PR #7](https://github.com/pmconnolly80/FinalCapstone/pull/7); registration bug [#17](https://github.com/pmconnolly80/FinalCapstone/issues/17) fixed in [PR #20](https://github.com/pmconnolly80/FinalCapstone/pull/20) — password policy now explicit length-only min 8) — **new scope added July 2026, not yet ticketed**: social sign-in (Google/Facebook/Apple via Identity external providers) + marketing-consent capture, see `TECHNICAL_ARCHITECTURE_PLAN.md` §4.6; the gap was re-confirmed by 2026-07-14 live testing (no ticket yet per the grooming rule) |
 | **Mug Club Progress & Bartender Confirmation** | `epic:mug-club` | ✅ **Done** — Sprint 1 ([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), 2026-07-14) + Sprint 2 (PRs [#21](https://github.com/pmconnolly80/FinalCapstone/pull/21)–[#25](https://github.com/pmconnolly80/FinalCapstone/pull/25), closed 2026-07-15). Built to the one-device rule: confirmation on the customer's phone, sealed by the bartender's personal 6-digit PIN, hardened with two-axis lockout, real PIN lifecycle, durable mug awards, and the admin correction path |
-| Customer Phone Experience (search-first UX, availability states for the rotating inventory, Open Brewery DB brewery enrichment, mobile repair) | `epic:phone-experience` | ⬜ Not started — planned July 2026, see `MOBILE_FIRST_PRODUCT_OUTLINE.md`. First slice pulled forward 2026-07-14 as a Sprint 2 interrupt ([#18](https://github.com/pmconnolly80/FinalCapstone/issues/18), landing-page facelift) |
+| Customer Phone Experience (search-first UX, availability states for the rotating inventory, Open Brewery DB brewery enrichment, mobile repair) | `epic:phone-experience` | 🔵 Groomed into Sprint 3 ([#26](https://github.com/pmconnolly80/FinalCapstone/issues/26)–[#32](https://github.com/pmconnolly80/FinalCapstone/issues/32), 2026-07-20) — not started. First slice pulled forward 2026-07-14 as a Sprint 2 interrupt ([#18](https://github.com/pmconnolly80/FinalCapstone/issues/18), landing-page facelift) |
 | Admin Experience (dashboard + anomaly panel, user/role/PIN mgmt UI, full data correction with audit, catalog bulk-add guardrail) | `epic:admin` | 🔵 First slice shipped with Sprint 2 (confirmation audit/correction API + screen #15/#16, admin PIN issue/reset/deactivate API #13, mug-earner list #14) — dashboard, anomaly panel, and user/role management UI still to come |
 | Engagement, Retention & Social (badges, push notifications + owner composer, My Beers — ratings/want list/personal stats viz, social feed/cheers/leaderboard, journal, owner analytics) | `epic:retention` | ⬜ Not started — the business-owner payoff, see `FEATURE_MAP.md` and `PERSONAS_AND_USAGE.md` |
 | Deployment & Hardening (AWS, CI/CD) | `epic:deployment` | ⬜ Not started |
@@ -109,20 +109,38 @@ Retention & Social epic; #14 is the durable flag + in-app surfacing only.
   Tailwind v4 adopted, real Home page; the full progress-as-home screen and app-wide restyle
   stay in the Customer Phone Experience sprint
 
-### Later sprints (named only — groomed into issues when they're next up)
+### Sprint 3: Customer Phone Experience — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/3) (🔵 groomed 2026-07-20, in progress)
 
-- **Customer Phone Experience** — the July 2026 UX re-plan: search-first beer list
-  (API search/pagination, autocomplete, had/not-had filter), availability states for the
-  rotating inventory (on tap / out of stock / retired; in-stock default; confirmations
-  permanent through inventory churn), beer detail built for beer nerds — ABV, IBU, style
-  family/class, description, plus Open Brewery DB brewery data (OBDB is breweries-only;
-  the tavern's list stays the source of truth). Data-sourcing principle: auto-enrich from
-  open projects so staff never have to type beer data, manual entry as fallback/override
-  — includes the **Catalog.beer hit-rate spike** (researched 2026-07-14, the beer-level
-  candidate; beer.db evaluated and rejected as dormant, see
-  `TECHNICAL_ARCHITECTURE_PLAN.md` §6). Also: progress-centric home screen, auth-aware
-  navigation, CRUD removed from the customer surface, and the mobile blockers found in
-  the July 2026 code audit (hardcoded `localhost` API URL, error states, form usability)
+The July 2026 UX re-plan: makes the app actually live on the customer's phone rather than
+being an aspirational app shell. Search-first beer list, availability states for the
+rotating inventory, beer-nerd stats, Open Brewery DB enrichment, a Catalog.beer pre-fill
+spike, and the mobile UX blockers found in the July 2026 code audit.
+
+> **Status (2026-07-21):** #26 done — `Beer.Availability` (`OnTap`/`Available`/`OutOfStock`/
+> `Retired`), `AddBeerAvailability` migration, defaults to `Available`, serialized as a
+> string via `[JsonConverter(typeof(JsonStringEnumConverter))]` on the enum itself (not a
+> global `Program.cs` registration — that only covers callers using the server's own
+> `JsonOptions`, and broke the test `HttpClient`'s default deserialization). Backend 88/88,
+> live-verified against Docker (search+PUT round-trip, seed backfill).
+
+1. [#26 Data: Beer.Availability state (on tap / available / out of stock / retired)](https://github.com/pmconnolly80/FinalCapstone/issues/26)
+   — ✅ done 2026-07-21
+2. [#27 API: beer search endpoint (name/brewery/style, paginated, availability + had/not-had filters)](https://github.com/pmconnolly80/FinalCapstone/issues/27)
+   — depends on #26
+3. [#28 UI: search-first beer list (autocomplete, filter chips, confirmed checkmark + availability badge)](https://github.com/pmconnolly80/FinalCapstone/issues/28)
+   — depends on #27
+4. [#29 Beer detail: beer-nerd stats (ABV, IBU, style family/class) + Open Brewery DB brewery card](https://github.com/pmconnolly80/FinalCapstone/issues/29)
+5. [#30 Admin: Open Brewery DB brewery autocomplete in beer add/edit form](https://github.com/pmconnolly80/FinalCapstone/issues/30)
+   — depends on #29 (shares its OBDB caching service)
+6. [#31 Catalog.beer beer-level pre-fill spike (hit-rate spike, go/no-go, admin pre-fill if go)](https://github.com/pmconnolly80/FinalCapstone/issues/31)
+7. [#32 Mobile UX repair: progress-centric home, auth-aware nav, remove customer CRUD, fix hardcoded API URL, error/loading states](https://github.com/pmconnolly80/FinalCapstone/issues/32)
+
+OBDB is breweries-only (no beer-level endpoint) — the tavern's list stays the source of
+truth for beers; data-sourcing principle is auto-enrich from open projects so staff never
+have to type beer data, manual entry as fallback/override. See `MVP_SCREEN_PLAN.md` and
+`TECHNICAL_ARCHITECTURE_PLAN.md` §6 for the Catalog.beer research.
+
+### Later sprints (named only — groomed into issues when they're next up)
 - **Auth II: Social Sign-in** — Google/Facebook/Apple via ASP.NET Core Identity external
   login providers (researched July 2026, `TECHNICAL_ARCHITECTURE_PLAN.md` §4.6),
   account linking on verified email, marketing-consent capture, privacy policy +

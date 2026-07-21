@@ -73,6 +73,33 @@ public class BeersControllerTests
     }
 
     [Fact]
+    public void Beer_DefaultsToAvailable()
+    {
+        var beer = new Beer { Name = "Duvel", Brewery = "Duvel Moortgat", Style = "Belgian Strong Golden Ale" };
+
+        Assert.Equal(BeerAvailability.Available, beer.Availability);
+    }
+
+    [Fact]
+    public async Task PostBeer_PersistsExplicitAvailability()
+    {
+        using var context = CreateContext();
+        var controller = new BeersController(context);
+        var beer = new Beer
+        {
+            Name = "Winter Bock",
+            Brewery = "Some Seasonal Brewery",
+            Style = "Bock",
+            Availability = BeerAvailability.OutOfStock,
+        };
+
+        await controller.PostBeer(beer);
+
+        var saved = await context.Beers.FirstAsync(b => b.Name == "Winter Bock");
+        Assert.Equal(BeerAvailability.OutOfStock, saved.Availability);
+    }
+
+    [Fact]
     public async Task PutBeer_WithMismatchedId_ReturnsBadRequest()
     {
         using var context = CreateContext();
