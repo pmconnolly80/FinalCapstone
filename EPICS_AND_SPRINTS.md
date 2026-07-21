@@ -116,22 +116,25 @@ being an aspirational app shell. Search-first beer list, availability states for
 rotating inventory, beer-nerd stats, Open Brewery DB enrichment, a Catalog.beer pre-fill
 spike, and the mobile UX blockers found in the July 2026 code audit.
 
-> **Status (2026-07-21):** #26–#27 done. #26: `Beer.Availability` (`OnTap`/`Available`/
+> **Status (2026-07-21):** #26–#28 done. #26: `Beer.Availability` (`OnTap`/`Available`/
 > `OutOfStock`/`Retired`), `AddBeerAvailability` migration, defaults to `Available`,
 > serialized as a string via `[JsonConverter(typeof(JsonStringEnumConverter))]` on the enum
 > itself (not a global `Program.cs` registration — that only covers callers using the
 > server's own `JsonOptions`, and broke the test `HttpClient`'s default deserialization).
 > #27: `GET /api/beers` is now the search endpoint (search/availability/hadStatus/page/
-> pageSize, paginated envelope, per-item `confirmed` flag); `fetchBeers()` unwraps `.items`
-> so `BeerList.jsx` keeps working until #28's redesign. Backend 101/101, frontend 61/61,
-> live-verified against Docker.
+> pageSize, paginated envelope, per-item `confirmed` flag). #28: `BeerList.jsx` rebuilt on
+> Tailwind around the search endpoint — debounced search, availability + had/not-had chip
+> rows, style/brewery quick-search chips, availability badges, confirmed checkmarks.
+> Backend 101/101, frontend 70/70, live-verified against Docker. Along the way, corrected
+> the `verify` skill's stale claim that the frontend container is volume-mounted — it
+> isn't, so frontend edits need `docker compose up -d --build web` like backend ones do.
 
 1. [#26 Data: Beer.Availability state (on tap / available / out of stock / retired)](https://github.com/pmconnolly80/FinalCapstone/issues/26)
    — ✅ done 2026-07-21
 2. [#27 API: beer search endpoint (name/brewery/style, paginated, availability + had/not-had filters)](https://github.com/pmconnolly80/FinalCapstone/issues/27)
    — ✅ done 2026-07-21
 3. [#28 UI: search-first beer list (autocomplete, filter chips, confirmed checkmark + availability badge)](https://github.com/pmconnolly80/FinalCapstone/issues/28)
-   — depends on #27
+   — ✅ done 2026-07-21
 4. [#29 Beer detail: beer-nerd stats (ABV, IBU, style family/class) + Open Brewery DB brewery card](https://github.com/pmconnolly80/FinalCapstone/issues/29)
 5. [#30 Admin: Open Brewery DB brewery autocomplete in beer add/edit form](https://github.com/pmconnolly80/FinalCapstone/issues/30)
    — depends on #29 (shares its OBDB caching service)

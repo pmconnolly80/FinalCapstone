@@ -14,8 +14,9 @@ docker compose logs api | tail           # wait for "Now listening"; migrations 
 ```
 
 - API: `http://localhost:5153` (Swagger at `/swagger`) · Web: `http://localhost:3001`
-  (Vite **dev server** with the source volume-mounted — new frontend files are served
-  without rebuild; the container only needs a restart if package.json changed)
+  (Vite dev server, but `docker-compose.yml` has no volume mount for `web` — the
+  Dockerfile `COPY`s source once at build time, so frontend edits need
+  `docker compose up -d --build web` to show up, same as backend changes)
 - DB: `docker compose exec db psql -U beeruser -d beerdb -tc '<sql>'` — check
   `"__EFMigrationsHistory"` to confirm a new migration applied.
 

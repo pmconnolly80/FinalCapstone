@@ -115,9 +115,16 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     tavern's ~200-beer catalog so today's UI stays unpaginated in practice). Response is a
     `BeerSearchResponse` envelope (`items`/`page`/`pageSize`/`totalCount`); each item carries
     a `confirmed` flag for the calling customer, false if anonymous
-    (`beer-app/backend/Controllers/BeersController.cs`). `fetchBeers()` unwraps `.items` so
-    the existing `BeerList.jsx` keeps working unchanged until #28 rebuilds it around real
-    search/filter UI
+    (`beer-app/backend/Controllers/BeersController.cs`)
+  - #28 `BeerList.jsx` rebuilt around the search endpoint (Tailwind, replacing the last
+    inline-styled beer-facing page): debounced search-as-you-type, an availability chip
+    row (`In Stock`/`On Tap`/`Available`/`Out of Stock`/`Retired`/`All`), a had/not-had
+    chip row (signed-in customers only, since `hadStatus` 401s anonymously), and
+    style/brewery "quick-search" chips computed from the current result page (the API has
+    one combined `search` field, not separate style/brewery params, so these just fill the
+    search box rather than compose as independent structured filters). Each result shows
+    an availability badge and a confirmed checkmark. `fetchBeers()` → `searchBeers(params)`
+    in `api.js`, returning the full envelope
 
 **Not built** — next up per `EPICS_AND_SPRINTS.md`:
 - No admin UI to assign roles (currently DB-manual only; PIN management API exists)
@@ -171,10 +178,10 @@ Manual (no Docker): `dotnet run` in `beer-app/backend/`, and
 [#3](https://github.com/pmconnolly80/FinalCapstone/milestone/3), issues #26–#32, groomed
 2026-07-20). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md`. In order:
 
-1. #26 and #27 done (`Beer.Availability` data model, beer search API) — backend 101/101,
-   frontend 61/61. Next: #28 (search-first list UI, depends on #27).
-2. Then #29 (beer-nerd stats + OBDB brewery card) → #30 (admin OBDB autocomplete, shares
-   #29's caching service), #31 (Catalog.beer pre-fill spike), #32 (mobile UX repair bundle).
+1. #26–#28 done (`Beer.Availability` data model, beer search API, search-first list UI) —
+   backend 101/101, frontend 70/70. Next: #29 (beer-nerd stats + OBDB brewery card).
+2. Then #30 (admin OBDB autocomplete, shares #29's caching service), #31 (Catalog.beer
+   pre-fill spike), #32 (mobile UX repair bundle).
 3. Then the remaining named sprints: Auth II (social sign-in + password reset), Admin
    Experience, Engagement/Retention/Social, Deployment & Hardening.
 

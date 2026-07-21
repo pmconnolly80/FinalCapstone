@@ -3,13 +3,13 @@ import {
   confirmBeer,
   fetchAdminConfirmations,
   fetchBeer,
-  fetchBeers,
   fetchConfirmationAudits,
   fetchMyProgress,
   getRolesFromToken,
   login,
   register,
   saveBeer,
+  searchBeers,
   setMyPin,
   voidConfirmation,
 } from './api';
@@ -34,18 +34,50 @@ describe('api', () => {
     vi.restoreAllMocks();
   });
 
-  it('fetchBeers resolves with the items from the paginated search response', async () => {
-    mockFetchOnce(true, { items: [{ id: 1, name: 'Pale Ale' }], page: 1, pageSize: 200, totalCount: 1 });
+  it('searchBeers GETs /api/beers with no query string when called with no params', async () => {
+    mockFetchOnce(true, { items: [], page: 1, pageSize: 200, totalCount: 0 });
 
-    const beers = await fetchBeers();
+    await searchBeers();
 
-    expect(beers).toEqual([{ id: 1, name: 'Pale Ale' }]);
+    const [url] = global.fetch.mock.calls[0];
+    expect(url).toMatch(/\/api\/beers$/);
   });
 
-  it('fetchBeers throws when the response is not ok', async () => {
+  it('searchBeers builds a query string from provided params, omitting blank ones', async () => {
+    mockFetchOnce(true, { items: [], page: 1, pageSize: 200, totalCount: 0 });
+
+    await searchBeers({ search: 'ipa', availability: '', hadStatus: undefined, page: 2 });
+
+    const [url] = global.fetch.mock.calls[0];
+    expect(url).toContain('search=ipa');
+    expect(url).toContain('page=2');
+    expect(url).not.toContain('availability');
+    expect(url).not.toContain('hadStatus');
+  });
+
+  it('searchBeers includes the Authorization header when a token is stored', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    mockFetchOnce(true, { items: [], page: 1, pageSize: 200, totalCount: 0 });
+
+    await searchBeers({ hadStatus: 'had' });
+
+    const [, init] = global.fetch.mock.calls[0];
+    expect(init.headers.Authorization).toBe('Bearer abc123');
+  });
+
+  it('searchBeers resolves with the full paginated response', async () => {
+    const body = { items: [{ id: 1, name: 'Pale Ale' }], page: 1, pageSize: 200, totalCount: 1 };
+    mockFetchOnce(true, body);
+
+    const result = await searchBeers();
+
+    expect(result).toEqual(body);
+  });
+
+  it('searchBeers throws when the response is not ok', async () => {
     mockFetchOnce(false, {});
 
-    await expect(fetchBeers()).rejects.toThrow('Failed to load beers');
+    await expect(searchBeers()).rejects.toThrow('Failed to load beers');
   });
 
   it('fetchBeer throws when the response is not ok', async () => {
