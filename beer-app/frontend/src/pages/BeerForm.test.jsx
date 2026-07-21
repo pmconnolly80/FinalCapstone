@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import BeerForm from './BeerForm';
-import { fetchBeer, saveBeer } from '../lib/api';
+import { fetchBeer, saveBeer, searchBreweries } from '../lib/api';
 
 vi.mock('../lib/api');
 
@@ -113,5 +113,51 @@ describe('BeerForm', () => {
     expect(screen.getByDisplayValue('18')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Amber')).toBeInTheDocument();
     expect(screen.getByLabelText('Class')).toHaveValue('Ale');
+  });
+
+  it('selecting a brewery suggestion fills the field and stores its OBDB id', async () => {
+    const user = userEvent.setup();
+    searchBreweries.mockResolvedValue([
+      { id: 'obdb-1', name: 'Duvel Moortgat', city: 'Breendonk', state: 'Antwerp' },
+    ]);
+    saveBeer.mockResolvedValue({ id: 9 });
+
+    renderAt('/beers/new');
+    await user.type(screen.getByPlaceholderText('Name'), 'Duvel');
+    await user.type(screen.getByPlaceholderText('Brewery'), 'Duv');
+
+    const suggestion = await screen.findByRole('button', { name: /Duvel Moortgat/ });
+    await user.click(suggestion);
+
+    expect(screen.getByPlaceholderText('Brewery')).toHaveValue('Duvel Moortgat');
+
+    await user.type(screen.getByPlaceholderText('Style'), 'Ale');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(saveBeer).toHaveBeenCalledWith(
+      expect.objectContaining({ brewery: 'Duvel Moortgat', obdbBreweryId: 'obdb-1' }),
+      undefined
+    );
+  });
+
+  it('editing the brewery field after a selection clears the stored OBDB id', async () => {
+    const user = userEvent.setup();
+    searchBreweries.mockResolvedValue([{ id: 'obdb-1', name: 'Duvel Moortgat' }]);
+    saveBeer.mockResolvedValue({ id: 9 });
+
+    renderAt('/beers/new');
+    await user.type(screen.getByPlaceholderText('Name'), 'Duvel');
+    await user.type(screen.getByPlaceholderText('Brewery'), 'Duv');
+    const suggestion = await screen.findByRole('button', { name: /Duvel Moortgat/ });
+    await user.click(suggestion);
+
+    await user.type(screen.getByPlaceholderText('Brewery'), ' Extra');
+    await user.type(screen.getByPlaceholderText('Style'), 'Ale');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(saveBeer).toHaveBeenCalledWith(
+      expect.objectContaining({ obdbBreweryId: null }),
+      undefined
+    );
   });
 });

@@ -98,4 +98,56 @@ public class OpenBreweryDbServiceTests
 
         Assert.Equal(2, handler.CallCount);
     }
+
+    [Fact]
+    public async Task SearchBreweriesAsync_ReturnsMappedResults()
+    {
+        var (service, handler) = CreateService();
+        handler.Respond = _ => JsonResponse(
+            "[{\"id\":\"70e66be3\",\"name\":\"Sierra Nevada Brewing Co\",\"brewery_type\":\"regional\"," +
+            "\"city\":\"Chico\",\"state_province\":\"California\",\"website_url\":\"https://sierranevada.com\"}]");
+
+        var results = await service.SearchBreweriesAsync("sierra");
+
+        var result = Assert.Single(results);
+        Assert.Equal("70e66be3", result.Id);
+        Assert.Equal("Sierra Nevada Brewing Co", result.Name);
+        Assert.Equal("regional", result.BreweryType);
+        Assert.Equal("Chico", result.City);
+        Assert.Equal("California", result.State);
+    }
+
+    [Fact]
+    public async Task SearchBreweriesAsync_CachesByQuery_DoesNotRefetch()
+    {
+        var (service, handler) = CreateService();
+        handler.Respond = _ => JsonResponse("[{\"id\":\"70e66be3\",\"name\":\"Sierra Nevada Brewing Co\"}]");
+
+        await service.SearchBreweriesAsync("sierra");
+        await service.SearchBreweriesAsync("sierra");
+
+        Assert.Equal(1, handler.CallCount);
+    }
+
+    [Fact]
+    public async Task SearchBreweriesAsync_ReturnsEmpty_WhenObdbIsUnreachable()
+    {
+        var (service, handler) = CreateService();
+        handler.Respond = _ => throw new HttpRequestException("network down");
+
+        var results = await service.SearchBreweriesAsync("sierra");
+
+        Assert.Empty(results);
+    }
+
+    [Fact]
+    public async Task SearchBreweriesAsync_ReturnsEmpty_ForBlankQuery()
+    {
+        var (service, handler) = CreateService();
+
+        var results = await service.SearchBreweriesAsync("   ");
+
+        Assert.Empty(results);
+        Assert.Equal(0, handler.CallCount);
+    }
 }

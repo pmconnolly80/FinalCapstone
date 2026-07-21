@@ -85,6 +85,14 @@ function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+export async function searchBreweries(query) {
+  const response = await fetch(`${API_BASE_URL}/api/breweries/search?query=${encodeURIComponent(query)}`, {
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw new Error('Failed to search breweries');
+  return response.json();
+}
+
 export async function fetchAdminConfirmations() {
   const response = await fetch(`${API_BASE_URL}/api/admin/confirmations`, {
     headers: authHeaders(),

@@ -5,4 +5,5 @@ public record BreweryInfo(string Id, string Name, string? BreweryType, string? C
 public interface IBreweryLookupService
 {
     Task<BreweryInfo?> GetBreweryAsync(string breweryId);
+    Task<IReadOnlyList<BreweryInfo>> SearchBreweriesAsync(string query);
 }

@@ -10,6 +10,7 @@ import {
   register,
   saveBeer,
   searchBeers,
+  searchBreweries,
   setMyPin,
   voidConfirmation,
 } from './api';
@@ -239,6 +240,24 @@ describe('api', () => {
     await expect(voidConfirmation(7, '')).rejects.toThrow(
       'A reason is required to void a confirmation.'
     );
+  });
+
+  it('searchBreweries GETs with the query string and Authorization header', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    mockFetchOnce(true, [{ id: 'obdb-1', name: 'Sierra Nevada Brewing Co' }]);
+
+    const results = await searchBreweries('sierra');
+
+    const [url, init] = global.fetch.mock.calls[0];
+    expect(url).toContain('/api/breweries/search?query=sierra');
+    expect(init.headers.Authorization).toBe('Bearer abc123');
+    expect(results).toEqual([{ id: 'obdb-1', name: 'Sierra Nevada Brewing Co' }]);
+  });
+
+  it('searchBreweries throws when the response is not ok', async () => {
+    mockFetchOnce(false, {});
+
+    await expect(searchBreweries('sierra')).rejects.toThrow('Failed to search breweries');
   });
 
   it('getRolesFromToken reads the role claim, tolerating strings, arrays, and junk', () => {

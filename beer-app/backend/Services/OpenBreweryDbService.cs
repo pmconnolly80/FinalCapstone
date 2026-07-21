@@ -55,6 +55,43 @@ public class OpenBreweryDbService : IBreweryLookupService
         return info;
     }
 
+    public async Task<IReadOnlyList<BreweryInfo>> SearchBreweriesAsync(string query)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return Array.Empty<BreweryInfo>();
+        }
+
+        var normalized = query.Trim().ToLowerInvariant();
+        var cacheKey = $"obdb-brewery-search:{normalized}";
+        if (_cache.TryGetValue(cacheKey, out IReadOnlyList<BreweryInfo>? cached))
+        {
+            return cached!;
+        }
+
+        IReadOnlyList<BreweryInfo> results;
+        try
+        {
+            var response = await _httpClient.GetAsync($"breweries/search?query={Uri.EscapeDataString(normalized)}&per_page=8");
+            if (!response.IsSuccessStatusCode)
+            {
+                return Array.Empty<BreweryInfo>();
+            }
+
+            var dtos = await response.Content.ReadFromJsonAsync<List<ObdbBreweryDto>>(JsonOptions);
+            results = (dtos ?? new List<ObdbBreweryDto>())
+                .Select(dto => new BreweryInfo(dto.Id, dto.Name, dto.BreweryType, dto.City, dto.StateProvince, dto.WebsiteUrl))
+                .ToList();
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException)
+        {
+            return Array.Empty<BreweryInfo>();
+        }
+
+        _cache.Set(cacheKey, results, CacheDuration);
+        return results;
+    }
+
     private record ObdbBreweryDto(
         string Id,
         string Name,

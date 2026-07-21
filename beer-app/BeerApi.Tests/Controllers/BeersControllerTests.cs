@@ -24,6 +24,9 @@ public class BeersControllerTests
             LastRequestedId = breweryId;
             return Task.FromResult(Result);
         }
+
+        public Task<IReadOnlyList<BreweryInfo>> SearchBreweriesAsync(string query) =>
+            Task.FromResult<IReadOnlyList<BreweryInfo>>(Array.Empty<BreweryInfo>());
     }
 
     private static ApplicationDbContext CreateContext()
