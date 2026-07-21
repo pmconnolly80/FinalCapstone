@@ -59,4 +59,59 @@ describe('BeerForm', () => {
     expect(screen.getByDisplayValue('New Belgium')).toBeInTheDocument();
     expect(fetchBeer).toHaveBeenCalledWith('42');
   });
+
+  it('submits blank beer-nerd stat fields as null rather than empty strings', async () => {
+    saveBeer.mockResolvedValue({ id: 9 });
+    const user = userEvent.setup();
+
+    renderAt('/beers/new');
+    await user.type(screen.getByPlaceholderText('Name'), 'Duvel');
+    await user.type(screen.getByPlaceholderText('Brewery'), 'Duvel Moortgat');
+    await user.type(screen.getByPlaceholderText('Style'), 'Belgian Strong Golden Ale');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(saveBeer).toHaveBeenCalledWith(
+      expect.objectContaining({ abv: null, ibu: null, styleFamily: null, class: null }),
+      undefined
+    );
+  });
+
+  it('submits entered beer-nerd stats as numbers', async () => {
+    saveBeer.mockResolvedValue({ id: 9 });
+    const user = userEvent.setup();
+
+    renderAt('/beers/new');
+    await user.type(screen.getByPlaceholderText('Name'), 'Duvel');
+    await user.type(screen.getByPlaceholderText('Brewery'), 'Duvel Moortgat');
+    await user.type(screen.getByPlaceholderText('Style'), 'Belgian Strong Golden Ale');
+    await user.type(screen.getByPlaceholderText('ABV %'), '8.5');
+    await user.type(screen.getByPlaceholderText('IBU'), '30');
+    await user.type(screen.getByPlaceholderText('Style family'), 'Strong Golden Ale');
+    await user.selectOptions(screen.getByLabelText('Class'), 'Ale');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(saveBeer).toHaveBeenCalledWith(
+      expect.objectContaining({ abv: 8.5, ibu: 30, styleFamily: 'Strong Golden Ale', class: 'Ale' }),
+      undefined
+    );
+  });
+
+  it('pre-fills beer-nerd stats in edit mode when present', async () => {
+    fetchBeer.mockResolvedValue({
+      name: 'Fat Tire',
+      brewery: 'New Belgium',
+      style: 'Amber Ale',
+      abv: 5.2,
+      ibu: 18,
+      styleFamily: 'Amber',
+      class: 'Ale',
+    });
+
+    renderAt('/beers/42/edit');
+
+    expect(await screen.findByDisplayValue('5.2')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('18')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Amber')).toBeInTheDocument();
+    expect(screen.getByLabelText('Class')).toHaveValue('Ale');
+  });
 });

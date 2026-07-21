@@ -116,7 +116,7 @@ being an aspirational app shell. Search-first beer list, availability states for
 rotating inventory, beer-nerd stats, Open Brewery DB enrichment, a Catalog.beer pre-fill
 spike, and the mobile UX blockers found in the July 2026 code audit.
 
-> **Status (2026-07-21):** #26–#28 done. #26: `Beer.Availability` (`OnTap`/`Available`/
+> **Status (2026-07-21):** #26–#29 done. #26: `Beer.Availability` (`OnTap`/`Available`/
 > `OutOfStock`/`Retired`), `AddBeerAvailability` migration, defaults to `Available`,
 > serialized as a string via `[JsonConverter(typeof(JsonStringEnumConverter))]` on the enum
 > itself (not a global `Program.cs` registration — that only covers callers using the
@@ -125,9 +125,16 @@ spike, and the mobile UX blockers found in the July 2026 code audit.
 > pageSize, paginated envelope, per-item `confirmed` flag). #28: `BeerList.jsx` rebuilt on
 > Tailwind around the search endpoint — debounced search, availability + had/not-had chip
 > rows, style/brewery quick-search chips, availability badges, confirmed checkmarks.
-> Backend 101/101, frontend 70/70, live-verified against Docker. Along the way, corrected
-> the `verify` skill's stale claim that the frontend container is volume-mounted — it
-> isn't, so frontend edits need `docker compose up -d --build web` like backend ones do.
+> #29: `Beer` grows `Abv`/`Ibu`/`StyleFamily`/`Class`/`ObdbBreweryId`; new
+> `IBreweryLookupService`/`OpenBreweryDbService` proxies and caches OBDB brewery lookups
+> (24h `IMemoryCache`, degrades to `null` on any failure — the backend's first external-API
+> integration); `GET /api/beers/{id}` returns a `BeerDetailResponse` with nerd stats + a
+> resolved `BreweryInfo?`; `BeerDetail.jsx` renders the stats block + brewery card,
+> `BeerForm.jsx` gained ABV/IBU/style-family/class inputs. Live-verified against a real
+> Sierra Nevada OBDB record (Chico, CA) including cache hit and graceful bad-id handling.
+> Backend 110/110, frontend 77/77. Along the way (#28), corrected the `verify` skill's
+> stale claim that the frontend container is volume-mounted — it isn't, so frontend edits
+> need `docker compose up -d --build web` like backend ones do.
 
 1. [#26 Data: Beer.Availability state (on tap / available / out of stock / retired)](https://github.com/pmconnolly80/FinalCapstone/issues/26)
    — ✅ done 2026-07-21
@@ -136,6 +143,7 @@ spike, and the mobile UX blockers found in the July 2026 code audit.
 3. [#28 UI: search-first beer list (autocomplete, filter chips, confirmed checkmark + availability badge)](https://github.com/pmconnolly80/FinalCapstone/issues/28)
    — ✅ done 2026-07-21
 4. [#29 Beer detail: beer-nerd stats (ABV, IBU, style family/class) + Open Brewery DB brewery card](https://github.com/pmconnolly80/FinalCapstone/issues/29)
+   — ✅ done 2026-07-21
 5. [#30 Admin: Open Brewery DB brewery autocomplete in beer add/edit form](https://github.com/pmconnolly80/FinalCapstone/issues/30)
    — depends on #29 (shares its OBDB caching service)
 6. [#31 Catalog.beer beer-level pre-fill spike (hit-rate spike, go/no-go, admin pre-fill if go)](https://github.com/pmconnolly80/FinalCapstone/issues/31)

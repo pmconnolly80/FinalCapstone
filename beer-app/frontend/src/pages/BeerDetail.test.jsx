@@ -65,4 +65,66 @@ describe('BeerDetail', () => {
     expect(await screen.findByRole('button', { name: 'Confirm with bartender' })).toBeInTheDocument();
     localStorage.clear();
   });
+
+  it('renders the beer-nerd stats block when present', async () => {
+    fetchBeer.mockResolvedValue({
+      id: 1,
+      name: 'Duvel',
+      brewery: 'Duvel Moortgat',
+      style: 'Belgian Strong Golden Ale',
+      abv: 8.5,
+      ibu: 30,
+      styleFamily: 'Strong Golden Ale',
+      class: 'Ale',
+    });
+
+    renderBeerDetail('1');
+
+    expect(await screen.findByText('8.5%')).toBeInTheDocument();
+    expect(screen.getByText('30')).toBeInTheDocument();
+    expect(screen.getByText('Strong Golden Ale')).toBeInTheDocument();
+    expect(screen.getByText('Ale')).toBeInTheDocument();
+  });
+
+  it('omits the nerd stats block when no nerd stats are present', async () => {
+    fetchBeer.mockResolvedValue({ id: 1, name: 'Duvel', brewery: 'Duvel Moortgat', style: 'Ale' });
+
+    renderBeerDetail('1');
+
+    expect(await screen.findByText('Duvel')).toBeInTheDocument();
+    expect(screen.queryByText('ABV')).not.toBeInTheDocument();
+  });
+
+  it('renders the brewery card with a website link when present', async () => {
+    fetchBeer.mockResolvedValue({
+      id: 1,
+      name: 'Duvel',
+      brewery: 'Duvel Moortgat',
+      style: 'Ale',
+      breweryInfo: {
+        id: 'obdb-1',
+        name: 'Duvel Moortgat',
+        breweryType: 'regional',
+        city: 'Breendonk',
+        state: 'Antwerp',
+        websiteUrl: 'https://duvel.com',
+      },
+    });
+
+    renderBeerDetail('1');
+
+    expect(await screen.findByText(/regional/)).toBeInTheDocument();
+    expect(screen.getByText(/Breendonk/)).toBeInTheDocument();
+    const link = screen.getByRole('link', { name: 'Visit website' });
+    expect(link).toHaveAttribute('href', 'https://duvel.com');
+  });
+
+  it('omits the brewery card when no brewery info is present', async () => {
+    fetchBeer.mockResolvedValue({ id: 1, name: 'Duvel', brewery: 'Duvel Moortgat', style: 'Ale' });
+
+    renderBeerDetail('1');
+
+    expect(await screen.findByText('Duvel')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Visit website' })).not.toBeInTheDocument();
+  });
 });

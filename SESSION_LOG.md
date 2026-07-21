@@ -586,3 +586,41 @@ doesn't cost a debugging session again. Backend untouched (101/101 still green),
 response and what the component reads.
 
 **Resume here:** #29 (beer-nerd stats + Open Brewery DB brewery card) — next in Sprint 3.
+
+## 2026-07-21 — Sprint 3 #29 shipped: beer-nerd stats + Open Brewery DB brewery card
+
+**Sprint/story:** [#29](https://github.com/pmconnolly80/FinalCapstone/issues/29) — `epic:phone-experience`.
+
+TDD: 5 `OpenBreweryDbService` tests (success mapping, cache-hit avoids a refetch, 404 →
+null, network exception → null, failures aren't cached so they retry) + 4 new
+`BeersController.GetBeer` tests, written first; backend 110/110. `Beer` grows `Abv`
+(double?), `Ibu` (int?), `StyleFamily` (string?), and `Class` (nullable `BeerClass` enum,
+`Ale`/`Lager`, stored as text like `Availability`) plus `ObdbBreweryId` (string?) —
+`AddBeerNerdStatsAndObdbBreweryId` migration.
+
+New `beer-app/backend/Services/` — the backend's first external-API integration. A hand-
+rolled `FakeHttpMessageHandler` test double stands in for OBDB (no Moq in this project);
+`OpenBreweryDbService` wraps a typed `HttpClient` (`AddHttpClient<IBreweryLookupService,
+OpenBreweryDbService>`) and an `IMemoryCache` (24h TTL — TECHNICAL_ARCHITECTURE_PLAN.md §6
+calls caching mandatory, "stale data is fine, breweries rarely move"). Any failure —
+404, network down, malformed JSON — returns `null` rather than throwing, so a bad or
+unreachable OBDB record never breaks beer detail; failures also aren't cached, so a
+transient outage self-heals on the next request instead of being pinned for 24h.
+
+`GET /api/beers/{id}` now returns a `BeerDetailResponse` (nerd-stat fields + a resolved
+`BreweryInfo?`) instead of the raw `Beer` entity — `PostBeer`/`PutBeer` stay on the raw
+entity untouched, so this is additive for the write path. `BeerDetail.jsx` renders a
+nerd-stats block and brewery card (with a website link) only when the corresponding data
+is present; `BeerForm.jsx` gained ABV/IBU/style-family/class inputs, with the submit path
+converting blank number inputs to `null` rather than an empty string (which would fail to
+bind to the nullable `double`/`int` properties). `ObdbBreweryId` has no form control yet —
+admins set it via raw PUT until #30's autocomplete. Frontend 77/77.
+
+Live-verified against the *real* Open Brewery DB API (not a stub): looked up Sierra
+Nevada's Chico, CA brewery record by id, confirmed the resolved brewery card, confirmed a
+second fetch was cache-served, and confirmed an invalid brewery id degrades to
+`breweryInfo: null` without a 500.
+
+**Resume here:** #30 (admin Open Brewery DB brewery autocomplete) — reuses #29's caching
+service, wires the missing piece (setting `ObdbBreweryId` from the admin UI instead of raw
+PUT).

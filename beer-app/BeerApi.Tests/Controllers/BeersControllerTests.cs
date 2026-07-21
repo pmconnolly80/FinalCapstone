@@ -2,6 +2,7 @@ using System.Security.Claims;
 using BeerApi.Controllers;
 using BeerApi.Data;
 using BeerApi.Models;
+using BeerApi.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,18 @@ public class BeersControllerTests
 {
     private const string CustomerId = "customer-1";
 
+    private class FakeBreweryLookupService : IBreweryLookupService
+    {
+        public BreweryInfo? Result { get; set; }
+        public string? LastRequestedId { get; private set; }
+
+        public Task<BreweryInfo?> GetBreweryAsync(string breweryId)
+        {
+            LastRequestedId = breweryId;
+            return Task.FromResult(Result);
+        }
+    }
+
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -21,13 +34,14 @@ public class BeersControllerTests
         return new ApplicationDbContext(options);
     }
 
-    private static BeersController CreateController(ApplicationDbContext context, string? userId = null)
+    private static BeersController CreateController(
+        ApplicationDbContext context, string? userId = null, IBreweryLookupService? breweryLookup = null)
     {
         var identity = userId == null
             ? new ClaimsIdentity()
             : new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, userId) }, "Test");
 
-        return new BeersController(context)
+        return new BeersController(context, breweryLookup ?? new FakeBreweryLookupService())
         {
             ControllerContext = new ControllerContext
             {
@@ -252,6 +266,81 @@ public class BeersControllerTests
         var result = await controller.GetBeer(999);
 
         Assert.IsType<NotFoundResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task GetBeer_IncludesBeerNerdStats()
+    {
+        using var context = CreateContext();
+        var beer = new Beer
+        {
+            Name = "60 Minute IPA",
+            Brewery = "Dogfish Head",
+            Style = "IPA",
+            Abv = 6.0,
+            Ibu = 60,
+            StyleFamily = "IPA",
+            Class = BeerClass.Ale,
+        };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        var controller = CreateController(context);
+
+        var result = await controller.GetBeer(beer.Id);
+
+        Assert.Equal(6.0, result.Value?.Abv);
+        Assert.Equal(60, result.Value?.Ibu);
+        Assert.Equal("IPA", result.Value?.StyleFamily);
+        Assert.Equal(BeerClass.Ale, result.Value?.Class);
+    }
+
+    [Fact]
+    public async Task GetBeer_WithoutObdbBreweryId_ReturnsNullBreweryInfo()
+    {
+        using var context = CreateContext();
+        var beer = new Beer { Name = "Hefeweizen", Brewery = "Weihenstephaner", Style = "Wheat" };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        var lookup = new FakeBreweryLookupService { Result = new BreweryInfo("x", "Should not be called", null, null, null, null) };
+        var controller = CreateController(context, breweryLookup: lookup);
+
+        var result = await controller.GetBeer(beer.Id);
+
+        Assert.Null(result.Value?.BreweryInfo);
+        Assert.Null(lookup.LastRequestedId);
+    }
+
+    [Fact]
+    public async Task GetBeer_WithObdbBreweryId_ReturnsBreweryInfoFromLookupService()
+    {
+        using var context = CreateContext();
+        var beer = new Beer { Name = "Hefeweizen", Brewery = "Weihenstephaner", Style = "Wheat", ObdbBreweryId = "obdb-1" };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        var breweryInfo = new BreweryInfo("obdb-1", "Weihenstephaner", "large", "Freising", "Bavaria", "https://weihenstephaner.de");
+        var lookup = new FakeBreweryLookupService { Result = breweryInfo };
+        var controller = CreateController(context, breweryLookup: lookup);
+
+        var result = await controller.GetBeer(beer.Id);
+
+        Assert.Equal("obdb-1", lookup.LastRequestedId);
+        Assert.Equal(breweryInfo, result.Value?.BreweryInfo);
+    }
+
+    [Fact]
+    public async Task GetBeer_WhenBreweryLookupReturnsNull_StillReturnsBeer()
+    {
+        using var context = CreateContext();
+        var beer = new Beer { Name = "Hefeweizen", Brewery = "Weihenstephaner", Style = "Wheat", ObdbBreweryId = "obdb-1" };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        var lookup = new FakeBreweryLookupService { Result = null };
+        var controller = CreateController(context, breweryLookup: lookup);
+
+        var result = await controller.GetBeer(beer.Id);
+
+        Assert.Equal("Hefeweizen", result.Value?.Name);
+        Assert.Null(result.Value?.BreweryInfo);
     }
 
     [Fact]
