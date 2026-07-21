@@ -132,9 +132,14 @@ spike, and the mobile UX blockers found in the July 2026 code audit.
 > resolved `BreweryInfo?`; `BeerDetail.jsx` renders the stats block + brewery card,
 > `BeerForm.jsx` gained ABV/IBU/style-family/class inputs. Live-verified against a real
 > Sierra Nevada OBDB record (Chico, CA) including cache hit and graceful bad-id handling.
-> Backend 110/110, frontend 77/77. Along the way (#28), corrected the `verify` skill's
-> stale claim that the frontend container is volume-mounted — it isn't, so frontend edits
-> need `docker compose up -d --build web` like backend ones do.
+> #30: `IBreweryLookupService` gained `SearchBreweriesAsync` (same cache, keyed by
+> normalized query); new Admin-only `BreweriesController` at `GET /api/breweries/search`;
+> `BeerForm.jsx`'s Brewery field is now a debounced autocomplete — selecting a suggestion
+> fills the field and stores `ObdbBreweryId`, typing further by hand clears it so manual
+> entry always overrides. Live-verified against real OBDB search results plus the
+> 401/403/200 role gating. Backend 119/119, frontend 81/81. Along the way (#28), corrected
+> the `verify` skill's stale claim that the frontend container is volume-mounted — it
+> isn't, so frontend edits need `docker compose up -d --build web` like backend ones do.
 
 1. [#26 Data: Beer.Availability state (on tap / available / out of stock / retired)](https://github.com/pmconnolly80/FinalCapstone/issues/26)
    — ✅ done 2026-07-21
@@ -145,7 +150,7 @@ spike, and the mobile UX blockers found in the July 2026 code audit.
 4. [#29 Beer detail: beer-nerd stats (ABV, IBU, style family/class) + Open Brewery DB brewery card](https://github.com/pmconnolly80/FinalCapstone/issues/29)
    — ✅ done 2026-07-21
 5. [#30 Admin: Open Brewery DB brewery autocomplete in beer add/edit form](https://github.com/pmconnolly80/FinalCapstone/issues/30)
-   — depends on #29 (shares its OBDB caching service)
+   — ✅ done 2026-07-21
 6. [#31 Catalog.beer beer-level pre-fill spike (hit-rate spike, go/no-go, admin pre-fill if go)](https://github.com/pmconnolly80/FinalCapstone/issues/31)
 7. [#32 Mobile UX repair: progress-centric home, auth-aware nav, remove customer CRUD, fix hardcoded API URL, error/loading states](https://github.com/pmconnolly80/FinalCapstone/issues/32)
 

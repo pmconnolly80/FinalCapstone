@@ -624,3 +624,40 @@ second fetch was cache-served, and confirmed an invalid brewery id degrades to
 **Resume here:** #30 (admin Open Brewery DB brewery autocomplete) — reuses #29's caching
 service, wires the missing piece (setting `ObdbBreweryId` from the admin UI instead of raw
 PUT).
+
+## 2026-07-21 — Sprint 3 #30 shipped: admin Open Brewery DB brewery autocomplete
+
+**Sprint/story:** [#30](https://github.com/pmconnolly80/FinalCapstone/issues/30) — `epic:phone-experience`.
+
+TDD: 5 new `OpenBreweryDbService.SearchBreweriesAsync` tests (mapped results, cache-by-
+query avoids a refetch, empty on unreachable OBDB, empty on blank query without a network
+call) + 2 `BreweriesController` unit tests + 3 HTTP-level role-gating tests (401 anonymous,
+403 customer, 200 admin — same pattern as `BeersAuthorizationTests`), written first;
+backend 119/119. `IBreweryLookupService` gained `SearchBreweriesAsync(query)`, hitting
+OBDB's `breweries/search?query=` and caching by the normalized query string in the same
+`IMemoryCache` from #29 — failures return an empty list rather than throwing, same
+resilience posture as the single-brewery lookup. New `[Authorize(Roles = "Admin")]
+BreweriesController` at `GET /api/breweries/search` — admin-only since this endpoint has no
+customer-facing use.
+
+`BeerForm.jsx`'s Brewery field is now a debounced (300ms) autocomplete: typing shows a
+suggestion dropdown (name + city/state) below the field; selecting one fills the field and
+stores `ObdbBreweryId`. Design choice for the "manual entry stays the fallback/override"
+acceptance criterion: typing into the field by hand — whether from scratch or editing after
+a selection — clears the stored `ObdbBreweryId`, so it's never possible for a stale link to
+survive an edit the admin didn't explicitly re-confirm via another selection. `searchBreweries(query)`
+added to `api.js`. Frontend 81/81 (2 new tests for select-fills-and-stores and
+edit-after-select-clears-id).
+
+Backend hit one C# compiler wrinkle: `ActionResult<IReadOnlyList<BreweryInfo>>` refused to
+implicitly convert from a same-typed `IReadOnlyList<BreweryInfo>` local (a genuine operator-
+resolution quirk, not a caching or nullability issue) — sidestepped by dropping the
+`ActionResult<T>` wrapper entirely, since this action never returns an alternate status from
+its body (auth failures are handled by the `[Authorize]` middleware, not action code).
+
+Live-verified against Docker with the *real* OBDB search API: role gating (401/403/200),
+a live "sierra nevada" search returning real brewery records, cache-hit timing, and the
+blank-query short-circuit never hitting the network.
+
+**Resume here:** #31 (Catalog.beer beer-level pre-fill spike) — the hit-rate spike against
+the tavern's real list, go/no-go decision, then (if go) admin pre-fill wiring.
