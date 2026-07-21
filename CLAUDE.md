@@ -225,14 +225,17 @@ Manual (no Docker): `dotnet run` in `beer-app/backend/`, and
 ([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), 2026-07-14), Sprint 2
 (PRs #19–#25, milestone closed 2026-07-15), and **Sprint 3: Customer Phone Experience**
 (PRs #33–#39, issues #26–#32, closed 2026-07-21; suites at close: backend 131/131,
-frontend 97/97). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md` for the full per-story
-history. In order:
+frontend 99/99). **Sprint 4: Auth II** is groomed and up next (milestone
+[#4](https://github.com/pmconnolly80/FinalCapstone/milestone/4), issues #40–#46, groomed
+2026-07-21 — no code written yet). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md` for the
+full history. In order:
 
-1. **Groom the next named sprint into issues** — per the "only the next sprint gets
-   ticketed" rule, **Auth II: Social Sign-in** (Google/Facebook/Apple via ASP.NET Core
-   Identity external login providers, account linking, marketing-consent capture, privacy
-   policy + data-deletion path, and password reset) has no issues yet.
-2. Then the remaining named sprints: Admin Experience, Engagement/Retention/Social,
+1. #40 (`ApplicationUser` + marketing-consent migration) — foundational, nothing else in
+   the sprint's UI/consent work can land without it.
+2. #41 (pluggable email sender) → #42 (forgot/reset password, depends on #41).
+3. #43/#44/#45 (Google/Facebook/Apple external sign-in — independent of each other) → #46
+   (social buttons + account linking + consent checkbox, depends on #40/#43/#44/#45).
+4. Then the remaining named sprints: Admin Experience, Engagement/Retention/Social,
    Deployment & Hardening.
 
 Local tooling note: only the .NET 10 SDK is on PATH but the projects target net8.0 — run

@@ -761,3 +761,30 @@ frontend 99/99.
 **Resume here:** groom the next named sprint into issues — **Auth II: Social Sign-in**
 (Google/Facebook/Apple, account linking, marketing consent, privacy/data-deletion, and
 password reset) is next per the "only the next sprint gets ticketed" rule.
+
+## 2026-07-21 — Sprint 4 groomed: Auth II
+
+Broke Auth II into [milestone #4](https://github.com/pmconnolly80/FinalCapstone/milestone/4)
+and 7 issues (#40–#46), mirroring the API/UI split style of prior sprints:
+`ApplicationUser` + marketing-consent data model (#40, foundational) → pluggable email
+sender (#41) → forgot/reset password (#42, depends on #41); Google/Facebook/Apple
+external sign-in (#43/#44/#45, independent of each other — #44 bundles the privacy
+policy page and data-deletion path since Facebook's app review requires both) → social
+buttons + account-linking screen + consent checkbox (#46, depends on #40/#43/#44/#45).
+Approach was already decided in `TECHNICAL_ARCHITECTURE_PLAN.md` §4.6 (Identity external
+login providers, not a hosted vendor; link-or-create by verified email; API keeps
+issuing its own JWT) — this session's research (an Explore agent reading that section,
+`IMPLEMENTATION_BACKLOG.md` Phase 3, and the current `AuthController.cs`/`Program.cs`)
+confirmed no `ApplicationUser` class exists yet and all the OAuth/email-sender packages
+are greenfield additions. No code written this session — grooming only.
+`EPICS_AND_SPRINTS.md` updated with the new Sprint 4 section and the Auth & Roles epic
+status; `CLAUDE.md`'s "Likely next steps" updated to the new story order.
+
+**Process note:** these grooming doc updates were committed and pushed standalone at the
+user's request, rather than bundled into the first story's PR (the pattern every prior
+sprint's grooming followed — see #26's commit, which carried both the Sprint 3 grooming
+docs and its own implementation). No functional difference; just flagging the deviation so
+it doesn't read as an oversight later.
+
+**Resume here:** #40 (`ApplicationUser` + marketing-consent migration) — first story in
+Sprint 4, foundational for #42's consent capture and #46's UI.

@@ -46,7 +46,7 @@ testing found the registration flow broken, see #17.)
 | Epic | Label | Status |
 |---|---|---|
 | Core Catalog (browse/detail/CRUD) | `epic:core-catalog` | ✅ Done — pre-dates formal sprint tracking |
-| Auth & Roles | `epic:auth` | ✅ Done for password auth ([PR #7](https://github.com/pmconnolly80/FinalCapstone/pull/7); registration bug [#17](https://github.com/pmconnolly80/FinalCapstone/issues/17) fixed in [PR #20](https://github.com/pmconnolly80/FinalCapstone/pull/20) — password policy now explicit length-only min 8) — **new scope added July 2026, not yet ticketed**: social sign-in (Google/Facebook/Apple via Identity external providers) + marketing-consent capture, see `TECHNICAL_ARCHITECTURE_PLAN.md` §4.6; the gap was re-confirmed by 2026-07-14 live testing (no ticket yet per the grooming rule) |
+| Auth & Roles | `epic:auth` | ✅ Done for password auth ([PR #7](https://github.com/pmconnolly80/FinalCapstone/pull/7); registration bug [#17](https://github.com/pmconnolly80/FinalCapstone/issues/17) fixed in [PR #20](https://github.com/pmconnolly80/FinalCapstone/pull/20) — password policy now explicit length-only min 8) — 🔵 social sign-in + password reset groomed into Sprint 4 ([#40](https://github.com/pmconnolly80/FinalCapstone/issues/40)–[#46](https://github.com/pmconnolly80/FinalCapstone/issues/46), 2026-07-21), see `TECHNICAL_ARCHITECTURE_PLAN.md` §4.6 |
 | **Mug Club Progress & Bartender Confirmation** | `epic:mug-club` | ✅ **Done** — Sprint 1 ([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), 2026-07-14) + Sprint 2 (PRs [#21](https://github.com/pmconnolly80/FinalCapstone/pull/21)–[#25](https://github.com/pmconnolly80/FinalCapstone/pull/25), closed 2026-07-15). Built to the one-device rule: confirmation on the customer's phone, sealed by the bartender's personal 6-digit PIN, hardened with two-axis lockout, real PIN lifecycle, durable mug awards, and the admin correction path |
 | **Customer Phone Experience** (search-first UX, availability states for the rotating inventory, Open Brewery DB brewery enrichment, Catalog.beer pre-fill, mobile repair) | `epic:phone-experience` | ✅ **Done** — Sprint 3 ([#26](https://github.com/pmconnolly80/FinalCapstone/issues/26)–[#32](https://github.com/pmconnolly80/FinalCapstone/issues/32), groomed 2026-07-20, closed 2026-07-21, PRs #33–#39). First slice pulled forward 2026-07-14 as a Sprint 2 interrupt ([#18](https://github.com/pmconnolly80/FinalCapstone/issues/18), landing-page facelift) |
 | Admin Experience (dashboard + anomaly panel, user/role/PIN mgmt UI, full data correction with audit, catalog bulk-add guardrail) | `epic:admin` | 🔵 First slice shipped with Sprint 2 (confirmation audit/correction API + screen #15/#16, admin PIN issue/reset/deactivate API #13, mug-earner list #14) — dashboard, anomaly panel, and user/role management UI still to come |
@@ -154,13 +154,29 @@ truth for beers; data-sourcing principle is auto-enrich from open projects so st
 have to type beer data, manual entry as fallback/override. See `MVP_SCREEN_PLAN.md` and
 `TECHNICAL_ARCHITECTURE_PLAN.md` §6 for the Catalog.beer research.
 
+### Sprint 4: Auth II — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/4) (🔵 groomed 2026-07-21, not started)
+
+Social sign-in (Google/Facebook/Apple) via ASP.NET Core Identity external login providers,
+account linking on verified email, marketing-consent capture, a privacy policy page +
+data-deletion path, and password reset — the app's first email-delivery dependency.
+
+1. [#40 Data: ApplicationUser custom Identity user + marketing-consent field](https://github.com/pmconnolly80/FinalCapstone/issues/40)
+2. [#41 API: pluggable email sender (IEmailSender + SMTP)](https://github.com/pmconnolly80/FinalCapstone/issues/41)
+3. [#42 API + UI: forgot/reset password flow](https://github.com/pmconnolly80/FinalCapstone/issues/42)
+   — depends on #41
+4. [#43 API: Google external sign-in](https://github.com/pmconnolly80/FinalCapstone/issues/43)
+5. [#44 API: Facebook external sign-in + privacy policy page + data-deletion path](https://github.com/pmconnolly80/FinalCapstone/issues/44)
+   — depends on #40
+6. [#45 API: Apple (Sign in with Apple) external sign-in](https://github.com/pmconnolly80/FinalCapstone/issues/45)
+7. [#46 UI: social sign-in buttons + account-linking screen + marketing-consent checkbox](https://github.com/pmconnolly80/FinalCapstone/issues/46)
+   — depends on #40, #43, #44, #45
+
+Approach decided in `TECHNICAL_ARCHITECTURE_PLAN.md` §4.6: ASP.NET Core Identity external
+login providers (not a hosted vendor), callback links-or-creates a local user matched on
+verified email, the API keeps issuing its own JWT via `AuthController`'s existing
+`CreateToken` — same as password login today.
+
 ### Later sprints (named only — groomed into issues when they're next up)
-- **Auth II: Social Sign-in** — Google/Facebook/Apple via ASP.NET Core Identity external
-  login providers (researched July 2026, `TECHNICAL_ARCHITECTURE_PLAN.md` §4.6),
-  account linking on verified email, marketing-consent capture, privacy policy +
-  data-deletion path. **Password reset** (added to scope 2026-07-14): Identity's built-in
-  reset tokens + a "forgot password" flow; brings in the app's first email-sender
-  dependency (SMTP/SES) — see `IMPLEMENTATION_BACKLOG.md` Phase 3
 - **Admin Experience** — admin dashboard with anomaly panel (bulk beer-add alerts to
   owner+admin, confirmation velocity spikes, off-hours activity), beer management table
   (catalog CRUD's new home, with OBDB brewery autocomplete and inline availability),
