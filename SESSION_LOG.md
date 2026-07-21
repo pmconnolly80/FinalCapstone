@@ -556,3 +556,33 @@ anonymous and real confirm-then-filter round trip, and pagination.
 
 **Resume here:** #28 (search-first beer list UI) — depends on #27, the last piece before
 moving to #29 (beer-nerd stats + OBDB brewery card).
+
+## 2026-07-21 — Sprint 3 #28 shipped: search-first beer list UI
+
+**Sprint/story:** [#28](https://github.com/pmconnolly80/FinalCapstone/issues/28) — `epic:phone-experience`.
+
+TDD: 4 new `api.js` tests (`searchBeers` query-string building, auth header, envelope
+passthrough) plus 9 new `BeerList` RTL tests written first; frontend 70/70. `fetchBeers()`
+replaced with `searchBeers(params)`, returning the full `{items, page, pageSize,
+totalCount}` envelope rather than unwrapping it — this page needed `totalCount` and the
+per-item fields anyway, so the temporary unwrap from #27 was removed rather than kept.
+`BeerList.jsx` rebuilt on Tailwind (the last inline-styled beer-facing page — matches the
+"restyled once Customer Phone Experience lands" note in `CLAUDE.md`): debounced (300ms)
+search-as-you-type, an availability chip row (In Stock/On Tap/Available/Out of Stock/
+Retired/All), a had/not-had chip row shown only when signed in (since `hadStatus` 401s
+anonymously per #27), and style/brewery "quick-search" chips computed from the current
+result page. Design note: the search API has one combined free-text field spanning name/
+brewery/style, not separate structured style/brewery params — so those chips fill the
+search box rather than compose as independent filters; genuinely composable are search
+text + availability + hadStatus, which the API does support together. Each result shows an
+availability badge and a confirmed checkmark.
+
+Side quest: live-verifying against Docker hit a stale-cache surprise — `docker compose up
+-d --build web` without rebuilding still served pre-edit `api.js`. Traced it to
+`docker-compose.yml` having no volume mount for `web`; the `verify` skill claimed otherwise
+(carried over from an earlier compose setup, presumably). Fixed the skill doc so this
+doesn't cost a debugging session again. Backend untouched (101/101 still green), frontend
+70/70, live-verified: dev-server module content, field-casing match between the API
+response and what the component reads.
+
+**Resume here:** #29 (beer-nerd stats + Open Brewery DB brewery card) — next in Sprint 3.

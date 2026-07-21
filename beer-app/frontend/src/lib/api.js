@@ -1,10 +1,20 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5153';
 
-export async function fetchBeers() {
-  const response = await fetch(`${API_BASE_URL}/api/beers`);
+export async function searchBeers(params = {}) {
+  const token = localStorage.getItem('beer-token');
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      query.set(key, value);
+    }
+  });
+  const qs = query.toString();
+
+  const response = await fetch(`${API_BASE_URL}/api/beers${qs ? `?${qs}` : ''}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
   if (!response.ok) throw new Error('Failed to load beers');
-  const data = await response.json();
-  return data.items;
+  return response.json();
 }
 
 export async function fetchBeer(id) {
