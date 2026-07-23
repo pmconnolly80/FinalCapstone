@@ -199,7 +199,7 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     no-ops (logs instead) when `SmtpHost` or `FromAddress` is unconfigured, rather than
     throwing. `ISmtpClient`/`ISmtpClientFactory` wrap `System.Net.Mail.SmtpClient` as a thin
     seam so the send path is unit-testable without a real network call.
-  - #42 (in progress, not yet PR'd): `POST /api/auth/forgot-password` — always returns the
+  - #42 ([PR #48](https://github.com/pmconnolly80/FinalCapstone/pull/48) open): `POST /api/auth/forgot-password` — always returns the
     same generic success message regardless of whether the email exists (avoids account
     enumeration), and only sends a reset email via #41's `IEmailSender` when it does.
     `POST /api/auth/reset-password` — validates the Identity reset token via
@@ -270,7 +270,8 @@ frontend 99/99). **Sprint 4: Auth II** is in progress (milestone
    [PR #47](https://github.com/pmconnolly80/FinalCapstone/pull/47).
 2. ~~#41 (pluggable email sender)~~ — done, merged
    [PR #47](https://github.com/pmconnolly80/FinalCapstone/pull/47).
-3. #42 (forgot/reset password, depends on #41) — in progress, not yet PR'd.
+3. #42 (forgot/reset password, depends on #41) — done,
+   [PR #48](https://github.com/pmconnolly80/FinalCapstone/pull/48) (open).
 4. #43/#44/#45 (Google/Facebook/Apple external sign-in — independent of each other) → #46
    (social buttons + account linking + consent checkbox, depends on #40/#43/#44/#45).
 5. Then the remaining named sprints: Admin Experience, Engagement/Retention/Social,
