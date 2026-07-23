@@ -128,7 +128,11 @@ He's typing his credential into a customer's device, so the system protects him:
 ### What Marco does *not* do
 - No catalog editing, no lookup screens, no analytics, no queue. If a beer isn't on the
   list, that's an admin's job tomorrow — Marco says "it'll count once it's added" (admin
-  can back-date a correction if the tavern wants that policy).
+  can back-date a correction if the tavern wants that policy). **Decided 2026-07-23**:
+  one narrow exception — while confirming a beer, Marco can flag it out of stock right
+  from the same PIN pad if the keg just kicked, reusing the PIN-resolution trust model
+  rather than needing a login or a role permission ([#80](https://github.com/pmconnolly80/FinalCapstone/issues/80)).
+  Still no general catalog editing beyond that one flip.
 - Wrong confirmation? Corrections go through the admin audit trail — no silent deletes,
   which protects Marco as much as the customer.
 
@@ -137,15 +141,14 @@ Owner/admin issues Marco a PIN when he's hired (he changes it on first use), res
 forgotten, deactivates it the day he leaves. A departed bartender's PIN stops working
 everywhere instantly — something a laminated paper sheet never offered.
 
-**Under review 2026-07-23:** onboarding today actually requires Marco to self-register
-like a customer *before* an admin can find and promote him — not the "one screen" this
-implies. A lighter model has been floated where Marco never has an account or logs in
-at all: the admin creates his staff record and PIN directly, using his birthday
-(`MMDDYYYY`) as an easy-to-remember 8-digit PIN instead of a random 6-digit one. Not
-decided — needs a real design pass (PIN length is hardcoded to 6 digits in several
-places, and this would decouple `StaffPin` from a full Identity account). See
-`TECHNICAL_ARCHITECTURE_PLAN.md` §4.1's "Open architecture questions" and
-`USABILITY_TESTING.md`.
+**Decided 2026-07-23:** onboarding today actually requires Marco to self-register like
+a customer *before* an admin can find and promote him — not the "one screen" this
+implies; fixed by an admin-initiated invite ([#77](https://github.com/pmconnolly80/FinalCapstone/issues/77)).
+Marco keeps a real `ApplicationUser` account (a lighter no-login model was considered
+and rejected — not worth decoupling `StaffPin` from Identity for this). His PIN can
+now optionally be his birthday (`MMDDYYYY`, 8 digits) instead of a random 6-digit code,
+once PIN length becomes configurable ([#79](https://github.com/pmconnolly80/FinalCapstone/issues/79)).
+See `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1 and `USABILITY_TESTING.md`.
 
 ---
 

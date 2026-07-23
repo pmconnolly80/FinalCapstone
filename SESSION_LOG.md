@@ -1229,3 +1229,56 @@ unaffected (239/239 as of the seed-data changes earlier today).
 Recommendations) to actually start building, or continue narrowing the two open
 architecture questions (bartender account model, multi-admin/owner tiering) before they
 block #77/#A2's mid-shift-availability follow-up.
+
+---
+
+## 2026-07-23 — Sprint 8 assigned; both architecture questions decided; Milestone 4 drift fixed
+
+**Epic:** cross-cutting (grooming + tracking cleanup, continuing the same day's usability work)
+
+Picked up exactly where the prior entry's "Resume here" left off, in order:
+
+1. **Fixed the Milestone 4 tracking drift.** Verified all 6 closing PRs (#47–#52) were
+   actually merged and each explicitly referenced its issue number in the PR body
+   (`gh pr view --json body`), confirming Sprint 4's work is genuinely done — the PRs
+   just said "#40:" instead of "Closes #40," so GitHub's auto-close never fired. Closed
+   issues #40–#46 with a comment explaining why. Milestone 4 now correctly shows
+   0 open / 7 closed.
+2. **Created Milestone 8 ("Admin & Engagement UX Follow-ups")** and assigned the 5
+   previously-ungroomed issues (#74–#78) to it — bundled by size/independence rather
+   than shared epic, matching how Sprint 2's interrupts mixed epics before.
+3. **Resolved both open architecture questions from the prior session**, via direct
+   questions rather than guessing:
+   - **Bartender account model**: keep today's full-`ApplicationUser` model — the
+     lighter no-login alternative is rejected. The only real change: PIN length
+     becomes configurable (6-8 digits) instead of hardcoded to 6, so a bartender's PIN
+     can optionally be birthday-format. New issue [#79](https://github.com/pmconnolly80/FinalCapstone/issues/79).
+   - **Mid-shift availability**: layer all three previously-proposed options rather
+     than picking one. The user's choice unlocked a synthesis not proposed in the
+     prior round: since the bartender is already typing their PIN into the customer's
+     phone to confirm a beer — a server-side identity resolution that doesn't require
+     a real login session — the same trust mechanism can authorize an availability
+     flip in that same moment. This resolves the original tension (a role-based
+     permission would have required bartenders to be authenticated users, which
+     conflicted with the account-model question) since PIN resolution isn't a login.
+     New issues [#80](https://github.com/pmconnolly80/FinalCapstone/issues/80) (PIN-pad
+     toggle, primary) and [#81](https://github.com/pmconnolly80/FinalCapstone/issues/81)
+     (customer-facing crowd-sourced report, secondary) — house policy (bartender
+     texts/calls the admin) is the fallback, no code needed.
+   - Both new issues assigned to Milestone 8. Updated #77's body to drop the
+     "scope may shift" caveat now that the account-model question is settled.
+4. Updated `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1 (both questions moved from "open" to
+   "decided," with the new issues linked), `PERSONAS_AND_USAGE.md` (PIN-lifecycle note
+   and "what Marco does not do" section updated to reflect the PIN-pad availability
+   exception), `EPICS_AND_SPRINTS.md` (Sprint 8 section replaces the old
+   "ungroomed" list, epics table updated, Milestone 4 fix logged), and
+   `USABILITY_TESTING.md` (new "Round 3" section, A1/A2 rows updated from open
+   questions to decisions).
+
+No app code changes this session — pure grooming, architecture decisions, and GitHub
+tracking cleanup.
+
+**Resume here:** pick which sprint to actually start building — Sprint 6 (Mobile UI
+Polish, #67–71), Sprint 7 (Beer Discovery & Recommendations, #72–73), or Sprint 8
+(Admin & Engagement UX Follow-ups, #74–81, now including the two architecture
+follow-ons). No further open architecture questions blocking any of the three.

@@ -58,8 +58,8 @@ testing found the registration flow broken, see #17.)
 | Auth & Roles | `epic:auth` | ✅ Done for password auth ([PR #7](https://github.com/pmconnolly80/FinalCapstone/pull/7); registration bug [#17](https://github.com/pmconnolly80/FinalCapstone/issues/17) fixed in [PR #20](https://github.com/pmconnolly80/FinalCapstone/pull/20) — password policy now explicit length-only min 8) — 🔵 social sign-in + password reset groomed into Sprint 4 ([#40](https://github.com/pmconnolly80/FinalCapstone/issues/40)–[#46](https://github.com/pmconnolly80/FinalCapstone/issues/46), 2026-07-21), see `TECHNICAL_ARCHITECTURE_PLAN.md` §4.6 |
 | **Mug Club Progress & Bartender Confirmation** | `epic:mug-club` | ✅ **Done** — Sprint 1 ([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), 2026-07-14) + Sprint 2 (PRs [#21](https://github.com/pmconnolly80/FinalCapstone/pull/21)–[#25](https://github.com/pmconnolly80/FinalCapstone/pull/25), closed 2026-07-15). Built to the one-device rule: confirmation on the customer's phone, sealed by the bartender's personal 6-digit PIN, hardened with two-axis lockout, real PIN lifecycle, durable mug awards, and the admin correction path |
 | **Customer Phone Experience** (search-first UX, availability states for the rotating inventory, Open Brewery DB brewery enrichment, Catalog.beer pre-fill, mobile repair) | `epic:phone-experience` | ✅ **Done** — Sprint 3 ([#26](https://github.com/pmconnolly80/FinalCapstone/issues/26)–[#32](https://github.com/pmconnolly80/FinalCapstone/issues/32), groomed 2026-07-20, closed 2026-07-21, PRs #33–#39). First slice pulled forward 2026-07-14 as a Sprint 2 interrupt ([#18](https://github.com/pmconnolly80/FinalCapstone/issues/18), landing-page facelift). 🔵 A follow-up polish pass (mobile nav, login screen, tab navigation) was flagged from 2026-07-23 live testing — see **Mobile UI Polish** below |
-| Admin Experience (dashboard + anomaly panel, user/role/PIN mgmt UI, full data correction with audit, catalog bulk-add guardrail) | `epic:admin` | ✅ **Done** for the original scope — Sprint 2's first slice (confirmation audit/correction API + screen #15/#16, admin PIN issue/reset/deactivate API #13, mug-earner list #14) plus Sprint 5 ([#53](https://github.com/pmconnolly80/FinalCapstone/issues/53)–[#59](https://github.com/pmconnolly80/FinalCapstone/issues/59), groomed/closed 2026-07-23 — PRs [#60](https://github.com/pmconnolly80/FinalCapstone/pull/60)–[#66](https://github.com/pmconnolly80/FinalCapstone/pull/66)). 🔵 Five more UX-gap issues groomed 2026-07-23 ([#75](https://github.com/pmconnolly80/FinalCapstone/issues/75)–[#78](https://github.com/pmconnolly80/FinalCapstone/issues/78)), not yet sequenced into a sprint |
-| Engagement, Retention & Social (badges, push notifications + owner composer, My Beers — ratings/want list/personal stats viz, social feed/cheers/leaderboard, journal, owner analytics) | `epic:retention` | ⬜ Not started — the business-owner payoff, see `FEATURE_MAP.md` and `PERSONAS_AND_USAGE.md`. 🔵 One pull-forward story groomed 2026-07-23 ([#74](https://github.com/pmconnolly80/FinalCapstone/issues/74): rating prompt + minimal milestone), not yet sequenced |
+| Admin Experience (dashboard + anomaly panel, user/role/PIN mgmt UI, full data correction with audit, catalog bulk-add guardrail) | `epic:admin` | ✅ **Done** for the original scope — Sprint 2's first slice (confirmation audit/correction API + screen #15/#16, admin PIN issue/reset/deactivate API #13, mug-earner list #14) plus Sprint 5 ([#53](https://github.com/pmconnolly80/FinalCapstone/issues/53)–[#59](https://github.com/pmconnolly80/FinalCapstone/issues/59), groomed/closed 2026-07-23 — PRs [#60](https://github.com/pmconnolly80/FinalCapstone/pull/60)–[#66](https://github.com/pmconnolly80/FinalCapstone/pull/66)). 🔵 Four more UX-gap issues groomed into **Sprint 8** below ([#75](https://github.com/pmconnolly80/FinalCapstone/issues/75)–[#78](https://github.com/pmconnolly80/FinalCapstone/issues/78)) |
+| Engagement, Retention & Social (badges, push notifications + owner composer, My Beers — ratings/want list/personal stats viz, social feed/cheers/leaderboard, journal, owner analytics) | `epic:retention` | ⬜ Not started — the business-owner payoff, see `FEATURE_MAP.md` and `PERSONAS_AND_USAGE.md`. 🔵 One pull-forward story groomed into **Sprint 8** below ([#74](https://github.com/pmconnolly80/FinalCapstone/issues/74): rating prompt + minimal milestone) |
 | **Mobile UI Polish** (nav bar redesign for phone-first use + hidden pre-login, minimal branded login screen, several small UX-gap fixes) | `epic:ui-polish` | 🔵 Groomed 2026-07-23 as **Sprint 6** ([milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/6), issues [#67](https://github.com/pmconnolly80/FinalCapstone/issues/67)–[#71](https://github.com/pmconnolly80/FinalCapstone/issues/71)), not yet started |
 | **Beer Discovery & Recommendations** (customer-facing external beer-database search, beer recommendations/requests + admin triage) | `epic:beer-discovery` | 🔵 Groomed 2026-07-23 as **Sprint 7** ([milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/7), issues [#72](https://github.com/pmconnolly80/FinalCapstone/issues/72)–[#73](https://github.com/pmconnolly80/FinalCapstone/issues/73)), not yet started |
 | Deployment & Hardening (AWS, CI/CD) | `epic:deployment` | ⬜ Not started — also covers wiring real SMTP credentials so forgot-password emails actually send (currently silently no-ops, flagged 2026-07-23) |
@@ -253,17 +253,20 @@ search) plus a customer beer-recommendation/request feature with admin triage.
    — depends on #72 for the "recommend from a search hit" path, but stands alone for
    plain-text recommendations
 
-### Ungroomed-into-a-sprint issues (added 2026-07-23, sequencing not yet decided)
+### Sprint 8: Admin & Engagement UX Follow-ups — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/8) (groomed 2026-07-23, not started)
 
-Also groomed into real issues this session but not yet assigned to a milestone — these
-extend `epic:retention`/`epic:admin` ahead of those epics' full grooming, per explicit
-user direction to narrow priorities now rather than wait for strict sequencing:
+Small admin/engagement UX-gap fixes from the 2026-07-23 review, extending
+`epic:retention`/`epic:admin` ahead of those epics' full grooming — bundled together
+since each is small and independent rather than because they share one epic, per
+explicit user direction to narrow priorities now rather than wait for strict
+sequencing.
 
-- [#74 UI + API: pull forward 'How was it?' rating prompt + minimal milestone moment](https://github.com/pmconnolly80/FinalCapstone/issues/74) (`epic:retention`)
-- [#75 UI: inline consequence microcopy on audited admin actions](https://github.com/pmconnolly80/FinalCapstone/issues/75) (`epic:admin`)
-- [#76 UI: staff-only filter + search on the User Management table](https://github.com/pmconnolly80/FinalCapstone/issues/76) (`epic:admin`)
-- [#77 API + UI: admin-initiated bartender account invite](https://github.com/pmconnolly80/FinalCapstone/issues/77) (`epic:admin`)
-- [#78 UI + API: reframe Admin Dashboard as operational health; pull forward most/least-confirmed beers](https://github.com/pmconnolly80/FinalCapstone/issues/78) (`epic:admin`)
+1. [#74 UI + API: pull forward 'How was it?' rating prompt + minimal milestone moment](https://github.com/pmconnolly80/FinalCapstone/issues/74) (`epic:retention`)
+2. [#75 UI: inline consequence microcopy on audited admin actions](https://github.com/pmconnolly80/FinalCapstone/issues/75) (`epic:admin`)
+3. [#76 UI: staff-only filter + search on the User Management table](https://github.com/pmconnolly80/FinalCapstone/issues/76) (`epic:admin`)
+4. [#77 API + UI: admin-initiated bartender account invite](https://github.com/pmconnolly80/FinalCapstone/issues/77) (`epic:admin`) —
+   scope may shift pending the bartender-account-model architecture question, see below
+5. [#78 UI + API: reframe Admin Dashboard as operational health; pull forward most/least-confirmed beers](https://github.com/pmconnolly80/FinalCapstone/issues/78) (`epic:admin`)
 
 ## Live Testing Findings — 2026-07-23
 
@@ -274,9 +277,15 @@ rather than duplicated here. Headlines: dev admin (`admin@tavern.local`/`admin12
 test customer (`user1@gmail.com`/`1234User1#!`) accounts seeded this session
 (`BeerApi.Tests/Data/SeedDataTests.cs` +3 tests, backend suite 239/239 at the time);
 forgot-password confirmed as an SMTP-config gap, not a bug; twelve real product/UX gaps
-found and resolved into the Sprint 6/7 issues above plus two areas flagged as needing
+found and resolved into the Sprint 6/7/8 issues above plus two areas flagged as needing
 more architecture design before they can be ticketed (bartender account model, mid-shift
 availability permissions — see `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1).
+
+**Tracking-drift fix (2026-07-23):** Milestone 4 ("Sprint 4: Auth II") was marked closed
+in GitHub while issues #40–#46 were still open. Verified each against its closing PR
+(#47–#52, all confirmed merged and referencing the correct issue number in the PR body)
+before closing all 7 — genuinely done, just never auto-closed because the PRs said
+"#40:" rather than "Closes #40."
 
 ## Session traceability
 

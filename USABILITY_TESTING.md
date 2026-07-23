@@ -52,18 +52,18 @@ achieve what the planning docs promise, or where the docs themselves have an unr
 
 | # | Gap | Decision |
 |---|---|---|
-| A1 | No admin-initiated way to onboard a new bartender — only self-registration exists | Admin-initiated invite (creates the account, emails a set-password link) against today's account model. Issue [#77](https://github.com/pmconnolly80/FinalCapstone/issues/77). **Separately flagged**: the user floated a lighter future model where bartenders never get a real account at all — admin creates a staff record + PIN directly, using the bartender's birthday (`MMDDYYYY`, 8 digits) as an easy-to-remember PIN. Documented, not decided — see `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1's "Open architecture questions." |
-| A2 | Nobody physically at the bar can mark a keg as kicked mid-shift — only Admin can, conflicting with the one-device rule | No single decision — user wants elements of all three explored: (a) a narrow bartender availability-only permission, (b) house policy (bartender texts/calls the admin), (c) a customer-facing "flag as unavailable" report. **Real open tension**: (a) requires bartenders to be authenticated users, which conflicts with A1's lighter future account model. Documented in `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1 as unresolved — needs the account-model question settled first. Not yet ticketed. |
+| A1 | No admin-initiated way to onboard a new bartender — only self-registration exists | **Decided 2026-07-23**: admin-initiated invite (creates the account, emails a set-password link), keeping today's full-Identity-account model — the lighter no-login alternative floated in Round 2 was considered and rejected. Issue [#77](https://github.com/pmconnolly80/FinalCapstone/issues/77). Bartenders can still get an easy-to-remember birthday-format (`MMDDYYYY`, 8-digit) PIN once PIN length is configurable — issue [#79](https://github.com/pmconnolly80/FinalCapstone/issues/79). |
+| A2 | Nobody physically at the bar can mark a keg as kicked mid-shift — only Admin can, conflicting with the one-device rule | **Decided 2026-07-23**: layer all three. Primary — piggyback an availability flag onto the existing PIN-confirmation trust model (issue [#80](https://github.com/pmconnolly80/FinalCapstone/issues/80)), which resolves the original tension since it rides on PIN resolution rather than a role-based `[Authorize]` permission. Secondary — customer-facing crowd-sourced "flag as unavailable" report (issue [#81](https://github.com/pmconnolly80/FinalCapstone/issues/81)). Fallback — house policy (bartender texts/calls the admin), no code needed. |
 | A3 | The shipped Admin Dashboard doesn't answer the owner's real question ("what to order," "who's lapsing") | Reframe the dashboard's purpose explicitly as "operational health," with beer intelligence deferred to a separate future Owner Analytics screen; pull the cheap most/least-confirmed-beers query forward as a fast follow. Issue [#78](https://github.com/pmconnolly80/FinalCapstone/issues/78). |
 | A4 | `PERSONAS_AND_USAGE.md` says Owner/Admin roles should stay separable; the code has already merged them | Not a strict permission split after all — decided direction is **multiple individually-attributed Admin accounts** (mostly already true via `AdminAudit`) **plus one top-level account that can provision the others**. Documented in `PERSONAS_AND_USAGE.md`, not yet designed/ticketed — needs a real architecture pass (new role tier vs. a flag/claim on Admin). |
 | A5 | Audit "reason" fields are bare free-text with no in-UI explanation of real consequences | Inline consequence microcopy at the point of each audited action. Issue [#75](https://github.com/pmconnolly80/FinalCapstone/issues/75). |
 | A6 | User Management table has no search/filter — lists every customer, not just staff | Staff-only filter (default) plus a search box. Issue [#76](https://github.com/pmconnolly80/FinalCapstone/issues/76). |
 
-### What got groomed into real GitHub issues/milestones this session
+### What got groomed into real GitHub issues/milestones
 
 - **Milestone 6 — Mobile UI Polish**: issues [#67](https://github.com/pmconnolly80/FinalCapstone/issues/67)–[#71](https://github.com/pmconnolly80/FinalCapstone/issues/71) (`epic:ui-polish`)
 - **Milestone 7 — Beer Discovery & Recommendations**: issues [#72](https://github.com/pmconnolly80/FinalCapstone/issues/72)–[#73](https://github.com/pmconnolly80/FinalCapstone/issues/73) (`epic:beer-discovery`)
-- **Unassigned to a milestone yet** (sequencing not decided): [#74](https://github.com/pmconnolly80/FinalCapstone/issues/74) (`epic:retention`, engagement pull-forward), [#75](https://github.com/pmconnolly80/FinalCapstone/issues/75)–[#78](https://github.com/pmconnolly80/FinalCapstone/issues/78) (`epic:admin`, admin UX polish)
+- **Milestone 8 — Admin & Engagement UX Follow-ups**: issues [#74](https://github.com/pmconnolly80/FinalCapstone/issues/74)–[#81](https://github.com/pmconnolly80/FinalCapstone/issues/81) (`epic:retention`/`epic:admin`) — includes the two architecture-question follow-ons (#79, #80, #81) added in Round 3
 
 This deliberately deviates from the repo's usual "only the next epic gets ticketed"
 convention (`EPICS_AND_SPRINTS.md`) — the user explicitly asked to groom multiple
@@ -72,15 +72,24 @@ epic sequencing.
 
 ### What's documented but NOT ticketed — needs more design first
 
-- Bartender account model reconsideration (birthday PIN, no real Identity account) — `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1
-- Mid-shift availability permission model, blocked on the above — `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1
-- Multi-Admin-account + provisioning-tier model — `PERSONAS_AND_USAGE.md`
+- Multi-Admin-account + provisioning-tier model (A4 above) — `PERSONAS_AND_USAGE.md`
 - Native app-store distribution — mentioned above under C1, no design started
 
-### Known doc/GitHub drift found while grooming (not fixed this session)
+## Round 3 — 2026-07-23: architecture decisions + tracking cleanup
 
-Milestone 4 ("Sprint 4: Auth II") is marked **closed** in GitHub, but issues #40–#46 are
-all still **open** — `EPICS_AND_SPRINTS.md` describes Sprint 4 as fully merged and closed
-2026-07-23, which the code/PR history supports, but the underlying GitHub issues were
-never closed to match. Flagged for a future cleanup pass, not corrected here since it
-needs verification against each PR before bulk-closing issues.
+Follow-up session picking up where Round 2 left off. Three things resolved:
+
+1. **The two open architecture questions from Round 2 (A1/A2) are now decided** —
+   see the updated A1/A2 rows above and `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1. Three
+   new issues created: [#79](https://github.com/pmconnolly80/FinalCapstone/issues/79)
+   (variable-length staff PINs), [#80](https://github.com/pmconnolly80/FinalCapstone/issues/80)
+   (PIN-pad availability flag), [#81](https://github.com/pmconnolly80/FinalCapstone/issues/81)
+   (customer-facing unavailable report) — all assigned to Milestone 8.
+2. **The 5 previously-unassigned issues (#74–#78) got a real sprint**: Milestone 8,
+   "Admin & Engagement UX Follow-ups," created and all 5 assigned — bundled by size
+   (small, independent fixes) rather than by shared epic.
+3. **Tracking drift fixed**: Milestone 4 ("Sprint 4: Auth II") was marked closed in
+   GitHub while issues #40–#46 were still open. Verified each of the 6 closing PRs
+   (#47–#52) was actually merged and explicitly referenced the right issue number in
+   its body, then closed all 7 issues. Milestone 4 now correctly shows 0 open / 7
+   closed.

@@ -105,35 +105,34 @@ initialing the customer's own paper sheet.
   (rejected as primary — bartenders won't watch a queue mid-shift — but cheap to add
   later as an opt-in); Web NFC staff tap (not viable — no iPhone browser support).
 
-### Open architecture questions surfaced 2026-07-23 (not yet decided — flagged for future design)
+### Architecture questions from 2026-07-23 usability review — decided 2026-07-23
 
-Two real gaps came out of a 2026-07-23 product/UX review (`USABILITY_TESTING.md`),
-neither resolved yet:
+Two real gaps came out of a 2026-07-23 product/UX review (`USABILITY_TESTING.md`);
+both are now decided, with follow-on issues created:
 
-- **Bartender identity model may not need a full account at all.** Today `StaffPin`
-  hangs off a full `ApplicationUser` (Identity account, email/password, the works),
-  requiring a bartender to have registered like any customer before an admin can
-  promote+PIN them. The user has floated a lighter model where the bartender stays
-  "out of the loop" entirely — no login, no self-service — and an admin directly
-  creates a staff record + PIN with no underlying Identity account, using the
-  bartender's birthday (`MMDDYYYY`, 8 digits) as an easy-to-remember PIN. This is a
-  bigger change than it looks: PIN length is hardcoded to 6 digits throughout
-  (`StaffPin`, lockout logic, the PIN pad UI), and decoupling `StaffPin` from
-  `ApplicationUser` touches `ConfirmedByUserId`'s FK and every place that resolves a
-  bartender's display name from their user record. Needs a real design pass before
-  it's ticketed — not a quick patch.
-- **Mid-shift availability update has no clean answer under the one-device rule.**
-  Only `[Authorize(Roles = "Admin")]` can flip a beer's availability (`PATCH
-  /api/beers/{id}/availability`), but nobody physically at the bar when a keg kicks
-  necessarily has that role, and the one-device rule means a bartender has no device
-  of their own to act from anyway. Three options are all still live and may end up
-  layered rather than mutually exclusive: (a) a narrow availability-only permission
-  for Bartenders — but this requires the bartender to actually be an authenticated
-  user, which is in direct tension with the account-model question above; (b) house
-  policy — bartender tells the admin by text/call, admin updates remotely; (c) a
-  customer-facing "flag as unavailable" crowd-sourced report surfaced to the admin as
-  a lightweight alert, independent of bartender auth entirely. Resolving the account-
-  model question first will determine whether (a) is even feasible.
+- **Bartender identity model — decided: keep today's model.** `StaffPin` stays hung
+  off a full `ApplicationUser` (Identity account) rather than decoupling into a
+  lighter no-login staff record. The onboarding gap (#77) is solved by an
+  admin-initiated invite, not by removing accounts entirely. The one real change:
+  PIN length moves from hardcoded-6-digits to a configurable range (6-8), so an
+  admin can optionally use a birthday-format (`MMDDYYYY`) PIN per bartender — see
+  [#79](https://github.com/pmconnolly80/FinalCapstone/issues/79). No FK/schema
+  decoupling needed.
+- **Mid-shift availability update — decided: layer all three options.** Rather than
+  picking one, all three are being built: (a) primary path — piggyback an
+  availability flag onto the *existing* PIN-confirmation trust model (the bartender
+  is already typing their PIN into the customer's phone; the server already resolves
+  that to a specific bartender without a real login session, so the same mechanism
+  can authorize an availability flip too) — see
+  [#80](https://github.com/pmconnolly80/FinalCapstone/issues/80); (b) a
+  customer-facing "flag as unavailable" crowd-sourced report as a secondary signal,
+  surfaced to the admin like an anomaly — see
+  [#81](https://github.com/pmconnolly80/FinalCapstone/issues/81); (c) house policy
+  (bartender texts/calls the admin) as the fallback for anything the other two don't
+  catch — no code needed for this path. This resolves the original tension: since
+  (a) rides on PIN resolution rather than a role-based `[Authorize]` permission, it
+  doesn't actually require the bartender to be "logged in" in the ASP.NET Identity
+  sense, so it doesn't conflict with keeping the standard account model above.
 
 ## 4.2 Push notifications (planned July 2026)
 
