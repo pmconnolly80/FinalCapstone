@@ -290,6 +290,17 @@ public class AuthControllerTests : IDisposable
         Assert.Contains("facebook.com", response.Headers.Location?.ToString());
     }
 
+    [Fact]
+    public async Task ExternalLogin_Apple_RedirectsToAppleAuthorizeEndpoint()
+    {
+        using var noRedirectClient = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var response = await noRedirectClient.GetAsync("/api/auth/external-login/Apple");
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("appleid.apple.com", response.Headers.Location?.ToString());
+    }
+
     private static string BuildFacebookSignedRequest(string userId, string appSecret)
     {
         var payloadJson = JsonSerializer.Serialize(new { algorithm = "HMAC-SHA256", user_id = userId });
