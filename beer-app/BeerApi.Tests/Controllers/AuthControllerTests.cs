@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using BeerApi.Controllers;
 using BeerApi.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -257,6 +258,22 @@ public class AuthControllerTests : IDisposable
         var sent = _factory.EmailSender.SentEmails.Last(e => e.ToEmail == email);
         var tokenParam = sent.Body.Split("token=").Last().Split('\n', ' ').First();
         return Uri.UnescapeDataString(tokenParam);
+    }
+
+    // The challenge endpoint's redirect is buildable and testable without any real
+    // provider credentials or network access — it's just a 302 the OAuth handler
+    // constructs locally. The callback side (after a real provider round-trip) isn't
+    // covered here; see ExternalLoginServiceTests for the link-or-create logic that
+    // callback ultimately delegates to.
+    [Fact]
+    public async Task ExternalLogin_Google_RedirectsToGoogleAuthorizeEndpoint()
+    {
+        using var noRedirectClient = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var response = await noRedirectClient.GetAsync("/api/auth/external-login/Google");
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("accounts.google.com", response.Headers.Location?.ToString());
     }
 
     public void Dispose() => _factory.Dispose();

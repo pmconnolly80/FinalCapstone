@@ -1,6 +1,7 @@
 using BeerApi.Data;
 using BeerApi.Models;
 using BeerApi.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +26,7 @@ builder.Services.AddHttpClient<ICatalogBeerService, CatalogBeerService>(client =
 
 builder.Services.AddSingleton<ISmtpClientFactory, SmtpClientFactory>();
 builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
+builder.Services.AddScoped<IExternalLoginService, ExternalLoginService>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? "Host=localhost;Port=5432;Database=beerdb;Username=beeruser;Password=beerpass";
@@ -66,6 +68,18 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtAudience,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
     };
+}).AddGoogle(googleOptions =>
+{
+    // Never the default/challenge scheme (Jwt stays that) — only reached via an explicit
+    // Challenge(properties, "Google") call from AuthController's external-login endpoint.
+    // SignInScheme is Identity's own external cookie, used purely to correlate the
+    // redirect round-trip; it never becomes this app's session mechanism.
+    googleOptions.SignInScheme = IdentityConstants.ExternalScheme;
+    var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+    var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+    googleOptions.ClientId = string.IsNullOrWhiteSpace(googleClientId) ? "placeholder" : googleClientId;
+    googleOptions.ClientSecret = string.IsNullOrWhiteSpace(googleClientSecret) ? "placeholder" : googleClientSecret;
+    googleOptions.ClaimActions.MapJsonKey("email_verified", "verified_email");
 });
 
 builder.Services.AddAuthorization();

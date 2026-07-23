@@ -28,6 +28,8 @@ services:
       # same LAN-IP-friendly logic as the frontend's own API base URL derivation (#32). Set
       # only for a real deployment where the API isn't reached at the same host as the SPA.
       Frontend__BaseUrl: ${FRONTEND_BASE_URL:-}
+      Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID:-}
+      Authentication__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
     depends_on:
       - db
     ports:
