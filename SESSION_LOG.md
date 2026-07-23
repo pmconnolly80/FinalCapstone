@@ -1325,3 +1325,50 @@ No app code changes this session — pure coverage review and issue refinement.
 **Resume here:** all three sprints (6, 7, 8) are now reviewed for coverage and ready to
 build, 8/2/8 issues respectively (10 total added/amended this round: #82, #83 new;
 #72, #74, #79, #80 amended). Pick one to start.
+
+---
+
+## 2026-07-23 — Sprint 6: Mobile UI Polish
+
+**Epic:** cross-cutting UX (`beer-app/frontend` only, no backend changes)
+
+Built all six groomed Sprint 6 issues in one pass, since the tab bar (#67) and the
+Account hub (#82) are two halves of the same change and the rest are small,
+independent UI fixes:
+
+- #67: `App.jsx`'s flat top nav replaced with a fixed bottom tab bar
+  (Home/Beers/My Progress/Account), rendered only when `auth.signedIn` — nothing
+  role-specific lives directly in the tab bar itself.
+- #82: new `Account.jsx` hub at `/account` — My PIN (staff only), Linked Accounts,
+  Privacy Policy, Sign Out for everyone; Dashboard/Confirmations/Users/Manage Beers
+  added underneath for Admin roles. This is where Sign Out moved to (it used to be a
+  nav button); `App.jsx` no longer needs `useNavigate`/`handleSignOut` at all.
+- #68: `AuthPage.jsx` converted from inline styles to Tailwind, centered card layout,
+  placeholder wordmark/emoji logo slot above the form — no color theme decided yet,
+  matches the issue's explicit scope.
+- #69/#71: `confirmBeer` in `api.js` now catches a `fetch` throw (no network path at
+  all) and rethrows with an `isNetworkError` flag, distinguishing it from a normal
+  non-ok response; `ConfirmPinPad.jsx` shows a distinct "No signal — ask the
+  bartender..." message for that case, and after 3 consecutive non-network failures
+  shows an "ask an admin" cue — both purely client-side, no change to the generic 401
+  the API already returns.
+- #70: `BeerList.jsx` now calls `fetchMyProgress` for signed-in customers and shows a
+  first-visit hint ("try filtering by style...") when `confirmedCount === 0`,
+  alongside the existing had/not-had chips.
+
+Updated `App.test.jsx` (nav-hidden-when-signed-out, tab bar contents) and added
+`Account.test.jsx`; extended `BeerList.test.jsx` and `ConfirmPinPad.test.jsx` for the
+new behavior. Frontend suite: 158/158. Backend suite (unaffected, re-run for
+confidence): 239/239. Clean `npm run build`.
+
+No browser automation is available in this environment, so the UI wasn't visually
+click-through-verified on a real device — flagged as an open manual-verification item
+in the PR rather than claimed as done.
+
+- Branch: `sprint-6-mobile-ui-polish` — [PR #84](https://github.com/pmconnolly80/FinalCapstone/pull/84)
+  (open), closes #67, #68, #69, #70, #71, #82
+
+**Resume here:** Sprint 6 is code-complete pending PR review/merge and a manual
+phone/LAN click-through. Sprint 7 (Beer Discovery & Recommendations, #72/#73/#83) and
+Sprint 8 (Admin & Engagement UX Follow-ups, #74–#81) are both still groomed and ready
+to build next.

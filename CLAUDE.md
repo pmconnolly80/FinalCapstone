@@ -464,8 +464,40 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     numbers matched a direct `psql` cross-check exactly, and the anomaly panel rendered
     the live `BulkBeerAdd` anomaly from #58's own smoke test with a working link.
 
-**Not built** — the Admin Experience epic is done as of Sprint 5. Next up per
-`EPICS_AND_SPRINTS.md`: Engagement, Retention & Social (not yet groomed into issues).
+- **Sprint 6: Mobile UI Polish** (milestone [#6](https://github.com/pmconnolly80/FinalCapstone/milestone/6),
+  groomed 2026-07-23, built 2026-07-23 — [PR #84](https://github.com/pmconnolly80/FinalCapstone/pull/84),
+  open, not yet merged): six small phone-first UX fixes surfaced by the 2026-07-23
+  live/usability testing, all frontend-only (no backend changes):
+  - #67/#82: `App.jsx`'s flat top nav replaced with a fixed bottom tab bar
+    (Home/Beers/My Progress/Account), rendered only when signed in. New
+    `Account.jsx` hub at `/account` is where the tab bar's "Account" tab lands —
+    consolidates My PIN (staff only), Linked Accounts, Privacy Policy, and Sign Out
+    (moved off the nav, since a tab bar has no room for a standalone sign-out
+    button), plus Admin-only Dashboard/Confirmations/Users/Manage Beers links.
+  - #68: `AuthPage.jsx` converted from inline styles to Tailwind — centered card,
+    placeholder wordmark/emoji logo slot above the form (no color theme decided
+    yet, matching the issue's scope); same fields/behavior as before.
+  - #69/#71: `confirmBeer` (`lib/api.js`) now distinguishes a `fetch`-level network
+    failure (no signal at all) from a normal non-ok API response via an
+    `isNetworkError` flag on the thrown error — the API's generic 401 for a bad/
+    locked-out PIN is unchanged. `ConfirmPinPad.jsx` shows a distinct "No signal —
+    ask the bartender..." message for the network case, and after 3 consecutive
+    non-network rejections shows an "ask an admin" cue, without revealing whether
+    the cause was a wrong PIN or a lockout.
+  - #70: `BeerList.jsx` fetches the signed-in customer's progress and shows a
+    first-visit hint ("try filtering by style...") when `confirmedCount === 0`,
+    since the had/not-had chips have nothing to differentiate on night one.
+  - Frontend suite: 158/158 (new `Account.test.jsx`, extended `App.test.jsx`/
+    `BeerList.test.jsx`/`ConfirmPinPad.test.jsx`). Backend suite re-run for
+    confidence, unaffected: 239/239. Clean `npm run build`. No browser automation
+    is available in this environment, so a manual phone/LAN click-through is still
+    an open item on the PR rather than claimed as done.
+
+**Not built** — the Admin Experience epic is done as of Sprint 5; Sprint 6 (Mobile UI
+Polish) is code-complete pending PR #84 review/merge. Next up per
+`EPICS_AND_SPRINTS.md`: Sprint 7 (Beer Discovery & Recommendations) or Sprint 8 (Admin
+& Engagement UX Follow-ups), both groomed and ready to build; the Engagement,
+Retention & Social epic is not yet groomed into issues.
 
 ## Testing policy (TDD)
 
@@ -536,6 +568,14 @@ informational — bulk beer-add, confirmation velocity spikes, off-hours activit
 Admin Dashboard (#59), which also made itself the actual landing page for the Admin
 role (`Home.jsx` now redirects admins there) and closed the sprint. See the Sprint 5
 bullets above for what each story built.
+
+**Sprint 6: Mobile UI Polish** (milestone [#6](https://github.com/pmconnolly80/FinalCapstone/milestone/6),
+issues #67–71 + #82, groomed 2026-07-23, built 2026-07-23 —
+[PR #84](https://github.com/pmconnolly80/FinalCapstone/pull/84), open) is code-complete:
+bottom tab bar + Account hub, Tailwind AuthPage, PIN-pad offline/repeated-failure
+messaging, and a BeerList first-visit hint. See the bullet above for detail. Pending:
+PR review/merge and a manual phone/LAN click-through (no browser automation available
+in this environment).
 
 Next up: the **Engagement, Retention & Social** epic (milestone badges, push
 notifications + owner composer, My Beers, social feed, journal, owner analytics) is the

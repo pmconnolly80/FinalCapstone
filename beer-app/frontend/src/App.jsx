@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Routes, Route, Link, useNavigate } from 'react-router-dom';
-import { AUTH_CHANGED_EVENT, getRolesFromToken, logout } from './lib/api';
+import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { AUTH_CHANGED_EVENT, getRolesFromToken } from './lib/api';
 import Home from './pages/Home';
 import AdminConfirmations from './pages/AdminConfirmations';
 import AdminUsers from './pages/AdminUsers';
@@ -17,16 +17,43 @@ import MyProgress from './pages/MyProgress';
 import MyPin from './pages/MyPin';
 import LinkedAccounts from './pages/LinkedAccounts';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import Account from './pages/Account';
 
-const navLinkClass =
-  'rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 hover:text-gray-900';
+const TABS = [
+  { to: '/', label: 'Home' },
+  { to: '/beers', label: 'Beers' },
+  { to: '/progress', label: 'My Progress' },
+  { to: '/account', label: 'Account' },
+];
 
 function readAuthState() {
   return { signedIn: Boolean(localStorage.getItem('beer-token')), roles: getRolesFromToken() };
 }
 
+function BottomTabBar() {
+  const location = useLocation();
+
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-gray-200 bg-white">
+      {TABS.map((tab) => {
+        const isActive = tab.to === '/' ? location.pathname === '/' : location.pathname.startsWith(tab.to);
+        return (
+          <Link
+            key={tab.to}
+            to={tab.to}
+            className={`flex-1 py-3 text-center text-sm font-medium ${
+              isActive ? 'text-gray-900' : 'text-gray-500'
+            }`}
+          >
+            {tab.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 function App() {
-  const navigate = useNavigate();
   const [auth, setAuth] = useState(readAuthState);
 
   // Same-tab login/register/logout don't fire the browser's 'storage' event (only other
@@ -41,68 +68,13 @@ function App() {
     };
   }, []);
 
-  const handleSignOut = () => {
-    logout();
-    navigate('/');
-  };
-
   return (
-    <div className="mx-auto max-w-5xl p-4 md:p-8">
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="m-0 text-2xl font-bold tracking-tight">Beer App</h1>
-          <p className="m-0 mt-1 text-sm text-gray-600">
-            The tavern&apos;s 200 club, on your phone
-          </p>
-        </div>
-        <nav className="flex flex-wrap gap-1">
-          <Link className={navLinkClass} to="/">
-            Home
-          </Link>
-          <Link className={navLinkClass} to="/beers">
-            Beers
-          </Link>
-          <Link className={navLinkClass} to="/progress">
-            My Progress
-          </Link>
-          <Link className={navLinkClass} to="/my-pin">
-            My PIN
-          </Link>
-          {auth.signedIn && (
-            <Link className={navLinkClass} to="/account/linked-providers">
-              Linked accounts
-            </Link>
-          )}
-          {auth.roles.includes('Admin') && (
-            <Link className={navLinkClass} to="/admin/dashboard">
-              Dashboard
-            </Link>
-          )}
-          {auth.roles.includes('Admin') && (
-            <Link className={navLinkClass} to="/admin/confirmations">
-              Admin
-            </Link>
-          )}
-          {auth.roles.includes('Admin') && (
-            <Link className={navLinkClass} to="/admin/users">
-              Users
-            </Link>
-          )}
-          {auth.roles.includes('Admin') && (
-            <Link className={navLinkClass} to="/admin/beers">
-              Manage Beers
-            </Link>
-          )}
-          {auth.signedIn ? (
-            <button type="button" onClick={handleSignOut} className={navLinkClass}>
-              Sign out
-            </button>
-          ) : (
-            <Link className={navLinkClass} to="/auth">
-              Sign in
-            </Link>
-          )}
-        </nav>
+    <div className="mx-auto max-w-5xl p-4 pb-20 md:p-8 md:pb-24">
+      <header className="mb-6">
+        <h1 className="m-0 text-2xl font-bold tracking-tight">Beer App</h1>
+        <p className="m-0 mt-1 text-sm text-gray-600">
+          The tavern&apos;s 200 club, on your phone
+        </p>
       </header>
 
       <Routes>
@@ -112,6 +84,7 @@ function App() {
         <Route path="/beers/new" element={<BeerForm />} />
         <Route path="/beers/:id/edit" element={<BeerForm />} />
         <Route path="/progress" element={<MyProgress />} />
+        <Route path="/account" element={<Account />} />
         <Route path="/my-pin" element={<MyPin />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/confirmations" element={<AdminConfirmations />} />
@@ -130,6 +103,8 @@ function App() {
           Privacy policy
         </Link>
       </footer>
+
+      {auth.signedIn && <BottomTabBar />}
     </div>
   );
 }

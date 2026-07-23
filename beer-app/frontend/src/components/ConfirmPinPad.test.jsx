@@ -79,6 +79,65 @@ describe('ConfirmPinPad', () => {
     expect(input).toHaveValue('');
   });
 
+  it('shows a repeated-failure cue after 3 consecutive rejections, without revealing the cause', async () => {
+    confirmBeer.mockRejectedValue(new Error('Invalid PIN.'));
+    const user = userEvent.setup();
+    render(<ConfirmPinPad beer={beer} onClose={() => {}} />);
+
+    for (let i = 0; i < 3; i += 1) {
+      // eslint-disable-next-line no-await-in-loop
+      await user.type(screen.getByLabelText('Bartender PIN'), '654321');
+      // eslint-disable-next-line no-await-in-loop
+      await user.click(screen.getByRole('button', { name: 'Confirm' }));
+      // eslint-disable-next-line no-await-in-loop
+      await screen.findByText('Invalid PIN.');
+    }
+
+    expect(
+      screen.getByText(/If this keeps happening, ask an admin/)
+    ).toBeInTheDocument();
+  });
+
+  it('resets the failure count after a successful confirmation', async () => {
+    confirmBeer.mockRejectedValueOnce(new Error('Invalid PIN.'));
+    confirmBeer.mockRejectedValueOnce(new Error('Invalid PIN.'));
+    confirmBeer.mockResolvedValueOnce({ confirmedCount: 88, goal: 200, mugEarned: false });
+    const user = userEvent.setup();
+    render(<ConfirmPinPad beer={beer} onClose={() => {}} />);
+
+    await user.type(screen.getByLabelText('Bartender PIN'), '654321');
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    await screen.findByText('Invalid PIN.');
+    await user.type(screen.getByLabelText('Bartender PIN'), '654321');
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    await screen.findByText('Invalid PIN.');
+
+    expect(
+      screen.queryByText(/If this keeps happening, ask an admin/)
+    ).not.toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Bartender PIN'), '123456');
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+
+    expect(await screen.findByText('88 of 200')).toBeInTheDocument();
+  });
+
+  it('shows a distinct offline message on a network failure, not the generic auth error', async () => {
+    const networkError = new Error('No network connection');
+    networkError.isNetworkError = true;
+    confirmBeer.mockRejectedValue(networkError);
+    const user = userEvent.setup();
+    render(<ConfirmPinPad beer={beer} onClose={() => {}} />);
+
+    await user.type(screen.getByLabelText('Bartender PIN'), '654321');
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+
+    expect(
+      await screen.findByText(/No signal — ask the bartender to note it/)
+    ).toBeInTheDocument();
+    expect(screen.queryByText('No network connection')).not.toBeInTheDocument();
+  });
+
   it('closes via the cancel button', async () => {
     const onClose = vi.fn();
     const user = userEvent.setup();

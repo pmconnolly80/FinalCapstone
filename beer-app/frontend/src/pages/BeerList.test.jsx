@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import BeerList from './BeerList';
-import { searchBeers } from '../lib/api';
+import { fetchMyProgress, searchBeers } from '../lib/api';
 
 vi.mock('../lib/api');
 
@@ -36,6 +36,7 @@ const hefeweizen = {
 describe('BeerList', () => {
   beforeEach(() => {
     localStorage.clear();
+    fetchMyProgress.mockResolvedValue({ confirmedCount: 5, goal: 200, mugEarned: false, confirmations: [] });
   });
 
   afterEach(() => {
@@ -153,5 +154,38 @@ describe('BeerList', () => {
     await waitFor(() => {
       expect(searchBeers).toHaveBeenCalledWith(expect.objectContaining({ search: 'American Pale Ale' }));
     });
+  });
+
+  it('shows a first-visit hint for a signed-in customer with 0 confirmed beers', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    fetchMyProgress.mockResolvedValue({ confirmedCount: 0, goal: 200, mugEarned: false, confirmations: [] });
+    searchBeers.mockResolvedValue({ items: [paleAle], page: 1, pageSize: 200, totalCount: 1 });
+
+    renderBeerList();
+
+    expect(
+      await screen.findByText(/Try filtering by style, or ask the bartender/)
+    ).toBeInTheDocument();
+  });
+
+  it('hides the first-visit hint once the customer has at least one confirmation', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    fetchMyProgress.mockResolvedValue({ confirmedCount: 1, goal: 200, mugEarned: false, confirmations: [] });
+    searchBeers.mockResolvedValue({ items: [paleAle], page: 1, pageSize: 200, totalCount: 1 });
+
+    renderBeerList();
+    await screen.findByText('Pale Ale');
+
+    expect(screen.queryByText(/Try filtering by style, or ask the bartender/)).not.toBeInTheDocument();
+  });
+
+  it('shows no hint when signed out', async () => {
+    searchBeers.mockResolvedValue({ items: [paleAle], page: 1, pageSize: 200, totalCount: 1 });
+
+    renderBeerList();
+    await screen.findByText('Pale Ale');
+
+    expect(screen.queryByText(/Try filtering by style, or ask the bartender/)).not.toBeInTheDocument();
+    expect(fetchMyProgress).not.toHaveBeenCalled();
   });
 });

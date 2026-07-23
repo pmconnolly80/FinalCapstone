@@ -1,15 +1,14 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
-import { AUTH_CHANGED_EVENT, fetchMyProgress, logout } from './lib/api';
+import { AUTH_CHANGED_EVENT, fetchMyProgress } from './lib/api';
 
 // getRolesFromToken/AUTH_CHANGED_EVENT need their real implementations here (nav
 // behavior IS the thing under test); only the network-touching calls are mocked.
 vi.mock('./lib/api', async (importOriginal) => {
   const actual = await importOriginal();
-  return { ...actual, fetchMyProgress: vi.fn(), logout: vi.fn() };
+  return { ...actual, fetchMyProgress: vi.fn() };
 });
 
 function fakeJwt(payload) {
@@ -42,63 +41,45 @@ describe('App nav', () => {
     expect(screen.getByRole('link', { name: 'Privacy policy' })).toBeInTheDocument();
   });
 
-  it('shows Sign in and hides Manage Beers when signed out', () => {
+  it('renders no bottom tab bar when signed out', () => {
     renderApp();
-    const nav = within(screen.getByRole('navigation'));
 
-    expect(nav.getByRole('link', { name: 'Sign in' })).toBeInTheDocument();
-    expect(nav.queryByRole('link', { name: 'Manage Beers' })).not.toBeInTheDocument();
-    expect(nav.queryByRole('button', { name: 'Sign out' })).not.toBeInTheDocument();
-    expect(nav.queryByRole('link', { name: 'Linked accounts' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   });
 
-  it('hides Manage Beers for a signed-in customer, shows Linked accounts', () => {
+  it('shows the bottom tab bar for a signed-in customer, with Home/Beers/My Progress/Account only', () => {
     localStorage.setItem('beer-token', fakeJwt({ [roleClaim]: 'Customer' }));
 
     renderApp();
     const nav = within(screen.getByRole('navigation'));
 
+    expect(nav.getByRole('link', { name: 'Home' })).toBeInTheDocument();
+    expect(nav.getByRole('link', { name: 'Beers' })).toBeInTheDocument();
+    expect(nav.getByRole('link', { name: 'My Progress' })).toBeInTheDocument();
+    expect(nav.getByRole('link', { name: 'Account' })).toBeInTheDocument();
     expect(nav.queryByRole('link', { name: 'Manage Beers' })).not.toBeInTheDocument();
-    expect(nav.getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
-    expect(nav.getByRole('link', { name: 'Linked accounts' })).toBeInTheDocument();
+    expect(nav.queryByRole('button', { name: 'Sign out' })).not.toBeInTheDocument();
   });
 
-  it('shows Manage Beers for a signed-in admin', () => {
+  it('shows the same four tabs for a signed-in admin (admin links live under Account, not the tab bar)', () => {
     localStorage.setItem('beer-token', fakeJwt({ [roleClaim]: 'Admin' }));
 
     renderApp();
     const nav = within(screen.getByRole('navigation'));
 
-    expect(nav.getByRole('link', { name: 'Manage Beers' })).toBeInTheDocument();
+    expect(nav.getByRole('link', { name: 'Account' })).toBeInTheDocument();
+    expect(nav.queryByRole('link', { name: 'Manage Beers' })).not.toBeInTheDocument();
   });
 
   it('reacts to the auth-changed event without a page reload', async () => {
     renderApp();
-    const nav = within(screen.getByRole('navigation'));
-    expect(nav.getByRole('link', { name: 'Sign in' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
 
     localStorage.setItem('beer-token', fakeJwt({ [roleClaim]: 'Admin' }));
     act(() => {
       window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
     });
 
-    await waitFor(() => expect(nav.getByRole('button', { name: 'Sign out' })).toBeInTheDocument());
-    expect(nav.getByRole('link', { name: 'Manage Beers' })).toBeInTheDocument();
-  });
-
-  it('clicking Sign out calls logout', async () => {
-    const user = userEvent.setup();
-    localStorage.setItem('beer-token', fakeJwt({ [roleClaim]: 'Customer' }));
-    logout.mockImplementation(() => {
-      localStorage.removeItem('beer-token');
-      window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
-    });
-
-    renderApp();
-    const nav = within(screen.getByRole('navigation'));
-    await user.click(nav.getByRole('button', { name: 'Sign out' }));
-
-    expect(logout).toHaveBeenCalled();
-    expect(nav.getByRole('link', { name: 'Sign in' })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('navigation')).toBeInTheDocument());
   });
 });
