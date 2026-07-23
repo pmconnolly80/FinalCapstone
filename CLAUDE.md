@@ -263,7 +263,7 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     `/forgot-password`. **Same caveat as #43**: the challenge/callback wiring against a
     live Facebook app is unverified in this environment; the signed-request verification
     and anonymization logic have real test coverage.
-  - #45 (in progress, not yet PR'd): Apple (Sign in with Apple) external sign-in via the
+  - #45 ([PR #51](https://github.com/pmconnolly80/FinalCapstone/pull/51) open): Apple (Sign in with Apple) external sign-in via the
     community `AspNet.Security.OAuth.Apple` package (Apple has no first-party ASP.NET Core
     package), same challenge/callback/`ExternalLoginService` pattern as #43/#44.
     `Authentication:Apple:ClientId`/`TeamId`/`KeyId`/`PrivateKey` follow the same
@@ -349,9 +349,10 @@ frontend 99/99). **Sprint 4: Auth II** is in progress (milestone
    done in that order): ~~#43~~ done, merged
    [PR #49](https://github.com/pmconnolly80/FinalCapstone/pull/49). ~~#44~~ (Facebook +
    privacy policy + data deletion) done, merged
-   [PR #50](https://github.com/pmconnolly80/FinalCapstone/pull/50). #45 (Apple) in
-   progress, not yet PR'd → #46 (social buttons + account linking + consent checkbox,
-   depends on #40/#43/#44/#45) is last in the sprint.
+   [PR #50](https://github.com/pmconnolly80/FinalCapstone/pull/50). #45 (Apple) done,
+   [PR #51](https://github.com/pmconnolly80/FinalCapstone/pull/51) (open) → #46 (social
+   buttons + account linking + consent checkbox, depends on #40/#43/#44/#45) is last in
+   the sprint.
 5. Then the remaining named sprints: Admin Experience, Engagement/Retention/Social,
    Deployment & Hardening.
 
