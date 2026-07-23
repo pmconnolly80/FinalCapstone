@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AUTH_CHANGED_EVENT, login, register } from '../lib/api';
 
 function AuthPage() {
@@ -63,6 +64,11 @@ function AuthPage() {
         )}
         <button type="submit">{mode === 'login' ? 'Continue' : 'Create account'}</button>
       </form>
+      {mode === 'login' && (
+        <p>
+          <Link to="/forgot-password">Forgot password?</Link>
+        </p>
+      )}
       {message && <p>{message}</p>}
     </div>
   );

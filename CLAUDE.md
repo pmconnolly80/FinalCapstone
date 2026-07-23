@@ -182,27 +182,44 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     auth-awareness, the reactive event).
 
 - **Sprint 4: Auth II** (milestone [#4](https://github.com/pmconnolly80/FinalCapstone/milestone/4),
-  in progress, [PR #47](https://github.com/pmconnolly80/FinalCapstone/pull/47) open):
-  - #40 `ApplicationUser : IdentityUser` (`beer-app/backend/Models/ApplicationUser.cs`) with a
+  in progress):
+  - #40/#41 (merged [PR #47](https://github.com/pmconnolly80/FinalCapstone/pull/47)):
+    `ApplicationUser : IdentityUser` (`beer-app/backend/Models/ApplicationUser.cs`) with a
     `MarketingConsent` bool (default `false`); replaces the bare `IdentityUser` in
     `ApplicationDbContext`, `Program.cs`'s `AddIdentity<...>`, `AuthController`'s
     `UserManager`/`RoleManager`, and `SeedData.cs`'s dev bartender bootstrap.
     `AddApplicationUserMarketingConsent` migration adds the column (backfills existing rows
     to `false`). `RegisterRequest` gained an optional `MarketingConsent` param — the actual
-    consent-checkbox UI is #46's job, this just gives it somewhere to persist.
-  - #41 `IEmailSender`/`SmtpEmailSender` (`beer-app/backend/Services/`), the app's first
-    email dependency (#42's password reset is the first real caller). Config-driven the same
-    way `CatalogBeerService.cs` handles its API key: `Email:SmtpHost`/`SmtpPort`/`Username`/
-    `Password`/`FromAddress`/`FromName`/`EnableSsl` in `appsettings.json` (all empty/defaulted
-    in the committed file), overridable via `Email__*` in `docker-compose.yml`, sourced from
-    an untracked `beer-app/.env`. Sending silently no-ops (logs instead) when `SmtpHost` or
-    `FromAddress` is unconfigured, rather than throwing. `ISmtpClient`/`ISmtpClientFactory`
-    wrap `System.Net.Mail.SmtpClient` as a thin seam so the send path is unit-testable
-    without a real network call.
+    consent-checkbox UI is #46's job, this just gives it somewhere to persist. Also
+    `IEmailSender`/`SmtpEmailSender` (`beer-app/backend/Services/`), the app's first email
+    dependency. Config-driven the same way `CatalogBeerService.cs` handles its API key:
+    `Email:SmtpHost`/`SmtpPort`/`Username`/`Password`/`FromAddress`/`FromName`/`EnableSsl` in
+    `appsettings.json` (all empty/defaulted in the committed file), overridable via `Email__*`
+    in `docker-compose.yml`, sourced from an untracked `beer-app/.env`. Sending silently
+    no-ops (logs instead) when `SmtpHost` or `FromAddress` is unconfigured, rather than
+    throwing. `ISmtpClient`/`ISmtpClientFactory` wrap `System.Net.Mail.SmtpClient` as a thin
+    seam so the send path is unit-testable without a real network call.
+  - #42 ([PR #48](https://github.com/pmconnolly80/FinalCapstone/pull/48) open): `POST /api/auth/forgot-password` — always returns the
+    same generic success message regardless of whether the email exists (avoids account
+    enumeration), and only sends a reset email via #41's `IEmailSender` when it does.
+    `POST /api/auth/reset-password` — validates the Identity reset token via
+    `ResetPasswordAsync` (enforces the same length-only min-8 policy as registration since
+    it goes through the same password validators); an unknown email returns the identical
+    generic "invalid or expired" message an invalid token would, again to avoid enumeration.
+    The reset link's frontend origin resolves from `Frontend:BaseUrl` config first (empty by
+    default), falling back to the request's `Origin` header (so it works out of the box for
+    both `localhost` and a phone hitting the API over a LAN IP, matching #32's dynamic-host
+    approach), then `http://localhost:3001` as a last resort. New `ForgotPassword.jsx`/
+    `ResetPassword.jsx` pages (`beer-app/frontend/src/pages/`, same inline-styled pattern as
+    `AuthPage.jsx`, not yet Tailwind-converted) at `/forgot-password`/`/reset-password`;
+    `AuthPage.jsx` login mode links to the former. Backend tests use a new `FakeEmailSender`
+    test double (`beer-app/BeerApi.Tests/TestDoubles/`) wired into
+    `TestWebApplicationFactory` so integration tests can assert on sent emails without a
+    real SMTP server.
 
 **Not built** — next up per `EPICS_AND_SPRINTS.md`:
 - No admin UI to assign roles (currently DB-manual only; PIN management API exists)
-- Sprint 4 #42–#46 (password reset, external sign-in, social buttons/account linking)
+- Sprint 4 #43–#46 (external sign-in, social buttons/account linking)
 
 ## Testing policy (TDD)
 
@@ -249,13 +266,15 @@ frontend 99/99). **Sprint 4: Auth II** is in progress (milestone
 [#4](https://github.com/pmconnolly80/FinalCapstone/milestone/4), issues #40–#46, groomed
 2026-07-21). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md` for the full history. In order:
 
-1. ~~#40 (`ApplicationUser` + marketing-consent migration)~~ — done,
-   [PR #47](https://github.com/pmconnolly80/FinalCapstone/pull/47) (open).
-2. ~~#41 (pluggable email sender)~~ — done, [PR #47](https://github.com/pmconnolly80/FinalCapstone/pull/47)
-   (open). → #42 (forgot/reset password, depends on #41) is next.
-3. #43/#44/#45 (Google/Facebook/Apple external sign-in — independent of each other) → #46
+1. ~~#40 (`ApplicationUser` + marketing-consent migration)~~ — done, merged
+   [PR #47](https://github.com/pmconnolly80/FinalCapstone/pull/47).
+2. ~~#41 (pluggable email sender)~~ — done, merged
+   [PR #47](https://github.com/pmconnolly80/FinalCapstone/pull/47).
+3. #42 (forgot/reset password, depends on #41) — done,
+   [PR #48](https://github.com/pmconnolly80/FinalCapstone/pull/48) (open).
+4. #43/#44/#45 (Google/Facebook/Apple external sign-in — independent of each other) → #46
    (social buttons + account linking + consent checkbox, depends on #40/#43/#44/#45).
-4. Then the remaining named sprints: Admin Experience, Engagement/Retention/Social,
+5. Then the remaining named sprints: Admin Experience, Engagement/Retention/Social,
    Deployment & Hardening.
 
 Local tooling note: only the .NET 10 SDK is on PATH but the projects target net8.0 — run

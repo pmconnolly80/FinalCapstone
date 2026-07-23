@@ -1,10 +1,19 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AuthPage from './AuthPage';
 import { login, register } from '../lib/api';
 
 vi.mock('../lib/api');
+
+function renderAuthPage() {
+  return render(
+    <MemoryRouter>
+      <AuthPage />
+    </MemoryRouter>
+  );
+}
 
 describe('AuthPage', () => {
   beforeEach(() => {
@@ -16,15 +25,26 @@ describe('AuthPage', () => {
   });
 
   it('defaults to login mode', () => {
-    render(<AuthPage />);
+    renderAuthPage();
 
     expect(screen.getByRole('heading', { name: 'Log in' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
   });
 
+  it('shows a forgot password link in login mode only', async () => {
+    const user = userEvent.setup();
+    renderAuthPage();
+
+    expect(screen.getByRole('link', { name: 'Forgot password?' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Register' }));
+
+    expect(screen.queryByRole('link', { name: 'Forgot password?' })).not.toBeInTheDocument();
+  });
+
   it('switches to register mode', async () => {
     const user = userEvent.setup();
-    render(<AuthPage />);
+    renderAuthPage();
 
     await user.click(screen.getByRole('button', { name: 'Register' }));
 
@@ -36,7 +56,7 @@ describe('AuthPage', () => {
     login.mockResolvedValue({ token: 'jwt-token', email: 'a@example.com' });
     const user = userEvent.setup();
 
-    render(<AuthPage />);
+    renderAuthPage();
     await user.type(screen.getByPlaceholderText('Email'), 'a@example.com');
     await user.type(screen.getByPlaceholderText('Password'), 'Passw0rd!');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
@@ -50,7 +70,7 @@ describe('AuthPage', () => {
     login.mockRejectedValue(new Error('Login failed'));
     const user = userEvent.setup();
 
-    render(<AuthPage />);
+    renderAuthPage();
     await user.type(screen.getByPlaceholderText('Email'), 'a@example.com');
     await user.type(screen.getByPlaceholderText('Password'), 'wrong');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
@@ -62,7 +82,7 @@ describe('AuthPage', () => {
     register.mockResolvedValue({ token: 'jwt-token', email: 'new@example.com' });
     const user = userEvent.setup();
 
-    render(<AuthPage />);
+    renderAuthPage();
     await user.click(screen.getByRole('button', { name: 'Register' }));
     await user.type(screen.getByPlaceholderText('Email'), 'new@example.com');
     await user.type(screen.getByPlaceholderText('Password'), 'Passw0rd!');
@@ -74,7 +94,7 @@ describe('AuthPage', () => {
 
   it('shows the password requirement in register mode before submitting', async () => {
     const user = userEvent.setup();
-    render(<AuthPage />);
+    renderAuthPage();
 
     expect(
       screen.queryByText('Passwords need at least 8 characters.')
@@ -87,7 +107,7 @@ describe('AuthPage', () => {
 
   it('blocks registration with a short password without calling the API', async () => {
     const user = userEvent.setup();
-    render(<AuthPage />);
+    renderAuthPage();
 
     await user.click(screen.getByRole('button', { name: 'Register' }));
     await user.type(screen.getByPlaceholderText('Email'), 'new@example.com');
@@ -102,7 +122,7 @@ describe('AuthPage', () => {
     register.mockRejectedValue(new Error('A user with that email already exists.'));
     const user = userEvent.setup();
 
-    render(<AuthPage />);
+    renderAuthPage();
     await user.click(screen.getByRole('button', { name: 'Register' }));
     await user.type(screen.getByPlaceholderText('Email'), 'dup@example.com');
     await user.type(screen.getByPlaceholderText('Password'), 'Passw0rd!');

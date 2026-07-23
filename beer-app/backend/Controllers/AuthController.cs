@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using BeerApi.Models;
+using BeerApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -17,12 +18,18 @@ public class AuthController : ControllerBase
 
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly IEmailSender _emailSender;
     private readonly IConfiguration _configuration;
 
-    public AuthController(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration)
+    public AuthController(
+        UserManager<ApplicationUser> userManager,
+        RoleManager<IdentityRole> roleManager,
+        IEmailSender emailSender,
+        IConfiguration configuration)
     {
         _userManager = userManager;
         _roleManager = roleManager;
+        _emailSender = emailSender;
         _configuration = configuration;
     }
 
@@ -89,6 +96,74 @@ public class AuthController : ControllerBase
         return Ok(new AuthResponse(token, user.Email!));
     }
 
+    [AllowAnonymous]
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email))
+        {
+            return BadRequest(new { message = "Email is required." });
+        }
+
+        var user = await _userManager.FindByEmailAsync(request.Email);
+        if (user != null)
+        {
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var resetLink = $"{ResolveFrontendBaseUrl()}/reset-password?email={Uri.EscapeDataString(request.Email)}&token={Uri.EscapeDataString(token)}";
+            await _emailSender.SendAsync(
+                request.Email,
+                "Reset your password",
+                $"Use the link below to reset your password:\n\n{resetLink}\n\nIf you didn't request this, you can ignore this email.");
+        }
+
+        // Same response whether or not the account exists — avoids account enumeration.
+        return Ok(new { message = "If an account with that email exists, a password reset link has been sent." });
+    }
+
+    [AllowAnonymous]
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Token) || string.IsNullOrWhiteSpace(request.NewPassword))
+        {
+            return BadRequest(new { message = "Email, token, and new password are required." });
+        }
+
+        var user = await _userManager.FindByEmailAsync(request.Email);
+        if (user == null)
+        {
+            // Same generic failure as an invalid/expired token — avoids account enumeration.
+            return BadRequest(new { message = "This password reset link is invalid or has expired." });
+        }
+
+        var result = await _userManager.ResetPasswordAsync(user, request.Token, request.NewPassword);
+        if (!result.Succeeded)
+        {
+            var message = result.Errors.Any(e => e.Code == "InvalidToken")
+                ? "This password reset link is invalid or has expired."
+                : string.Join(" ", result.Errors.Select(e => e.Description));
+            return BadRequest(new { message });
+        }
+
+        return Ok(new { message = "Your password has been reset. You can now sign in." });
+    }
+
+    // A configured Frontend:BaseUrl always wins — Origin can't be trusted to build a link
+    // that survives being copy-pasted or opened later (a different device, an email client
+    // that strips it), whereas the fallback (Origin, then localhost) only matters for local
+    // dev boxes without the setting.
+    private string ResolveFrontendBaseUrl()
+    {
+        var configured = _configuration["Frontend:BaseUrl"];
+        if (!string.IsNullOrWhiteSpace(configured))
+        {
+            return configured.TrimEnd('/');
+        }
+
+        var origin = Request.Headers.Origin.FirstOrDefault();
+        return (!string.IsNullOrWhiteSpace(origin) ? origin : "http://localhost:3001").TrimEnd('/');
+    }
+
     private async Task<string> CreateToken(ApplicationUser user)
     {
         var jwtKey = _configuration["Jwt:Key"] ?? "development-secret-key-change-me";
@@ -121,3 +196,5 @@ public class AuthController : ControllerBase
 public record RegisterRequest(string Email, string Password, bool MarketingConsent = false);
 public record LoginRequest(string Email, string Password);
 public record AuthResponse(string Token, string Email);
+public record ForgotPasswordRequest(string Email);
+public record ResetPasswordRequest(string Email, string Token, string NewPassword);

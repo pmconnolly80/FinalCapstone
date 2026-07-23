@@ -167,6 +167,98 @@ public class AuthControllerTests : IDisposable
         Assert.False(user?.MarketingConsent);
     }
 
+    [Fact]
+    public async Task ForgotPassword_WithExistingEmail_ReturnsGenericSuccess_AndSendsResetEmail()
+    {
+        await _client.PostAsJsonAsync("/api/auth/register",
+            new RegisterRequest("forgot.exists@example.com", "Passw0rd!"));
+
+        var response = await _client.PostAsJsonAsync("/api/auth/forgot-password",
+            new ForgotPasswordRequest("forgot.exists@example.com"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var sent = Assert.Single(_factory.EmailSender.SentEmails, e => e.ToEmail == "forgot.exists@example.com");
+        Assert.Contains("reset-password?email=", sent.Body);
+    }
+
+    [Fact]
+    public async Task ForgotPassword_WithUnknownEmail_ReturnsSameGenericSuccess_AndDoesNotSendEmail()
+    {
+        var response = await _client.PostAsJsonAsync("/api/auth/forgot-password",
+            new ForgotPasswordRequest("no.such.account@example.com"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.DoesNotContain(_factory.EmailSender.SentEmails, e => e.ToEmail == "no.such.account@example.com");
+    }
+
+    [Fact]
+    public async Task ResetPassword_WithValidToken_ChangesPassword_AndAllowsLoginWithNewPassword()
+    {
+        const string email = "reset.valid@example.com";
+        await _client.PostAsJsonAsync("/api/auth/register", new RegisterRequest(email, "Passw0rd!"));
+        await _client.PostAsJsonAsync("/api/auth/forgot-password", new ForgotPasswordRequest(email));
+        var token = ExtractTokenFromLastResetEmail(email);
+
+        var response = await _client.PostAsJsonAsync("/api/auth/reset-password",
+            new ResetPasswordRequest(email, token, "NewPassw0rd!"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var oldPasswordLogin = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest(email, "Passw0rd!"));
+        Assert.Equal(HttpStatusCode.Unauthorized, oldPasswordLogin.StatusCode);
+
+        var newPasswordLogin = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest(email, "NewPassw0rd!"));
+        Assert.Equal(HttpStatusCode.OK, newPasswordLogin.StatusCode);
+    }
+
+    [Fact]
+    public async Task ResetPassword_WithInvalidToken_ReturnsBadRequest_WithGenericMessage()
+    {
+        const string email = "reset.invalidtoken@example.com";
+        await _client.PostAsJsonAsync("/api/auth/register", new RegisterRequest(email, "Passw0rd!"));
+
+        var response = await _client.PostAsJsonAsync("/api/auth/reset-password",
+            new ResetPasswordRequest(email, "not-a-real-token", "NewPassw0rd!"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.Equal("This password reset link is invalid or has expired.", body?.Message);
+    }
+
+    [Fact]
+    public async Task ResetPassword_WithUnknownEmail_ReturnsSameGenericMessageAsInvalidToken()
+    {
+        var response = await _client.PostAsJsonAsync("/api/auth/reset-password",
+            new ResetPasswordRequest("no.such.account@example.com", "not-a-real-token", "NewPassw0rd!"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.Equal("This password reset link is invalid or has expired.", body?.Message);
+    }
+
+    [Fact]
+    public async Task ResetPassword_WithShortNewPassword_ReturnsBadRequest_WithExplanation()
+    {
+        const string email = "reset.shortpass@example.com";
+        await _client.PostAsJsonAsync("/api/auth/register", new RegisterRequest(email, "Passw0rd!"));
+        await _client.PostAsJsonAsync("/api/auth/forgot-password", new ForgotPasswordRequest(email));
+        var token = ExtractTokenFromLastResetEmail(email);
+
+        var response = await _client.PostAsJsonAsync("/api/auth/reset-password",
+            new ResetPasswordRequest(email, token, "short"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.Contains("at least 8 characters", body?.Message);
+    }
+
+    private string ExtractTokenFromLastResetEmail(string email)
+    {
+        var sent = _factory.EmailSender.SentEmails.Last(e => e.ToEmail == email);
+        var tokenParam = sent.Body.Split("token=").Last().Split('\n', ' ').First();
+        return Uri.UnescapeDataString(tokenParam);
+    }
+
     public void Dispose() => _factory.Dispose();
 
     private sealed record ErrorResponse(string Message);
