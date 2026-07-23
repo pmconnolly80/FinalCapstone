@@ -239,7 +239,7 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     developer-console app hasn't been exercised end-to-end in this environment and needs
     manual verification before real users hit it. No frontend UI yet (buttons, the
     `/auth/callback` receiving page, account linking) — that's #46's job.
-  - #44 (in progress, not yet PR'd): Facebook external sign-in via
+  - #44 ([PR #50](https://github.com/pmconnolly80/FinalCapstone/pull/50) open): Facebook external sign-in via
     `Microsoft.AspNetCore.Authentication.Facebook`, same challenge/callback/
     `ExternalLoginService` pattern as #43 (`Authentication:Facebook:AppId`/`AppSecret`,
     same empty-by-default convention); Facebook's Graph API only ever returns
@@ -322,8 +322,9 @@ frontend 99/99). **Sprint 4: Auth II** is in progress (milestone
 4. #43/#44/#45 (Google/Facebook/Apple external sign-in — independent of each other, being
    done in that order): ~~#43~~ done, merged
    [PR #49](https://github.com/pmconnolly80/FinalCapstone/pull/49). #44 (Facebook +
-   privacy policy + data deletion) in progress, not yet PR'd → #45 next → #46 (social
-   buttons + account linking + consent checkbox, depends on #40/#43/#44/#45).
+   privacy policy + data deletion) done, [PR #50](https://github.com/pmconnolly80/FinalCapstone/pull/50)
+   (open) → #45 next → #46 (social buttons + account linking + consent checkbox,
+   depends on #40/#43/#44/#45).
 5. Then the remaining named sprints: Admin Experience, Engagement/Retention/Social,
    Deployment & Hardening.
 
