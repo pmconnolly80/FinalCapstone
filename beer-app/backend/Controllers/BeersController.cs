@@ -129,7 +129,27 @@ public class BeersController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Beer>> PostBeer(Beer beer)
     {
+        var adminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (adminId == null)
+        {
+            return Unauthorized();
+        }
+
         _context.Beers.Add(beer);
+        await _context.SaveChangesAsync();
+
+        // #58: attributes bulk-add anomalies to an admin — until now nothing recorded
+        // who created a beer at all, only edits/deletes (#56).
+        _context.AdminAudits.Add(new AdminAudit
+        {
+            AdminUserId = adminId,
+            EntityType = "Beer",
+            EntityId = beer.Id.ToString(),
+            Action = "Create",
+            BeforeSnapshot = null,
+            AfterSnapshot = $"{beer.Name} ({beer.Brewery})",
+            Reason = string.Empty,
+        });
         await _context.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetBeer), new { id = beer.Id }, beer);

@@ -39,6 +39,21 @@ services:
       # un-escapes them) since a real multi-line value can't round-trip through a
       # single-line .env entry.
       Authentication__Apple__PrivateKey: ${APPLE_PRIVATE_KEY:-}
+      # Anomaly-detection thresholds (#58) — none are secrets, just overridable for
+      # per-tavern tuning later without a rebuild (IMPLEMENTATION_BACKLOG.md Phase 5).
+      Anomalies__BulkBeerAdd__WindowMinutes: ${ANOMALIES_BULK_ADD_WINDOW_MINUTES:-60}
+      Anomalies__BulkBeerAdd__Threshold: ${ANOMALIES_BULK_ADD_THRESHOLD:-10}
+      Anomalies__BulkBeerAdd__LookbackHours: ${ANOMALIES_BULK_ADD_LOOKBACK_HOURS:-24}
+      Anomalies__ConfirmationVelocity__WindowMinutes: ${ANOMALIES_VELOCITY_WINDOW_MINUTES:-60}
+      Anomalies__ConfirmationVelocity__BaselineDays: ${ANOMALIES_VELOCITY_BASELINE_DAYS:-7}
+      Anomalies__ConfirmationVelocity__Multiplier: ${ANOMALIES_VELOCITY_MULTIPLIER:-3.0}
+      Anomalies__ConfirmationVelocity__MinimumCount: ${ANOMALIES_VELOCITY_MINIMUM_COUNT:-5}
+      Anomalies__ConfirmationVelocity__LookbackHours: ${ANOMALIES_VELOCITY_LOOKBACK_HOURS:-24}
+      Anomalies__OffHours__OpenHour: ${ANOMALIES_OFF_HOURS_OPEN_HOUR:-10}
+      Anomalies__OffHours__CloseHour: ${ANOMALIES_OFF_HOURS_CLOSE_HOUR:-2}
+      Anomalies__OffHours__TimeZoneId: ${ANOMALIES_OFF_HOURS_TIMEZONE:-}
+      Anomalies__OffHours__LookbackHours: ${ANOMALIES_OFF_HOURS_LOOKBACK_HOURS:-24}
+      Anomalies__OffHours__MaxItems: ${ANOMALIES_OFF_HOURS_MAX_ITEMS:-50}
     depends_on:
       - db
     ports:
