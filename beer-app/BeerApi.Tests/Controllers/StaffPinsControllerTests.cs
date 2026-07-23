@@ -18,7 +18,7 @@ public class StaffPinsControllerTests
     private const string OtherBartenderId = "bartender-2";
     private const string CustomerId = "customer-1";
 
-    private static readonly PasswordHasher<IdentityUser> Hasher = new();
+    private static readonly PasswordHasher<ApplicationUser> Hasher = new();
 
     private static ApplicationDbContext CreateContext()
     {
@@ -34,9 +34,9 @@ public class StaffPinsControllerTests
         var customerRole = new IdentityRole("Customer") { Id = "role-customer", NormalizedName = "CUSTOMER" };
         context.Roles.AddRange(bartenderRole, customerRole);
         context.Users.AddRange(
-            new IdentityUser { Id = BartenderId, UserName = "b1@example.com" },
-            new IdentityUser { Id = OtherBartenderId, UserName = "b2@example.com" },
-            new IdentityUser { Id = CustomerId, UserName = "c1@example.com" });
+            new ApplicationUser { Id = BartenderId, UserName = "b1@example.com" },
+            new ApplicationUser { Id = OtherBartenderId, UserName = "b2@example.com" },
+            new ApplicationUser { Id = CustomerId, UserName = "c1@example.com" });
         context.UserRoles.AddRange(
             new IdentityUserRole<string> { UserId = BartenderId, RoleId = bartenderRole.Id },
             new IdentityUserRole<string> { UserId = OtherBartenderId, RoleId = bartenderRole.Id },
@@ -64,7 +64,7 @@ public class StaffPinsControllerTests
         var staffPin = new StaffPin
         {
             UserId = userId,
-            PinHash = Hasher.HashPassword(new IdentityUser(), pin),
+            PinHash = Hasher.HashPassword(new ApplicationUser(), pin),
             IsActive = isActive,
         };
         context.StaffPins.Add(staffPin);
@@ -73,7 +73,7 @@ public class StaffPinsControllerTests
     }
 
     private static bool PinVerifies(StaffPin staffPin, string pin) =>
-        Hasher.VerifyHashedPassword(new IdentityUser(), staffPin.PinHash, pin) != PasswordVerificationResult.Failed;
+        Hasher.VerifyHashedPassword(new ApplicationUser(), staffPin.PinHash, pin) != PasswordVerificationResult.Failed;
 
     [Fact]
     public async Task SetMyPin_FirstTime_CreatesActiveHashedPin()

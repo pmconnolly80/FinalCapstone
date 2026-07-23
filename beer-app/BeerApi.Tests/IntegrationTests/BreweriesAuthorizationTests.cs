@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using BeerApi.Controllers;
+using BeerApi.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -61,8 +62,8 @@ public class BreweriesAuthorizationTests : IDisposable
     private async Task<string> CreateAdminAndLoginAsync(string email, string password)
     {
         using var scope = _factory.Services.CreateScope();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-        var user = new IdentityUser { UserName = email, Email = email };
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = new ApplicationUser { UserName = email, Email = email };
         await userManager.CreateAsync(user, password);
         await userManager.AddToRoleAsync(user, "Admin");
 

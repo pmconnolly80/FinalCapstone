@@ -52,18 +52,18 @@ public static class SeedData
             await db.SaveChangesAsync();
         }
 
-        var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var bartender = await userManager.FindByEmailAsync(DevBartenderEmail);
         if (bartender == null)
         {
-            bartender = new IdentityUser { UserName = DevBartenderEmail, Email = DevBartenderEmail };
+            bartender = new ApplicationUser { UserName = DevBartenderEmail, Email = DevBartenderEmail };
             await userManager.CreateAsync(bartender, DevBartenderPassword);
             await userManager.AddToRoleAsync(bartender, "Bartender");
         }
 
         if (!db.StaffPins.Any(p => p.UserId == bartender.Id))
         {
-            var hasher = new PasswordHasher<IdentityUser>();
+            var hasher = new PasswordHasher<ApplicationUser>();
             db.StaffPins.Add(new StaffPin
             {
                 UserId = bartender.Id,

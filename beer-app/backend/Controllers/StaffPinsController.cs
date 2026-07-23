@@ -15,7 +15,7 @@ namespace BeerApi.Controllers;
 [Route("api/staff-pins")]
 public class StaffPinsController : ControllerBase
 {
-    private static readonly PasswordHasher<IdentityUser> PinHasher = new();
+    private static readonly PasswordHasher<ApplicationUser> PinHasher = new();
 
     private readonly ApplicationDbContext _context;
 
@@ -91,7 +91,7 @@ public class StaffPinsController : ControllerBase
             .Where(p => p.IsActive && p.UserId != userId)
             .ToListAsync();
         var collides = otherActivePins.Any(p =>
-            PinHasher.VerifyHashedPassword(new IdentityUser(), p.PinHash, pin) != PasswordVerificationResult.Failed);
+            PinHasher.VerifyHashedPassword(new ApplicationUser(), p.PinHash, pin) != PasswordVerificationResult.Failed);
         if (collides)
         {
             return Conflict(new { message = "That PIN is already in use by another staff member." });
@@ -105,7 +105,7 @@ public class StaffPinsController : ControllerBase
         }
 
         // A fresh PIN starts with a clean slate: active, unlocked, counter at zero.
-        staffPin.PinHash = PinHasher.HashPassword(new IdentityUser(), pin);
+        staffPin.PinHash = PinHasher.HashPassword(new ApplicationUser(), pin);
         staffPin.IsActive = true;
         staffPin.FailedAttempts = 0;
         staffPin.LockedUntil = null;

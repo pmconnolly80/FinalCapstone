@@ -1,4 +1,5 @@
 using BeerApi.Data;
+using BeerApi.Models;
 using BeerApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -22,13 +23,16 @@ builder.Services.AddHttpClient<ICatalogBeerService, CatalogBeerService>(client =
     client.BaseAddress = new Uri("https://api.catalog.beer/");
 });
 
+builder.Services.AddSingleton<ISmtpClientFactory, SmtpClientFactory>();
+builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? "Host=localhost;Port=5432;Database=beerdb;Username=beeruser;Password=beerpass";
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     {
         // Length-only policy (#17): one rule the register form can state plainly, instead
         // of the four hidden composition rules Identity defaults to. Keep in sync with the

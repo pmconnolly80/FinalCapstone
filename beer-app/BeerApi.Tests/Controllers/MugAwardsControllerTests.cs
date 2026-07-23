@@ -24,8 +24,8 @@ public class MugAwardsControllerTests
     {
         using var context = CreateContext();
         context.Users.AddRange(
-            new IdentityUser { Id = "cust-early", Email = "early@example.com", UserName = "early@example.com" },
-            new IdentityUser { Id = "cust-late", Email = "late@example.com", UserName = "late@example.com" });
+            new ApplicationUser { Id = "cust-early", Email = "early@example.com", UserName = "early@example.com" },
+            new ApplicationUser { Id = "cust-late", Email = "late@example.com", UserName = "late@example.com" });
         context.MugAwards.AddRange(
             new MugAward { CustomerId = "cust-late", TavernId = 1, EarnedAt = new DateTime(2026, 7, 15, 0, 0, 0, DateTimeKind.Utc) },
             new MugAward { CustomerId = "cust-early", TavernId = 1, EarnedAt = new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc) });

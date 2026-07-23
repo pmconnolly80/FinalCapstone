@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using BeerApi.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -14,11 +15,11 @@ public class AuthController : ControllerBase
 {
     private const string DefaultRole = "Customer";
 
-    private readonly UserManager<IdentityUser> _userManager;
+    private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IConfiguration _configuration;
 
-    public AuthController(UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration)
+    public AuthController(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration)
     {
         _userManager = userManager;
         _roleManager = roleManager;
@@ -40,10 +41,11 @@ public class AuthController : ControllerBase
             return Conflict(new { message = "A user with that email already exists." });
         }
 
-        var user = new IdentityUser
+        var user = new ApplicationUser
         {
             UserName = request.Email,
-            Email = request.Email
+            Email = request.Email,
+            MarketingConsent = request.MarketingConsent
         };
 
         var result = await _userManager.CreateAsync(user, request.Password);
@@ -87,7 +89,7 @@ public class AuthController : ControllerBase
         return Ok(new AuthResponse(token, user.Email!));
     }
 
-    private async Task<string> CreateToken(IdentityUser user)
+    private async Task<string> CreateToken(ApplicationUser user)
     {
         var jwtKey = _configuration["Jwt:Key"] ?? "development-secret-key-change-me";
         var issuer = _configuration["Jwt:Issuer"] ?? "beer-api";
@@ -116,6 +118,6 @@ public class AuthController : ControllerBase
     }
 }
 
-public record RegisterRequest(string Email, string Password);
+public record RegisterRequest(string Email, string Password, bool MarketingConsent = false);
 public record LoginRequest(string Email, string Password);
 public record AuthResponse(string Token, string Email);

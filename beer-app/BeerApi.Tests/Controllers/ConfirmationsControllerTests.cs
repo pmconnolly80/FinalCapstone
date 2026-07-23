@@ -32,14 +32,14 @@ public class ConfirmationsControllerTests
 
         var role = new IdentityRole(bartenderRole) { Id = $"role-{bartenderRole}", NormalizedName = bartenderRole.ToUpperInvariant() };
         context.Roles.Add(role);
-        context.Users.Add(new IdentityUser { Id = BartenderId, UserName = "bartender@example.com" });
+        context.Users.Add(new ApplicationUser { Id = BartenderId, UserName = "bartender@example.com" });
         context.UserRoles.Add(new IdentityUserRole<string> { UserId = BartenderId, RoleId = role.Id });
 
-        var hasher = new PasswordHasher<IdentityUser>();
+        var hasher = new PasswordHasher<ApplicationUser>();
         context.StaffPins.Add(new StaffPin
         {
             UserId = BartenderId,
-            PinHash = hasher.HashPassword(new IdentityUser(), BartenderPin),
+            PinHash = hasher.HashPassword(new ApplicationUser(), BartenderPin),
             IsActive = bartenderPinActive,
         });
 

@@ -132,8 +132,8 @@ public class StaffPinLifecycleTests : IDisposable
     private async Task<string> CreateStaffUserAsync(string email, string role)
     {
         using var scope = _factory.Services.CreateScope();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-        var user = new IdentityUser { UserName = email, Email = email };
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = new ApplicationUser { UserName = email, Email = email };
         await userManager.CreateAsync(user, "StaffPassw0rd!");
         await userManager.AddToRoleAsync(user, role);
         return user.Id;
@@ -142,8 +142,8 @@ public class StaffPinLifecycleTests : IDisposable
     private async Task<string> CreateAdminAndLoginAsync(string email, string password)
     {
         using var scope = _factory.Services.CreateScope();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-        var user = new IdentityUser { UserName = email, Email = email };
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = new ApplicationUser { UserName = email, Email = email };
         await userManager.CreateAsync(user, password);
         await userManager.AddToRoleAsync(user, "Admin");
         return await LoginAsync(email, password);

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using BeerApi.Controllers;
+using BeerApi.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -46,8 +47,8 @@ public class MugAwardsTests : IDisposable
     {
         using (var scope = _factory.Services.CreateScope())
         {
-            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-            var admin = new IdentityUser { UserName = "award.admin@example.com", Email = "award.admin@example.com" };
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var admin = new ApplicationUser { UserName = "award.admin@example.com", Email = "award.admin@example.com" };
             await userManager.CreateAsync(admin, "AdminPassw0rd!");
             await userManager.AddToRoleAsync(admin, "Admin");
         }
