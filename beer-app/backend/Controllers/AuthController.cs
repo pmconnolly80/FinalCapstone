@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using BeerApi.Models;
 using BeerApi.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -19,17 +20,20 @@ public class AuthController : ControllerBase
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IEmailSender _emailSender;
+    private readonly IExternalLoginService _externalLoginService;
     private readonly IConfiguration _configuration;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
         RoleManager<IdentityRole> roleManager,
         IEmailSender emailSender,
+        IExternalLoginService externalLoginService,
         IConfiguration configuration)
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _emailSender = emailSender;
+        _externalLoginService = externalLoginService;
         _configuration = configuration;
     }
 
@@ -147,6 +151,61 @@ public class AuthController : ControllerBase
 
         return Ok(new { message = "Your password has been reset. You can now sign in." });
     }
+
+    // #43/#44/#45: one challenge/callback pair for every external provider — Google,
+    // Facebook, and (eventually) Apple all use Identity's external-login cookie for the
+    // same link-or-create-by-verified-email flow (TECHNICAL_ARCHITECTURE_PLAN.md §4.6).
+    // `provider` must be the exact registered authentication scheme name (e.g. "Google").
+    [AllowAnonymous]
+    [HttpGet("external-login/{provider}")]
+    public IActionResult ExternalLogin(string provider)
+    {
+        var redirectUrl = Url.Action(nameof(ExternalLoginCallback), "Auth", new { provider });
+        var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
+        return Challenge(properties, provider);
+    }
+
+    [AllowAnonymous]
+    [HttpGet("external-login-callback")]
+    public async Task<IActionResult> ExternalLoginCallback(string provider)
+    {
+        var frontendBaseUrl = ResolveFrontendBaseUrl();
+        var authenticateResult = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);
+
+        if (!authenticateResult.Succeeded || authenticateResult.Principal == null)
+        {
+            return Redirect($"{frontendBaseUrl}/auth?error=external_login_failed");
+        }
+
+        var principal = authenticateResult.Principal;
+        var providerKey = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        var email = principal.FindFirstValue(ClaimTypes.Email);
+        var displayName = principal.FindFirstValue(ClaimTypes.Name);
+        var emailVerified = IsEmailVerified(provider, principal);
+
+        await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+
+        if (string.IsNullOrWhiteSpace(providerKey) || string.IsNullOrWhiteSpace(email) || !emailVerified)
+        {
+            return Redirect($"{frontendBaseUrl}/auth?error=email_not_verified");
+        }
+
+        var result = await _externalLoginService.ProcessLoginAsync(provider, providerKey, email, displayName);
+        var token = await CreateToken(result.User);
+
+        return Redirect($"{frontendBaseUrl}/auth/callback?token={Uri.EscapeDataString(token)}");
+    }
+
+    // Each provider proves "verified" differently: Google's userinfo response carries an
+    // explicit verified_email flag (mapped to the email_verified claim in Program.cs);
+    // Facebook's Graph API only ever returns addresses it has itself verified, so the
+    // claim's mere presence is enough — there's no separate flag to check.
+    private static bool IsEmailVerified(string provider, ClaimsPrincipal principal) => provider switch
+    {
+        "Google" => principal.FindFirstValue("email_verified") == "true",
+        "Facebook" => !string.IsNullOrWhiteSpace(principal.FindFirstValue(ClaimTypes.Email)),
+        _ => false,
+    };
 
     // A configured Frontend:BaseUrl always wins — Origin can't be trusted to build a link
     // that survives being copy-pasted or opened later (a different device, an email client

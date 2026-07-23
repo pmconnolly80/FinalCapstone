@@ -199,7 +199,7 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     no-ops (logs instead) when `SmtpHost` or `FromAddress` is unconfigured, rather than
     throwing. `ISmtpClient`/`ISmtpClientFactory` wrap `System.Net.Mail.SmtpClient` as a thin
     seam so the send path is unit-testable without a real network call.
-  - #42 ([PR #48](https://github.com/pmconnolly80/FinalCapstone/pull/48) open): `POST /api/auth/forgot-password` — always returns the
+  - #42 (merged [PR #48](https://github.com/pmconnolly80/FinalCapstone/pull/48)): `POST /api/auth/forgot-password` — always returns the
     same generic success message regardless of whether the email exists (avoids account
     enumeration), and only sends a reset email via #41's `IEmailSender` when it does.
     `POST /api/auth/reset-password` — validates the Identity reset token via
@@ -216,10 +216,34 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     test double (`beer-app/BeerApi.Tests/TestDoubles/`) wired into
     `TestWebApplicationFactory` so integration tests can assert on sent emails without a
     real SMTP server.
+  - #43 (in progress, not yet PR'd): Google external sign-in via
+    `Microsoft.AspNetCore.Authentication.Google`. New shared
+    `IExternalLoginService`/`ExternalLoginService` (`beer-app/backend/Services/`) — the
+    link-or-create-by-verified-email rule #44/#45 will reuse: an existing password-auth
+    account with the same email gets the external login linked (via Identity's
+    `AspNetUserLogins`, no new table) rather than a duplicate account created; a genuinely
+    new email creates an `ApplicationUser` with `EmailConfirmed = true` (the provider
+    already verified it) in the `Customer` role. `AuthController` gained
+    `GET /api/auth/external-login/{provider}` (issues an ASP.NET Core `Challenge`) and
+    `GET /api/auth/external-login-callback` (reads the authenticated principal off
+    Identity's `IdentityConstants.ExternalScheme` cookie, checks a per-provider
+    `IsEmailVerified` gate — Google's userinfo `verified_email` field, mapped to an
+    `email_verified` claim in `Program.cs` — then delegates to `ExternalLoginService` and
+    redirects to `{frontend}/auth/callback?token=...` with a normal app JWT from the
+    existing `CreateToken`). `Authentication:Google:ClientId`/`ClientSecret` follow the
+    same empty-by-default/`.env`-sourced secret convention as `CatalogBeer`/`Email`.
+    **Caveat:** the challenge endpoint's redirect is verified in tests (a 302 to
+    `accounts.google.com`, buildable without real credentials or network access), and
+    `ExternalLoginService`'s link/create logic has real integration coverage against the
+    app's Identity/EF stack — but the actual callback round-trip against a live Google
+    developer-console app hasn't been exercised end-to-end in this environment and needs
+    manual verification before real users hit it. No frontend UI yet (buttons, the
+    `/auth/callback` receiving page, account linking) — that's #46's job.
 
 **Not built** — next up per `EPICS_AND_SPRINTS.md`:
 - No admin UI to assign roles (currently DB-manual only; PIN management API exists)
-- Sprint 4 #43–#46 (external sign-in, social buttons/account linking)
+- Sprint 4 #44–#46 (Facebook + privacy policy + data deletion, Apple sign-in, social
+  buttons/account linking UI)
 
 ## Testing policy (TDD)
 
@@ -270,10 +294,11 @@ frontend 99/99). **Sprint 4: Auth II** is in progress (milestone
    [PR #47](https://github.com/pmconnolly80/FinalCapstone/pull/47).
 2. ~~#41 (pluggable email sender)~~ — done, merged
    [PR #47](https://github.com/pmconnolly80/FinalCapstone/pull/47).
-3. #42 (forgot/reset password, depends on #41) — done,
-   [PR #48](https://github.com/pmconnolly80/FinalCapstone/pull/48) (open).
-4. #43/#44/#45 (Google/Facebook/Apple external sign-in — independent of each other) → #46
-   (social buttons + account linking + consent checkbox, depends on #40/#43/#44/#45).
+3. ~~#42 (forgot/reset password, depends on #41)~~ — done, merged
+   [PR #48](https://github.com/pmconnolly80/FinalCapstone/pull/48).
+4. #43/#44/#45 (Google/Facebook/Apple external sign-in — independent of each other, being
+   done in that order): #43 in progress, not yet PR'd → #44/#45 next → #46 (social buttons
+   + account linking + consent checkbox, depends on #40/#43/#44/#45).
 5. Then the remaining named sprints: Admin Experience, Engagement/Retention/Social,
    Deployment & Hardening.
 
