@@ -1361,14 +1361,21 @@ Updated `App.test.jsx` (nav-hidden-when-signed-out, tab bar contents) and added
 new behavior. Frontend suite: 158/158. Backend suite (unaffected, re-run for
 confidence): 239/239. Clean `npm run build`.
 
-No browser automation is available in this environment, so the UI wasn't visually
-click-through-verified on a real device — flagged as an open manual-verification item
-in the PR rather than claimed as done.
+No browser automation was pre-configured in this environment, so before merging, set
+one up ad hoc via `npx playwright install chromium` and wrote a driving script
+(iPhone-sized viewport) exercising: nav absence when signed out, sign-out/sign-in
+round trip, the bottom tab bar and Account hub for both a fresh customer and the
+seeded admin account (`admin@tavern.local`), the BeerList first-visit hint, and both
+the offline (`page.context().setOffline(true)`) and repeated-PIN-failure messages on
+the confirmation PIN pad — 16/16 assertions passed, with screenshots reviewed
+visually too, not just DOM checks.
 
 - Branch: `sprint-6-mobile-ui-polish` — [PR #84](https://github.com/pmconnolly80/FinalCapstone/pull/84)
-  (open), closes #67, #68, #69, #70, #71, #82
+  merged to `master`, closed #67, #68, #69, #70, #82 automatically; #71 didn't
+  auto-close from the merge commit's closing keywords and was closed manually,
+  cross-referencing PR #84. Milestone [#6](https://github.com/pmconnolly80/FinalCapstone/milestone/6)
+  closed.
 
-**Resume here:** Sprint 6 is code-complete pending PR review/merge and a manual
-phone/LAN click-through. Sprint 7 (Beer Discovery & Recommendations, #72/#73/#83) and
-Sprint 8 (Admin & Engagement UX Follow-ups, #74–#81) are both still groomed and ready
-to build next.
+**Resume here:** Sprint 6 is done. Sprint 7 (Beer Discovery & Recommendations,
+#72/#73/#83) and Sprint 8 (Admin & Engagement UX Follow-ups, #74–#81) are both still
+groomed and ready to build next.

@@ -232,7 +232,7 @@ it — confirmations keep their own existing audit trail from Sprint 2. Anomaly 
   CORS, no admin/bartender account bootstrap)
 - **Future Enhancements** — public reviews/ratings, images, recommendations
 
-### Sprint 6: Mobile UI Polish — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/6) (groomed 2026-07-23, built 2026-07-23 — [PR #84](https://github.com/pmconnolly80/FinalCapstone/pull/84), open)
+### Sprint 6: Mobile UI Polish — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/6) (groomed 2026-07-23, closed 2026-07-23 — [PR #84](https://github.com/pmconnolly80/FinalCapstone/pull/84), merged)
 
 Phone-first nav and login-screen fixes plus several small UX gaps, all surfaced by
 2026-07-23 live/usability testing (full findings in `USABILITY_TESTING.md`).
@@ -249,10 +249,14 @@ Phone-first nav and login-screen fixes plus several small UX gaps, all surfaced 
 
 Approach: all 6 issues shipped in one PR since each is small and touches overlapping
 UI (the tab bar and the Account hub are two halves of the same change). No backend
-changes — a pure frontend sprint. Manual click-through on a real phone/LAN device is
-still outstanding (no browser automation available in this environment); frontend
-suite (158/158) and backend suite (239/239, unaffected) both pass, plus a clean
-`npm run build`.
+changes — a pure frontend sprint. Frontend suite (158/158) and backend suite
+(239/239, unaffected) both pass, plus a clean `npm run build`. Manually verified with
+a real Playwright-driven Chromium session at a phone-sized viewport before merging
+(not just RTL tests) — confirmed the nav is absent when signed out, the bottom tab
+bar and Account hub render correctly for both a fresh customer and the seeded admin
+account, the BeerList first-visit hint, and both the offline and repeated-PIN-failure
+messages on the confirmation PIN pad. #71 didn't auto-close from the merge commit's
+closing keywords (closed manually, cross-referencing PR #84).
 
 ### Sprint 7: Beer Discovery & Recommendations — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/7) (groomed 2026-07-23, not started)
 

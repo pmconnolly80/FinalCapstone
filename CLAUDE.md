@@ -465,9 +465,10 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     the live `BulkBeerAdd` anomaly from #58's own smoke test with a working link.
 
 - **Sprint 6: Mobile UI Polish** (milestone [#6](https://github.com/pmconnolly80/FinalCapstone/milestone/6),
-  groomed 2026-07-23, built 2026-07-23 — [PR #84](https://github.com/pmconnolly80/FinalCapstone/pull/84),
-  open, not yet merged): six small phone-first UX fixes surfaced by the 2026-07-23
-  live/usability testing, all frontend-only (no backend changes):
+  groomed 2026-07-23, closed 2026-07-23 — merged to `master` via
+  [PR #84](https://github.com/pmconnolly80/FinalCapstone/pull/84)): six small
+  phone-first UX fixes surfaced by the 2026-07-23 live/usability testing, all
+  frontend-only (no backend changes):
   - #67/#82: `App.jsx`'s flat top nav replaced with a fixed bottom tab bar
     (Home/Beers/My Progress/Account), rendered only when signed in. New
     `Account.jsx` hub at `/account` is where the tab bar's "Account" tab lands —
@@ -489,15 +490,20 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     since the had/not-had chips have nothing to differentiate on night one.
   - Frontend suite: 158/158 (new `Account.test.jsx`, extended `App.test.jsx`/
     `BeerList.test.jsx`/`ConfirmPinPad.test.jsx`). Backend suite re-run for
-    confidence, unaffected: 239/239. Clean `npm run build`. No browser automation
-    is available in this environment, so a manual phone/LAN click-through is still
-    an open item on the PR rather than claimed as done.
+    confidence, unaffected: 239/239. Clean `npm run build`. Also manually verified
+    before merging with a real Playwright-driven Chromium session at a phone-sized
+    viewport (screenshots + 16 assertions): nav absence when signed out, the tab bar
+    and Account hub for both a fresh customer and the seeded admin account, the
+    BeerList first-visit hint, and both the offline and repeated-PIN-failure
+    messages on the PIN pad — no browser automation tool was pre-configured in this
+    environment, so this was set up ad hoc via `npx playwright`. #71 didn't
+    auto-close from the merge commit's closing keywords; closed manually.
 
 **Not built** — the Admin Experience epic is done as of Sprint 5; Sprint 6 (Mobile UI
-Polish) is code-complete pending PR #84 review/merge. Next up per
-`EPICS_AND_SPRINTS.md`: Sprint 7 (Beer Discovery & Recommendations) or Sprint 8 (Admin
-& Engagement UX Follow-ups), both groomed and ready to build; the Engagement,
-Retention & Social epic is not yet groomed into issues.
+Polish) is done. Next up per `EPICS_AND_SPRINTS.md`: Sprint 7 (Beer Discovery &
+Recommendations) or Sprint 8 (Admin & Engagement UX Follow-ups), both groomed and
+ready to build; the Engagement, Retention & Social epic is not yet groomed into
+issues.
 
 ## Testing policy (TDD)
 
@@ -548,17 +554,21 @@ Manual (no Docker): `dotnet run` in `beer-app/backend/`, and
 
 ## Likely next steps
 
-**Sprints 1 through 5 are all done.** Sprint 1
+**Sprints 1 through 6 are all done.** Sprint 1
 ([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), 2026-07-14), Sprint 2
 (PRs #19–#25, milestone closed 2026-07-15), Sprint 3: Customer Phone Experience
 (PRs #33–#39, issues #26–#32, closed 2026-07-21; suites at close: backend 131/131,
 frontend 99/99), **Sprint 4: Auth II** (milestone
 [#4](https://github.com/pmconnolly80/FinalCapstone/milestone/4), issues #40–#46, groomed
 2026-07-21, closed 2026-07-23 — PRs #47–#52; suites at close: backend 171/171,
-frontend 117/117), and **Sprint 5: Admin Experience** (milestone
+frontend 117/117), **Sprint 5: Admin Experience** (milestone
 [#5](https://github.com/pmconnolly80/FinalCapstone/milestone/5), issues #53–#59, groomed
 2026-07-23, closed 2026-07-23 — PRs #60–#66; suites at close: backend 236/236,
-frontend 149/149). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md` for the full history.
+frontend 149/149), and **Sprint 6: Mobile UI Polish** (milestone
+[#6](https://github.com/pmconnolly80/FinalCapstone/milestone/6), issues #67–71 + #82,
+groomed 2026-07-23, closed 2026-07-23 — [PR #84](https://github.com/pmconnolly80/FinalCapstone/pull/84);
+suites at close: backend 239/239, frontend 158/158). See `EPICS_AND_SPRINTS.md` and
+`SESSION_LOG.md` for the full history.
 
 Sprint 5 built: a generalized `AdminAudit` trail + role assignment (#53) → user
 management/account actions API (#54) and screen (#55); audited beer edit/delete +
@@ -570,12 +580,11 @@ role (`Home.jsx` now redirects admins there) and closed the sprint. See the Spri
 bullets above for what each story built.
 
 **Sprint 6: Mobile UI Polish** (milestone [#6](https://github.com/pmconnolly80/FinalCapstone/milestone/6),
-issues #67–71 + #82, groomed 2026-07-23, built 2026-07-23 —
-[PR #84](https://github.com/pmconnolly80/FinalCapstone/pull/84), open) is code-complete:
-bottom tab bar + Account hub, Tailwind AuthPage, PIN-pad offline/repeated-failure
-messaging, and a BeerList first-visit hint. See the bullet above for detail. Pending:
-PR review/merge and a manual phone/LAN click-through (no browser automation available
-in this environment).
+issues #67–71 + #82, groomed 2026-07-23, closed 2026-07-23 —
+[PR #84](https://github.com/pmconnolly80/FinalCapstone/pull/84), merged) built: bottom
+tab bar + Account hub, Tailwind AuthPage, PIN-pad offline/repeated-failure messaging,
+and a BeerList first-visit hint. See the bullet above for detail, including the
+Playwright-driven manual verification done before merging.
 
 Next up: the **Engagement, Retention & Social** epic (milestone badges, push
 notifications + owner composer, My Beers, social feed, journal, owner analytics) is the
