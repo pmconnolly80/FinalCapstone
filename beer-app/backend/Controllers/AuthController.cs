@@ -223,11 +223,24 @@ public class AuthController : ControllerBase
     // Each provider proves "verified" differently: Google's userinfo response carries an
     // explicit verified_email flag (mapped to the email_verified claim in Program.cs);
     // Facebook's Graph API only ever returns addresses it has itself verified, so the
-    // claim's mere presence is enough — there's no separate flag to check.
+    // claim's mere presence is enough — there's no separate flag to check. Apple's ID
+    // token carries its own email_verified claim, true for both a real address AND a
+    // Hide My Email privacy relay address (is_private_email) — Apple guarantees mail sent
+    // to a relay reaches the user, so "verified" holds either way.
+    //
+    // #45's relay-email caveat: verified-email matching only works when the SAME address
+    // is presented on every login. A relay address is stable per (app, Apple ID) pair, so
+    // repeat Apple sign-ins correctly resolve to one account. But a customer who registered
+    // with a password using their real email, then later signs in with Apple via a relay
+    // address, will NOT auto-link — the addresses genuinely differ, so ExternalLoginService
+    // creates a second account instead of linking the first. There's no way to detect this
+    // case from the relay address alone; resolving it requires account-linking UI (#46)
+    // where the customer proves ownership of both, not automatic email matching.
     private static bool IsEmailVerified(string provider, ClaimsPrincipal principal) => provider switch
     {
         "Google" => principal.FindFirstValue("email_verified") == "true",
         "Facebook" => !string.IsNullOrWhiteSpace(principal.FindFirstValue(ClaimTypes.Email)),
+        "Apple" => principal.FindFirstValue("email_verified") == "true",
         _ => false,
     };
 

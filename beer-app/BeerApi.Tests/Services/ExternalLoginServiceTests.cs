@@ -89,5 +89,42 @@ public class ExternalLoginServiceTests : IDisposable
         }
     }
 
+    [Fact]
+    public async Task ProcessLoginAsync_AppleProvider_CreatesAccount_SameAsAnyOtherProvider()
+    {
+        var service = CreateService(out var scope);
+        using (scope)
+        {
+            var result = await service.ProcessLoginAsync("Apple", "apple-key-1", "new.apple.user@example.com", null);
+
+            Assert.True(result.IsNewAccount);
+
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var logins = await userManager.GetLoginsAsync(result.User);
+            Assert.Contains(logins, l => l.LoginProvider == "Apple" && l.ProviderKey == "apple-key-1");
+        }
+    }
+
+    // #45's documented relay-email caveat: this isn't a bug to fix, it's the expected
+    // consequence of matching purely on email — see AuthController.IsEmailVerified's
+    // comment for why resolving it needs account-linking UI (#46), not smarter matching.
+    [Fact]
+    public async Task ProcessLoginAsync_AppleRelayEmail_DiffersFromExistingRealEmail_CreatesSeparateAccount_DoesNotAutoLink()
+    {
+        var service = CreateService(out var scope);
+        using (scope)
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var passwordUser = new ApplicationUser { UserName = "real.address@example.com", Email = "real.address@example.com" };
+            await userManager.CreateAsync(passwordUser, "Passw0rd!");
+
+            var result = await service.ProcessLoginAsync(
+                "Apple", "apple-relay-key", "abc123@privaterelay.appleid.com", "Relay User");
+
+            Assert.True(result.IsNewAccount);
+            Assert.NotEqual(passwordUser.Id, result.User.Id);
+        }
+    }
+
     public void Dispose() => _factory.Dispose();
 }

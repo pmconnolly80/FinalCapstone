@@ -88,6 +88,29 @@ builder.Services.AddAuthentication(options =>
     var facebookAppSecret = builder.Configuration["Authentication:Facebook:AppSecret"];
     facebookOptions.AppId = string.IsNullOrWhiteSpace(facebookAppId) ? "placeholder" : facebookAppId;
     facebookOptions.AppSecret = string.IsNullOrWhiteSpace(facebookAppSecret) ? "placeholder" : facebookAppSecret;
+}).AddApple(appleOptions =>
+{
+    appleOptions.SignInScheme = IdentityConstants.ExternalScheme;
+    var appleClientId = builder.Configuration["Authentication:Apple:ClientId"];
+    var appleTeamId = builder.Configuration["Authentication:Apple:TeamId"];
+    var appleKeyId = builder.Configuration["Authentication:Apple:KeyId"];
+    var applePrivateKey = builder.Configuration["Authentication:Apple:PrivateKey"];
+
+    appleOptions.ClientId = string.IsNullOrWhiteSpace(appleClientId) ? "placeholder" : appleClientId;
+    appleOptions.TeamId = string.IsNullOrWhiteSpace(appleTeamId) ? "placeholder" : appleTeamId;
+    appleOptions.KeyId = string.IsNullOrWhiteSpace(appleKeyId) ? "placeholder" : appleKeyId;
+
+    // GenerateClientSecret builds Apple's required JWT client secret fresh on every
+    // token exchange from the private key below — unlike a static secret, there is
+    // nothing to periodically rotate here as long as the .p8 key itself stays valid.
+    // The one operational follow-up (Deployment & Hardening): if that private key is
+    // ever revoked/rotated in the Apple Developer portal, Authentication:Apple:PrivateKey
+    // needs updating to match — there's no automatic recovery from a stale key.
+    appleOptions.GenerateClientSecret = true;
+    var normalizedPrivateKey = (string.IsNullOrWhiteSpace(applePrivateKey)
+        ? "placeholder-private-key"
+        : applePrivateKey).Replace("\\n", "\n");
+    appleOptions.PrivateKey = (_, _) => Task.FromResult<ReadOnlyMemory<char>>(normalizedPrivateKey.AsMemory());
 });
 
 builder.Services.AddAuthorization();

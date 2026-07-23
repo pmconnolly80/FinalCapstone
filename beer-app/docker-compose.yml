@@ -32,6 +32,13 @@ services:
       Authentication__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
       Authentication__Facebook__AppId: ${FACEBOOK_APP_ID:-}
       Authentication__Facebook__AppSecret: ${FACEBOOK_APP_SECRET:-}
+      Authentication__Apple__ClientId: ${APPLE_CLIENT_ID:-}
+      Authentication__Apple__TeamId: ${APPLE_TEAM_ID:-}
+      Authentication__Apple__KeyId: ${APPLE_KEY_ID:-}
+      # The .p8 private key's PEM content, newlines escaped as literal \n (Program.cs
+      # un-escapes them) since a real multi-line value can't round-trip through a
+      # single-line .env entry.
+      Authentication__Apple__PrivateKey: ${APPLE_PRIVATE_KEY:-}
     depends_on:
       - db
     ports:

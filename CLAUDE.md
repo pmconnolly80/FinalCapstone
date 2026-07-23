@@ -239,7 +239,7 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     developer-console app hasn't been exercised end-to-end in this environment and needs
     manual verification before real users hit it. No frontend UI yet (buttons, the
     `/auth/callback` receiving page, account linking) — that's #46's job.
-  - #44 ([PR #50](https://github.com/pmconnolly80/FinalCapstone/pull/50) open): Facebook external sign-in via
+  - #44 (merged [PR #50](https://github.com/pmconnolly80/FinalCapstone/pull/50)): Facebook external sign-in via
     `Microsoft.AspNetCore.Authentication.Facebook`, same challenge/callback/
     `ExternalLoginService` pattern as #43 (`Authentication:Facebook:AppId`/`AppSecret`,
     same empty-by-default convention); Facebook's Graph API only ever returns
@@ -263,10 +263,36 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     `/forgot-password`. **Same caveat as #43**: the challenge/callback wiring against a
     live Facebook app is unverified in this environment; the signed-request verification
     and anonymization logic have real test coverage.
+  - #45 ([PR #51](https://github.com/pmconnolly80/FinalCapstone/pull/51) open): Apple (Sign in with Apple) external sign-in via the
+    community `AspNet.Security.OAuth.Apple` package (Apple has no first-party ASP.NET Core
+    package), same challenge/callback/`ExternalLoginService` pattern as #43/#44.
+    `Authentication:Apple:ClientId`/`TeamId`/`KeyId`/`PrivateKey` follow the same
+    empty-by-default convention (`PrivateKey` is the `.p8` key's PEM content with newlines
+    escaped as literal `\n` in `docker-compose.yml`/`.env`, since a real multi-line value
+    can't round-trip through a single-line env entry — `Program.cs` un-escapes it).
+    `GenerateClientSecret = true` has the package build Apple's required JWT client secret
+    fresh from that private key on every token exchange — unlike a static secret there's
+    nothing to periodically rotate on a schedule; the one real operational follow-up
+    (Deployment & Hardening) is updating `Authentication:Apple:PrivateKey` if that key is
+    ever revoked/rotated in the Apple Developer portal. Apple's ID token carries its own
+    `email_verified` claim, true for both a real address and a Hide My Email privacy relay
+    address (Apple guarantees mail sent to a relay reaches the user, so "verified" holds
+    either way) — mapped in `AuthController.IsEmailVerified` same as Google/Facebook.
+    **Relay-email interaction with the verified-email matching rule (documented, not a
+    bug):** a relay address is stable per (app, Apple ID) pair, so repeat Apple sign-ins
+    correctly resolve to the same account. But a customer who registered with a password
+    using their real email, then later signs in with Apple via a relay address, will
+    *not* auto-link — the addresses genuinely differ, so `ExternalLoginService` creates a
+    second account rather than linking the first. There's no way to detect this from the
+    relay address alone; resolving it needs account-linking UI (#46), not smarter
+    matching. **Same caveat as #43/#44**: the challenge/callback wiring against a live
+    Apple Developer account is unverified in this environment; `ExternalLoginService`'s
+    behavior with the "Apple" provider (including the relay-email non-linking case) has
+    real test coverage.
 
 **Not built** — next up per `EPICS_AND_SPRINTS.md`:
 - No admin UI to assign roles (currently DB-manual only; PIN management API exists)
-- Sprint 4 #45–#46 (Apple sign-in, social buttons/account linking UI)
+- Sprint 4 #46 (social buttons + account linking UI + consent checkbox)
 
 ## Testing policy (TDD)
 
@@ -321,10 +347,12 @@ frontend 99/99). **Sprint 4: Auth II** is in progress (milestone
    [PR #48](https://github.com/pmconnolly80/FinalCapstone/pull/48).
 4. #43/#44/#45 (Google/Facebook/Apple external sign-in — independent of each other, being
    done in that order): ~~#43~~ done, merged
-   [PR #49](https://github.com/pmconnolly80/FinalCapstone/pull/49). #44 (Facebook +
-   privacy policy + data deletion) done, [PR #50](https://github.com/pmconnolly80/FinalCapstone/pull/50)
-   (open) → #45 next → #46 (social buttons + account linking + consent checkbox,
-   depends on #40/#43/#44/#45).
+   [PR #49](https://github.com/pmconnolly80/FinalCapstone/pull/49). ~~#44~~ (Facebook +
+   privacy policy + data deletion) done, merged
+   [PR #50](https://github.com/pmconnolly80/FinalCapstone/pull/50). #45 (Apple) done,
+   [PR #51](https://github.com/pmconnolly80/FinalCapstone/pull/51) (open) → #46 (social
+   buttons + account linking + consent checkbox, depends on #40/#43/#44/#45) is last in
+   the sprint.
 5. Then the remaining named sprints: Admin Experience, Engagement/Retention/Social,
    Deployment & Hardening.
 
