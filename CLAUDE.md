@@ -216,7 +216,7 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     test double (`beer-app/BeerApi.Tests/TestDoubles/`) wired into
     `TestWebApplicationFactory` so integration tests can assert on sent emails without a
     real SMTP server.
-  - #43 (in progress, not yet PR'd): Google external sign-in via
+  - #43 ([PR #49](https://github.com/pmconnolly80/FinalCapstone/pull/49) open): Google external sign-in via
     `Microsoft.AspNetCore.Authentication.Google`. New shared
     `IExternalLoginService`/`ExternalLoginService` (`beer-app/backend/Services/`) — the
     link-or-create-by-verified-email rule #44/#45 will reuse: an existing password-auth
@@ -297,8 +297,9 @@ frontend 99/99). **Sprint 4: Auth II** is in progress (milestone
 3. ~~#42 (forgot/reset password, depends on #41)~~ — done, merged
    [PR #48](https://github.com/pmconnolly80/FinalCapstone/pull/48).
 4. #43/#44/#45 (Google/Facebook/Apple external sign-in — independent of each other, being
-   done in that order): #43 in progress, not yet PR'd → #44/#45 next → #46 (social buttons
-   + account linking + consent checkbox, depends on #40/#43/#44/#45).
+   done in that order): #43 done, [PR #49](https://github.com/pmconnolly80/FinalCapstone/pull/49)
+   (open) → #44/#45 next → #46 (social buttons + account linking + consent checkbox,
+   depends on #40/#43/#44/#45).
 5. Then the remaining named sprints: Admin Experience, Engagement/Retention/Social,
    Deployment & Hardening.
 
