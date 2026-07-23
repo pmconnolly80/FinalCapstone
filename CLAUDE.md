@@ -361,7 +361,7 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     endpoints. Both actions require a reason and write an `AdminAudit` row, same
     pattern as #53's role assignment.
   - #55 (UI: User Management screen, [PR #62](https://github.com/pmconnolly80/FinalCapstone/pull/62),
-    open): new `beer-app/frontend/src/pages/AdminUsers.jsx` at `/admin/users` (nav entry
+    merged): new `beer-app/frontend/src/pages/AdminUsers.jsx` at `/admin/users` (nav entry
     next to the existing "Admin" link, admin-gated the same convenience-check way
     `AdminConfirmations.jsx` is — the API enforces Admin server-side regardless). Follows
     `AdminConfirmations.jsx`'s exact shape: gate → load → table → per-row two-step
@@ -382,9 +382,26 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     this, but a manual DB correction could) — 500ing the *entire* list for every user,
     not just the affected one. Switched to a `GroupBy`-then-`ToDictionary` that just
     picks one role, with a regression test.
+  - #56 (API: audited beer edit/delete + inline availability update,
+    [PR #63](https://github.com/pmconnolly80/FinalCapstone/pull/63), open): `BeersController`'s
+    existing `PUT`/`DELETE` (already `[Authorize(Roles = "Admin")]`, previously with zero
+    audit trail) now write an `AdminAudit` row each. Edits log a **changed-fields-only
+    text diff** (e.g. `"Style: Amber Ale; Abv: 5.2"` → `"Style: Belgian Pale Ale; Abv:
+    5.5"`, via a new private `DescribeBeerDiff` helper) rather than this codebase's first
+    JSON-blob snapshot — #53/#54's `BeforeSnapshot`/`AfterSnapshot` only ever held short
+    plain strings, so a whole-entity diff follows that same tone instead of introducing a
+    new format; a no-op edit (identical resubmission) writes no audit row at all. `PUT`
+    also now 404s on an unknown id (previously threw `DbUpdateConcurrencyException` — the
+    existing-row fetch needed for diffing makes this check free). `DELETE` gains a
+    required `reason` query parameter (no existing frontend call to break — matches
+    `GetBeers`'s plain-query-param convention rather than inventing a DELETE-with-body
+    shape). New `PATCH /api/beers/{id}/availability` (`UpdateAvailabilityRequest`) is the
+    single-field inline-toggle endpoint #57's table needs; a same-value PATCH is a no-op,
+    also audited, no reason required (only delete requires one, per the issue).
 
 **Not built** — next up per `EPICS_AND_SPRINTS.md`:
-- No audited beer edit/delete, no anomaly detection, no admin dashboard (#56–#59)
+- No Beer Management Table UI yet (#56's APIs exist; #57 is the screen)
+- No anomaly detection, no admin dashboard (#58–#59)
 
 ## Testing policy (TDD)
 
@@ -437,19 +454,17 @@ frontend 117/117). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md` for the full 
 a generalized `AdminAudit` trail + role assignment (#53) → user management/account actions
 API (#54) and screen (#55); audited beer edit/delete + inline availability (#56) → Beer
 Management Table (#57); anomaly detection (#58, informational — bulk beer-add, confirmation
-velocity spikes, off-hours activity) → Admin Dashboard (#59, closes the sprint). #53 and
-#54 are merged ([PR #60](https://github.com/pmconnolly80/FinalCapstone/pull/60) and
-[PR #61](https://github.com/pmconnolly80/FinalCapstone/pull/61)); #55 is done
-([PR #62](https://github.com/pmconnolly80/FinalCapstone/pull/62), open, not yet merged) —
+velocity spikes, off-hours activity) → Admin Dashboard (#59, closes the sprint). #53,
+#54, and #55 are merged ([PR #60](https://github.com/pmconnolly80/FinalCapstone/pull/60),
+[PR #61](https://github.com/pmconnolly80/FinalCapstone/pull/61),
+[PR #62](https://github.com/pmconnolly80/FinalCapstone/pull/62)); #56 is done
+([PR #63](https://github.com/pmconnolly80/FinalCapstone/pull/63), open, not yet merged) —
 see the Sprint 5 bullets above for what they built. See `EPICS_AND_SPRINTS.md` for the
 full story list and dependency order. Engagement/Retention/Social and Deployment &
 Hardening follow after this.
 
-Next up once #62 merges: #56 (API: audited beer edit/delete + inline availability
-update), which builds on #53's `AdminAudit`.
-
-Next up once #60/#61 merge: #55 (UI: User Management screen), which wires up #53's role
-assignment and #54's user list/deactivate/reactivate endpoints.
+Next up once #63 merges: #57 (UI: Beer Management Table), which wires up #56's audited
+edit/delete/availability endpoints.
 
 Local tooling note: only the .NET 10 SDK is on PATH but the projects target net8.0 — run
 backend tests with the SDK at `~/.dotnet8` (see `.claude/skills/verify/SKILL.md` for the
