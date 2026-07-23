@@ -263,7 +263,7 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     `/forgot-password`. **Same caveat as #43**: the challenge/callback wiring against a
     live Facebook app is unverified in this environment; the signed-request verification
     and anonymization logic have real test coverage.
-  - #45 ([PR #51](https://github.com/pmconnolly80/FinalCapstone/pull/51) open): Apple (Sign in with Apple) external sign-in via the
+  - #45 (merged [PR #51](https://github.com/pmconnolly80/FinalCapstone/pull/51)): Apple (Sign in with Apple) external sign-in via the
     community `AspNet.Security.OAuth.Apple` package (Apple has no first-party ASP.NET Core
     package), same challenge/callback/`ExternalLoginService` pattern as #43/#44.
     `Authentication:Apple:ClientId`/`TeamId`/`KeyId`/`PrivateKey` follow the same
@@ -289,10 +289,46 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     Apple Developer account is unverified in this environment; `ExternalLoginService`'s
     behavior with the "Apple" provider (including the relay-email non-linking case) has
     real test coverage.
+  - #46 ([PR #52](https://github.com/pmconnolly80/FinalCapstone/pull/52) open) — **closes
+    Sprint 4**: wires #43/#44/#45's backend into
+    the actual customer-facing auth experience.
+    - `AuthPage.jsx` gained three sign-in links (`<a href>`, not a fetch — the whole point
+      is a full-page redirect through the provider) pointing at
+      `GET /api/auth/external-login/{provider}`, shown in both login and register mode.
+      New `AuthCallback.jsx` at `/auth/callback` reads `?token=`/`?error=` (set by
+      `ExternalLoginCallback`'s redirect), stores the token and dispatches
+      `AUTH_CHANGED_EVENT` the same way password login always has, then bounces to `/`.
+      A marketing-consent checkbox (unchecked by default) in register mode now actually
+      feeds `RegisterRequest.MarketingConsent` (#40's field, unused until now).
+    - **Account linking** — attaching an *additional* provider to an already-signed-in
+      account can't reuse the plain sign-in flow (find-or-create by email would risk
+      creating a duplicate account instead of linking to the current one), and a
+      full-page OAuth redirect can't carry an `Authorization` header. Solved with a
+      short-lived, single-use linking ticket in the existing `IMemoryCache` (the same
+      cache `CatalogBeerService`/`OpenBreweryDbService` already use): authenticated
+      `POST /api/auth/external-login-tickets` mints a ticket bound to the current user;
+      the existing `external-login/{provider}` challenge endpoint takes an optional
+      `?ticket=` that — if it resolves — carries the user id through the OAuth round trip
+      via `AuthenticationProperties.Items` (the same mechanism `RedirectUri` already
+      relies on); `ExternalLoginCallback` branches on that to call new
+      `ExternalLoginService.LinkAdditionalProviderAsync` (fails cleanly if that
+      provider+key is already linked to a *different* account, idempotent if already
+      linked to this one) instead of the normal sign-in path, then redirects to
+      `/account/linked-providers` rather than issuing a new JWT. Authenticated
+      `GET /api/auth/external-logins` lists the signed-in user's linked providers. New
+      `LinkedAccounts.jsx` page (route `/account/linked-providers`, linked from a new
+      signed-in-only nav item) shows connected/not-connected state per provider and a
+      "Connect" button for the rest (`startLinkingProvider` — fetches a ticket, then
+      navigates). No JWT is ever placed in a URL by this design (unlike a bearer-token-in-
+      query-string alternative that was considered and rejected).
+    - **Same caveat as #43/#44/#45**: the live challenge/callback round trip against a
+      real Google/Facebook/Apple app is unverified in this environment. The linking
+      ticket flow's actual business logic (`LinkAdditionalProviderAsync`'s three
+      outcomes, the ticket-creation/listing endpoints' auth gating) has real test
+      coverage.
 
 **Not built** — next up per `EPICS_AND_SPRINTS.md`:
 - No admin UI to assign roles (currently DB-manual only; PIN management API exists)
-- Sprint 4 #46 (social buttons + account linking UI + consent checkbox)
 
 ## Testing policy (TDD)
 
@@ -349,11 +385,12 @@ frontend 99/99). **Sprint 4: Auth II** is in progress (milestone
    done in that order): ~~#43~~ done, merged
    [PR #49](https://github.com/pmconnolly80/FinalCapstone/pull/49). ~~#44~~ (Facebook +
    privacy policy + data deletion) done, merged
-   [PR #50](https://github.com/pmconnolly80/FinalCapstone/pull/50). #45 (Apple) done,
-   [PR #51](https://github.com/pmconnolly80/FinalCapstone/pull/51) (open) → #46 (social
-   buttons + account linking + consent checkbox, depends on #40/#43/#44/#45) is last in
-   the sprint.
-5. Then the remaining named sprints: Admin Experience, Engagement/Retention/Social,
+   [PR #50](https://github.com/pmconnolly80/FinalCapstone/pull/50). ~~#45~~ (Apple) done,
+   merged [PR #51](https://github.com/pmconnolly80/FinalCapstone/pull/51).
+5. #46 (social buttons + account linking + consent checkbox, depends on
+   #40/#43/#44/#45) — done, [PR #52](https://github.com/pmconnolly80/FinalCapstone/pull/52)
+   (open). **Last story in Sprint 4.**
+6. Then the remaining named sprints: Admin Experience, Engagement/Retention/Social,
    Deployment & Hardening.
 
 Local tooling note: only the .NET 10 SDK is on PATH but the projects target net8.0 — run

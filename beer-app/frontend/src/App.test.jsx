@@ -49,9 +49,10 @@ describe('App nav', () => {
     expect(nav.getByRole('link', { name: 'Sign in' })).toBeInTheDocument();
     expect(nav.queryByRole('link', { name: 'Add Beer' })).not.toBeInTheDocument();
     expect(nav.queryByRole('button', { name: 'Sign out' })).not.toBeInTheDocument();
+    expect(nav.queryByRole('link', { name: 'Linked accounts' })).not.toBeInTheDocument();
   });
 
-  it('hides Add Beer for a signed-in customer', () => {
+  it('hides Add Beer for a signed-in customer, shows Linked accounts', () => {
     localStorage.setItem('beer-token', fakeJwt({ [roleClaim]: 'Customer' }));
 
     renderApp();
@@ -59,6 +60,7 @@ describe('App nav', () => {
 
     expect(nav.queryByRole('link', { name: 'Add Beer' })).not.toBeInTheDocument();
     expect(nav.getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
+    expect(nav.getByRole('link', { name: 'Linked accounts' })).toBeInTheDocument();
   });
 
   it('shows Add Beer for a signed-in admin', () => {

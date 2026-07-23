@@ -174,11 +174,11 @@ export async function login(email, password) {
   return response.json();
 }
 
-export async function register(email, password) {
+export async function register(email, password, marketingConsent = false) {
   const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, marketingConsent }),
   });
 
   if (!response.ok) {
@@ -186,6 +186,40 @@ export async function register(email, password) {
     throw new Error(body?.message || 'Registration failed');
   }
   return response.json();
+}
+
+// #46: a fresh sign-in needs no ticket — the challenge endpoint's find-or-create-by-email
+// flow runs unconditionally. This is a plain URL (not a fetch) since the whole point is a
+// full-page browser redirect through the provider's OAuth screen.
+export function externalLoginUrl(provider) {
+  return `${API_BASE_URL}/api/auth/external-login/${provider}`;
+}
+
+export async function createExternalLoginTicket() {
+  const response = await fetch(`${API_BASE_URL}/api/auth/external-login-tickets`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+
+  if (!response.ok) throw new Error('Could not start account linking');
+  return response.json();
+}
+
+export async function getLinkedProviders() {
+  const response = await fetch(`${API_BASE_URL}/api/auth/external-logins`, {
+    headers: authHeaders(),
+  });
+
+  if (!response.ok) throw new Error('Failed to load linked accounts');
+  return response.json();
+}
+
+// Attaching an additional provider to the signed-in account needs a ticket first (the
+// redirect that follows can't carry an Authorization header), so — unlike
+// externalLoginUrl — this has to be an async function that fetches, then navigates.
+export async function startLinkingProvider(provider) {
+  const { ticket } = await createExternalLoginTicket();
+  window.location.href = `${externalLoginUrl(provider)}?ticket=${encodeURIComponent(ticket)}`;
 }
 
 export async function forgotPassword(email) {
