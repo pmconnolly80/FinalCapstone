@@ -30,6 +30,9 @@ flow, not the other way around. See `PROJECT_PLAN.md` section 1 for the full fra
   `MVP_SCREEN_PLAN.md`, `MOBILE_FIRST_PRODUCT_OUTLINE.md`, `PRODUCT_FLOW_DIAGRAM.md`,
   and `PERSONAS_AND_USAGE.md` (persona day-in-the-life deep dive, added July 2026).
   These describe the target product and haven't gone stale the way a status tracker does.
+  `POST_MORTEM.md` (added 2026-07-23) is a different kind of doc — a retrospective on
+  Sprints 1–5, not a living plan; it's a snapshot, re-check it against `SESSION_LOG.md`
+  rather than updating it in place as work continues.
   **Load-bearing July 2026 product decision — the one-device rule:** the entire at-the-bar
   flow lives on the *customer's* phone; the bartender confirms by typing their personal
   6-digit PIN on it. No bartender-facing screens, no bar tablet; the earlier "I'm drinking
