@@ -242,16 +242,25 @@ Phone-first nav and login-screen fixes plus several small UX gaps, all surfaced 
 3. [#69 UI: bartender-visible signal after repeated PIN confirmation failures](https://github.com/pmconnolly80/FinalCapstone/issues/69)
 4. [#70 UI: first-visit empty-state hint on beer search for 0-confirmation customers](https://github.com/pmconnolly80/FinalCapstone/issues/70)
 5. [#71 UI: graceful offline/no-signal message on confirmation failure](https://github.com/pmconnolly80/FinalCapstone/issues/71)
+6. [#82 UI: Account/Profile hub screen](https://github.com/pmconnolly80/FinalCapstone/issues/82)
+   (added 2026-07-23 coverage review) — depends on/delivered alongside #67, since the
+   bottom tab bar's "Account" tab needs somewhere to actually send My PIN, Linked
+   Accounts, Privacy Policy, and Sign Out
 
 ### Sprint 7: Beer Discovery & Recommendations — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/7) (groomed 2026-07-23, not started)
 
 Customer-facing external beer-database search (distinct from the tavern's-own-list
 search) plus a customer beer-recommendation/request feature with admin triage.
 
-1. [#72 API + UI: customer-facing external beer database search](https://github.com/pmconnolly80/FinalCapstone/issues/72)
+1. [#72 API + UI: customer-facing external beer database search](https://github.com/pmconnolly80/FinalCapstone/issues/72) —
+   acceptance criteria amended 2026-07-23 to require sign-in + a rate limit before
+   this reaches the API-keyed Catalog.beer dependency
 2. [#73 API + UI: customer beer recommendations/requests + admin triage](https://github.com/pmconnolly80/FinalCapstone/issues/73)
    — depends on #72 for the "recommend from a search hit" path, but stands alone for
    plain-text recommendations
+3. [#83 Admin: external-search demand report](https://github.com/pmconnolly80/FinalCapstone/issues/83)
+   (added 2026-07-23 coverage review) — depends on #72; surfaces what #72 logs
+   (searched-but-not-carried beers) since nothing else in this sprint displays it
 
 ### Sprint 8: Admin & Engagement UX Follow-ups — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/8) (groomed 2026-07-23, not started)
 
@@ -261,12 +270,20 @@ since each is small and independent rather than because they share one epic, per
 explicit user direction to narrow priorities now rather than wait for strict
 sequencing.
 
-1. [#74 UI + API: pull forward 'How was it?' rating prompt + minimal milestone moment](https://github.com/pmconnolly80/FinalCapstone/issues/74) (`epic:retention`)
+1. [#74 UI + API: pull forward 'How was it?' rating prompt + minimal milestone moment](https://github.com/pmconnolly80/FinalCapstone/issues/74) (`epic:retention`) —
+   acceptance criteria amended 2026-07-23 to add a rating view/edit affordance on beer
+   detail, since My Beers doesn't exist yet
 2. [#75 UI: inline consequence microcopy on audited admin actions](https://github.com/pmconnolly80/FinalCapstone/issues/75) (`epic:admin`)
 3. [#76 UI: staff-only filter + search on the User Management table](https://github.com/pmconnolly80/FinalCapstone/issues/76) (`epic:admin`)
-4. [#77 API + UI: admin-initiated bartender account invite](https://github.com/pmconnolly80/FinalCapstone/issues/77) (`epic:admin`) —
-   scope may shift pending the bartender-account-model architecture question, see below
+4. [#77 API + UI: admin-initiated bartender account invite](https://github.com/pmconnolly80/FinalCapstone/issues/77) (`epic:admin`)
 5. [#78 UI + API: reframe Admin Dashboard as operational health; pull forward most/least-confirmed beers](https://github.com/pmconnolly80/FinalCapstone/issues/78) (`epic:admin`)
+6. [#79 API + UI: support variable-length staff PINs (e.g. birthday format)](https://github.com/pmconnolly80/FinalCapstone/issues/79) (`epic:admin`) —
+   acceptance criteria amended 2026-07-23 to explicitly call out 3 files with hardcoded
+   "6-digit" copy beyond the validation logic
+7. [#80 API + UI: mark a beer out-of-stock from the confirmation PIN pad](https://github.com/pmconnolly80/FinalCapstone/issues/80) (`epic:admin`) —
+   acceptance criteria amended 2026-07-23 to support toggling back to available (not
+   just out-of-stock) and to require a deliberate confirm step
+8. [#81 API + UI: customer-facing 'flag beer as unavailable' report](https://github.com/pmconnolly80/FinalCapstone/issues/81) (`epic:admin`)
 
 ## Live Testing Findings — 2026-07-23
 

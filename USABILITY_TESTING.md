@@ -93,3 +93,21 @@ Follow-up session picking up where Round 2 left off. Three things resolved:
    (#47–#52) was actually merged and explicitly referenced the right issue number in
    its body, then closed all 7 issues. Milestone 4 now correctly shows 0 open / 7
    closed.
+
+## Round 4 — 2026-07-23: sprint coverage review
+
+Before starting any of Sprints 6-8, reviewed each against its own goals and the real
+code (not just memory of writing the issues) to find gaps left by the issues as
+originally scoped. Found and closed 6:
+
+| Sprint | Gap found | Resolution |
+|---|---|---|
+| 6 (Mobile UI Polish) | #67's bottom tab bar has nowhere to send My PIN, Linked Accounts, Privacy Policy, or Sign Out for an ordinary customer — confirmed by counting today's actual 9 nav links in `App.jsx`, far more than a tab bar holds | New issue [#82](https://github.com/pmconnolly80/FinalCapstone/issues/82): Account/Profile hub screen |
+| 7 (Beer Discovery) | #72 opens a paid, API-keyed external service (Catalog.beer) to customer traffic with no access-control/rate-limit decision | #72 amended: requires sign-in + a rate limit, not anonymous/unlimited access |
+| 7 (Beer Discovery) | #72 logs customer search-demand data but nothing displays it | New issue [#83](https://github.com/pmconnolly80/FinalCapstone/issues/83): Admin external-search demand report |
+| 8 (Admin/Engagement) | #74's rating prompt promises "editable later" with no screen to edit from (My Beers doesn't exist yet) | #74 amended: view/edit rating from beer detail |
+| 8 (Admin/Engagement) | #79's PIN-length change only mentioned validation logic; checked the actual frontend code and found "6-digit" hardcoded in copy in 3 files (`MyPin.jsx`, `ConfirmPinPad.jsx`, `AdminUsers.jsx`) | #79 amended: explicit copy-update criteria for all 3 files |
+| 8 (Admin/Engagement) | #80 only flips a beer *to* out-of-stock — no path back to available without an admin, undercutting the point; also no confirm step on an impactful action sitting next to a routine one | #80 amended: both directions supported, explicit confirm step required |
+
+All changes are live on the actual GitHub issues (not just this doc) — see
+`EPICS_AND_SPRINTS.md`'s Sprint 6/7/8 sections for the updated issue lists.

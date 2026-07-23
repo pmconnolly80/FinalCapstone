@@ -1282,3 +1282,46 @@ tracking cleanup.
 Polish, #67–71), Sprint 7 (Beer Discovery & Recommendations, #72–73), or Sprint 8
 (Admin & Engagement UX Follow-ups, #74–81, now including the two architecture
 follow-ons). No further open architecture questions blocking any of the three.
+
+---
+
+## 2026-07-23 — Sprint coverage review before build start
+
+**Epic:** cross-cutting (pre-build QA on Sprints 6/7/8)
+
+Before starting any of the three groomed sprints, reviewed each against its own stated
+goal and the actual current code (not just the issue text as originally written) to
+check whether the sprints, as scoped, would actually close the gaps they were created
+for. Grounded the review in real checks rather than assumption — pulled every issue
+body via `gh issue view`, and grepped the frontend for hardcoded PIN-length copy and
+`App.jsx`'s actual current nav link count rather than guessing.
+
+Found 6 real gaps and closed all of them, with the user's agreement on each:
+
+- **Sprint 6**: #67's new bottom tab bar has no defined home for My PIN, Linked
+  Accounts, Privacy Policy, or Sign Out (confirmed `App.jsx` currently has 9 nav
+  links plus a footer link — far more than a tab bar holds). New issue
+  [#82](https://github.com/pmconnolly80/FinalCapstone/issues/82) (Account/Profile hub
+  screen), assigned to Milestone 6.
+- **Sprint 7**: #72 would open Catalog.beer (a real, paid, API-keyed dependency) to
+  customer traffic with no access-control or rate-limit decision — amended #72 to
+  require sign-in plus a rate limit. Also, #72's search-demand logging had nowhere to
+  be viewed — new issue [#83](https://github.com/pmconnolly80/FinalCapstone/issues/83)
+  (admin external-search demand report), assigned to Milestone 7.
+- **Sprint 8**: three issues amended in place — #74 (rating prompt) now requires a
+  view/edit affordance on beer detail, since My Beers doesn't exist yet to be the
+  promised "editable later" home; #79 (variable-length PINs) now explicitly lists the
+  3 files with hardcoded "6-digit" copy found via grep, not just the validation logic;
+  #80 (PIN-pad availability flag) now supports toggling back to available (not just
+  out-of-stock) and requires a deliberate confirm step, since the original scope would
+  have left reactivation stuck needing an admin anyway and risked an accidental flip
+  next to a routine action.
+
+Updated `EPICS_AND_SPRINTS.md`'s Sprint 6/7/8 issue lists and `USABILITY_TESTING.md`
+(new "Round 4" section) to match the amended GitHub issues.
+
+No app code changes this session — pure coverage review and issue refinement.
+
+**Resume here:** all three sprints (6, 7, 8) are now reviewed for coverage and ready to
+build, 8/2/8 issues respectively (10 total added/amended this round: #82, #83 new;
+#72, #74, #79, #80 amended). Pick one to start.
