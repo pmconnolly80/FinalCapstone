@@ -3,6 +3,7 @@ import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { AUTH_CHANGED_EVENT, getRolesFromToken, logout } from './lib/api';
 import Home from './pages/Home';
 import AdminConfirmations from './pages/AdminConfirmations';
+import AdminUsers from './pages/AdminUsers';
 import BeerList from './pages/BeerList';
 import BeerDetail from './pages/BeerDetail';
 import BeerForm from './pages/BeerForm';
@@ -80,6 +81,11 @@ function App() {
               Admin
             </Link>
           )}
+          {auth.roles.includes('Admin') && (
+            <Link className={navLinkClass} to="/admin/users">
+              Users
+            </Link>
+          )}
           {auth.signedIn ? (
             <button type="button" onClick={handleSignOut} className={navLinkClass}>
               Sign out
@@ -101,6 +107,7 @@ function App() {
         <Route path="/progress" element={<MyProgress />} />
         <Route path="/my-pin" element={<MyPin />} />
         <Route path="/admin/confirmations" element={<AdminConfirmations />} />
+        <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />

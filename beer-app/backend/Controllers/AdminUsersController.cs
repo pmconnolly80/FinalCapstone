@@ -44,11 +44,16 @@ public class AdminUsersController : ControllerBase
     {
         var users = await _context.Users.ToListAsync();
 
-        var roleByUserId = await (
+        // GroupBy rather than ToDictionaryAsync: the app's own AssignRole always leaves a
+        // user with exactly one role, but this shouldn't 500 the whole list if a user ever
+        // ends up with more than one (e.g. a manual DB correction) — just show one of them.
+        var roleByUserId = (await (
             from ur in _context.UserRoles
             join r in _context.Roles on ur.RoleId equals r.Id
             select new { ur.UserId, r.Name }
-        ).ToDictionaryAsync(x => x.UserId, x => x.Name ?? "(none)");
+        ).ToListAsync())
+            .GroupBy(x => x.UserId)
+            .ToDictionary(g => g.Key, g => g.First().Name ?? "(none)");
 
         var activePinUserIds = (await _context.StaffPins
             .Where(p => p.IsActive)

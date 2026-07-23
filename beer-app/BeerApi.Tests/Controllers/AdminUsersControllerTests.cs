@@ -180,6 +180,25 @@ public class AdminUsersControllerTests
     }
 
     [Fact]
+    public async Task GetUsers_UserWithMultipleRoleRows_DoesNotThrow()
+    {
+        // AssignRole always leaves a user with exactly one role, but a manual DB
+        // correction could leave more than one — the list must degrade gracefully
+        // (pick one) rather than 500 the entire endpoint.
+        using var fixture = new Fixture();
+        await fixture.SeedRolesAsync();
+        var user = await fixture.SeedTargetUserAsync(currentRole: "Customer");
+        await fixture.UserManager.AddToRoleAsync(user, "Bartender");
+        var controller = fixture.CreateController();
+
+        var result = await controller.GetUsers();
+
+        var rows = Assert.IsAssignableFrom<IReadOnlyList<AdminUserResponse>>(result.Value);
+        var row = Assert.Single(rows, r => r.Id == TargetUserId);
+        Assert.Contains(row.Role, new[] { "Customer", "Bartender" });
+    }
+
+    [Fact]
     public async Task GetUsers_DeactivatedUser_ReportsInactive_AndNoPin()
     {
         using var fixture = new Fixture();

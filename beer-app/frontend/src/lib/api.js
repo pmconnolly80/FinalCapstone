@@ -143,6 +143,78 @@ export async function voidConfirmation(id, reason) {
   }
 }
 
+export async function getAdminUsers() {
+  const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw new Error('Failed to load users');
+  return response.json();
+}
+
+export async function assignRole(id, role, reason) {
+  const response = await fetch(`${API_BASE_URL}/api/admin/users/${id}/role`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ role, reason }),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || 'Failed to change role');
+  }
+}
+
+export async function deactivateAccount(id, reason) {
+  const response = await fetch(`${API_BASE_URL}/api/admin/users/${id}/deactivate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ reason }),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || 'Failed to deactivate account');
+  }
+}
+
+export async function reactivateAccount(id, reason) {
+  const response = await fetch(`${API_BASE_URL}/api/admin/users/${id}/reactivate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ reason }),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || 'Failed to reactivate account');
+  }
+}
+
+export async function issueOrResetStaffPin(userId, pin) {
+  const response = await fetch(`${API_BASE_URL}/api/staff-pins/${userId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ pin }),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || 'Failed to set PIN');
+  }
+}
+
+export async function deactivateStaffPin(userId) {
+  const response = await fetch(`${API_BASE_URL}/api/staff-pins/${userId}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || 'Failed to deactivate PIN');
+  }
+}
+
 export async function setMyPin(pin) {
   const token = localStorage.getItem('beer-token');
   const response = await fetch(`${API_BASE_URL}/api/staff-pins/me`, {
