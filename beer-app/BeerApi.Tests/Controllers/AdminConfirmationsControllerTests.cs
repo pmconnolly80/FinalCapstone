@@ -36,10 +36,10 @@ public class AdminConfirmationsControllerTests
         context.Beers.AddRange(duvel, orval);
         context.Taverns.Add(new Tavern { Name = "The Tavern" });
         context.Users.AddRange(
-            new IdentityUser { Id = AdminId, Email = "admin@example.com", UserName = "admin@example.com" },
-            new IdentityUser { Id = CustomerId, Email = "customer@example.com", UserName = "customer@example.com" },
-            new IdentityUser { Id = OtherCustomerId, Email = "other@example.com", UserName = "other@example.com" },
-            new IdentityUser { Id = BartenderId, Email = "bartender@example.com", UserName = "bartender@example.com" });
+            new ApplicationUser { Id = AdminId, Email = "admin@example.com", UserName = "admin@example.com" },
+            new ApplicationUser { Id = CustomerId, Email = "customer@example.com", UserName = "customer@example.com" },
+            new ApplicationUser { Id = OtherCustomerId, Email = "other@example.com", UserName = "other@example.com" },
+            new ApplicationUser { Id = BartenderId, Email = "bartender@example.com", UserName = "bartender@example.com" });
         await context.SaveChangesAsync();
 
         var older = new BeerConfirmation

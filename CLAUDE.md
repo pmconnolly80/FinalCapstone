@@ -181,8 +181,28 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     inputs gained `type="email"`/`autoComplete` hints. New `App.test.jsx` (nav
     auth-awareness, the reactive event).
 
+- **Sprint 4: Auth II** (milestone [#4](https://github.com/pmconnolly80/FinalCapstone/milestone/4),
+  in progress, [PR #47](https://github.com/pmconnolly80/FinalCapstone/pull/47) open):
+  - #40 `ApplicationUser : IdentityUser` (`beer-app/backend/Models/ApplicationUser.cs`) with a
+    `MarketingConsent` bool (default `false`); replaces the bare `IdentityUser` in
+    `ApplicationDbContext`, `Program.cs`'s `AddIdentity<...>`, `AuthController`'s
+    `UserManager`/`RoleManager`, and `SeedData.cs`'s dev bartender bootstrap.
+    `AddApplicationUserMarketingConsent` migration adds the column (backfills existing rows
+    to `false`). `RegisterRequest` gained an optional `MarketingConsent` param — the actual
+    consent-checkbox UI is #46's job, this just gives it somewhere to persist.
+  - #41 `IEmailSender`/`SmtpEmailSender` (`beer-app/backend/Services/`), the app's first
+    email dependency (#42's password reset is the first real caller). Config-driven the same
+    way `CatalogBeerService.cs` handles its API key: `Email:SmtpHost`/`SmtpPort`/`Username`/
+    `Password`/`FromAddress`/`FromName`/`EnableSsl` in `appsettings.json` (all empty/defaulted
+    in the committed file), overridable via `Email__*` in `docker-compose.yml`, sourced from
+    an untracked `beer-app/.env`. Sending silently no-ops (logs instead) when `SmtpHost` or
+    `FromAddress` is unconfigured, rather than throwing. `ISmtpClient`/`ISmtpClientFactory`
+    wrap `System.Net.Mail.SmtpClient` as a thin seam so the send path is unit-testable
+    without a real network call.
+
 **Not built** — next up per `EPICS_AND_SPRINTS.md`:
 - No admin UI to assign roles (currently DB-manual only; PIN management API exists)
+- Sprint 4 #42–#46 (password reset, external sign-in, social buttons/account linking)
 
 ## Testing policy (TDD)
 
@@ -225,14 +245,14 @@ Manual (no Docker): `dotnet run` in `beer-app/backend/`, and
 ([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), 2026-07-14), Sprint 2
 (PRs #19–#25, milestone closed 2026-07-15), and **Sprint 3: Customer Phone Experience**
 (PRs #33–#39, issues #26–#32, closed 2026-07-21; suites at close: backend 131/131,
-frontend 99/99). **Sprint 4: Auth II** is groomed and up next (milestone
+frontend 99/99). **Sprint 4: Auth II** is in progress (milestone
 [#4](https://github.com/pmconnolly80/FinalCapstone/milestone/4), issues #40–#46, groomed
-2026-07-21 — no code written yet). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md` for the
-full history. In order:
+2026-07-21). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md` for the full history. In order:
 
-1. #40 (`ApplicationUser` + marketing-consent migration) — foundational, nothing else in
-   the sprint's UI/consent work can land without it.
-2. #41 (pluggable email sender) → #42 (forgot/reset password, depends on #41).
+1. ~~#40 (`ApplicationUser` + marketing-consent migration)~~ — done,
+   [PR #47](https://github.com/pmconnolly80/FinalCapstone/pull/47) (open).
+2. ~~#41 (pluggable email sender)~~ — done, [PR #47](https://github.com/pmconnolly80/FinalCapstone/pull/47)
+   (open). → #42 (forgot/reset password, depends on #41) is next.
 3. #43/#44/#45 (Google/Facebook/Apple external sign-in — independent of each other) → #46
    (social buttons + account linking + consent checkbox, depends on #40/#43/#44/#45).
 4. Then the remaining named sprints: Admin Experience, Engagement/Retention/Social,

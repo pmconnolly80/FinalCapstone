@@ -25,7 +25,7 @@ public class ConfirmationsController : ControllerBase
     public const int MaxCustomerFailures = 5;
     public const int CustomerWindowMinutes = 15;
 
-    private static readonly PasswordHasher<IdentityUser> PinHasher = new();
+    private static readonly PasswordHasher<ApplicationUser> PinHasher = new();
 
     private readonly ApplicationDbContext _context;
 
@@ -173,7 +173,7 @@ public class ConfirmationsController : ControllerBase
 
         foreach (var staffPin in activePins)
         {
-            var result = PinHasher.VerifyHashedPassword(new IdentityUser(), staffPin.PinHash, pin);
+            var result = PinHasher.VerifyHashedPassword(new ApplicationUser(), staffPin.PinHash, pin);
             if (result != PasswordVerificationResult.Failed)
             {
                 if (staffPin.LockedUntil != null && staffPin.LockedUntil > now)

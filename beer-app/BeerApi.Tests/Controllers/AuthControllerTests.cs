@@ -1,6 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using BeerApi.Controllers;
+using BeerApi.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace BeerApi.Tests.Controllers;
@@ -132,6 +135,36 @@ public class AuthControllerTests : IDisposable
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<ErrorResponse>();
         Assert.Equal("Invalid credentials.", body?.Message);
+    }
+
+    [Fact]
+    public async Task Register_WithMarketingConsentTrue_PersistsConsent()
+    {
+        var response = await _client.PostAsJsonAsync("/api/auth/register",
+            new RegisterRequest("consent.yes@example.com", "Passw0rd!", MarketingConsent: true));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var scope = _factory.Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = await userManager.FindByEmailAsync("consent.yes@example.com");
+
+        Assert.True(user?.MarketingConsent);
+    }
+
+    [Fact]
+    public async Task Register_WithoutMarketingConsent_DefaultsToFalse()
+    {
+        var response = await _client.PostAsJsonAsync("/api/auth/register",
+            new RegisterRequest("consent.default@example.com", "Passw0rd!"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var scope = _factory.Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = await userManager.FindByEmailAsync("consent.default@example.com");
+
+        Assert.False(user?.MarketingConsent);
     }
 
     public void Dispose() => _factory.Dispose();
