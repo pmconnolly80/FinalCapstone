@@ -5,6 +5,7 @@ import {
   confirmBeer,
   deactivateAccount,
   deactivateStaffPin,
+  deleteBeer,
   fetchAdminConfirmations,
   fetchBeer,
   fetchConfirmationAudits,
@@ -21,6 +22,7 @@ import {
   searchBreweries,
   searchCatalogBeer,
   setMyPin,
+  updateBeerAvailability,
   voidConfirmation,
 } from './api';
 
@@ -116,6 +118,37 @@ describe('api', () => {
     expect(url).toContain('/api/beers/5');
     expect(init.method).toBe('PUT');
     expect(init.headers.Authorization).toBe('Bearer abc123');
+  });
+
+  it('updateBeerAvailability PATCHes the availability, and surfaces API errors', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    mockFetchOnce(true, null);
+
+    await updateBeerAvailability(5, 'OutOfStock');
+
+    const [url, init] = global.fetch.mock.calls[0];
+    expect(url).toContain('/api/beers/5/availability');
+    expect(init.method).toBe('PATCH');
+    expect(init.headers.Authorization).toBe('Bearer abc123');
+    expect(JSON.parse(init.body)).toEqual({ availability: 'OutOfStock' });
+
+    mockFetchOnce(false, { message: 'Beer not found.' });
+    await expect(updateBeerAvailability(5, 'OutOfStock')).rejects.toThrow('Beer not found.');
+  });
+
+  it('deleteBeer DELETEs with the reason in the query string, and surfaces API errors', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    mockFetchOnce(true, null);
+
+    await deleteBeer(5, 'discontinued by brewery');
+
+    const [url, init] = global.fetch.mock.calls[0];
+    expect(url).toContain('/api/beers/5?reason=discontinued%20by%20brewery');
+    expect(init.method).toBe('DELETE');
+    expect(init.headers.Authorization).toBe('Bearer abc123');
+
+    mockFetchOnce(false, { message: 'A reason is required to delete a beer.' });
+    await expect(deleteBeer(5, '')).rejects.toThrow('A reason is required to delete a beer.');
   });
 
   it('login resolves with the response body on success', async () => {

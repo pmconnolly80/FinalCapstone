@@ -51,6 +51,31 @@ export async function saveBeer(beer, id) {
   return response.json();
 }
 
+export async function updateBeerAvailability(id, availability) {
+  const response = await fetch(`${API_BASE_URL}/api/beers/${id}/availability`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ availability }),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || 'Failed to update availability');
+  }
+}
+
+export async function deleteBeer(id, reason) {
+  const response = await fetch(`${API_BASE_URL}/api/beers/${id}?reason=${encodeURIComponent(reason)}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || 'Failed to delete beer');
+  }
+}
+
 export async function confirmBeer(beerId, pin) {
   const token = localStorage.getItem('beer-token');
   const response = await fetch(`${API_BASE_URL}/api/confirmations`, {

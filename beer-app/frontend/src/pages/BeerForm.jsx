@@ -134,7 +134,7 @@ function BeerForm() {
 
     try {
       await saveBeer(payload, id);
-      navigate('/beers');
+      navigate('/admin/beers');
     } catch (err) {
       setError(err.message);
     }
