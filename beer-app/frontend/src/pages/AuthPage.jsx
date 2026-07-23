@@ -8,6 +8,9 @@ const SOCIAL_PROVIDERS = [
   { id: 'Apple', label: 'Continue with Apple' },
 ];
 
+const inputClass =
+  'w-full rounded-lg border border-gray-300 px-3 py-2 text-base focus:border-gray-900 focus:outline-none';
+
 function AuthPage() {
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
@@ -35,69 +38,108 @@ function AuthPage() {
   };
 
   return (
-    <div style={{ maxWidth: 420, margin: '0 auto', padding: 16 }}>
-      <h2>{mode === 'login' ? 'Log in' : 'Create account'}</h2>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <button onClick={() => setMode('login')}>Login</button>
-        <button onClick={() => setMode('register')}>Register</button>
-      </div>
-      <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 12 }}>
-        <label style={{ display: 'grid', gap: 4 }}>
-          Email
-          <input
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-          />
-        </label>
-        <label style={{ display: 'grid', gap: 4 }}>
-          Password
-          <input
-            type="password"
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-          />
-        </label>
-        {mode === 'register' && (
-          <>
-            <p style={{ margin: 0, fontSize: 13, color: '#6b7280' }}>
-              Passwords need at least 8 characters.
-            </p>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input
-                type="checkbox"
-                checked={marketingConsent}
-                onChange={(e) => setMarketingConsent(e.target.checked)}
-              />
-              Send me marketing emails
-            </label>
-          </>
-        )}
-        <button type="submit">{mode === 'login' ? 'Continue' : 'Create account'}</button>
-      </form>
-      <div style={{ display: 'grid', gap: 8, marginTop: 16 }}>
-        {SOCIAL_PROVIDERS.map((provider) => (
-          <a
-            key={provider.id}
-            href={externalLoginUrl(provider.id)}
-            style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}
+    <div className="mx-auto max-w-sm">
+      <div className="rounded-2xl bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:p-8">
+        {/* Placeholder wordmark — swap for a real logo asset once the color theme lands. */}
+        <div className="mb-6 flex flex-col items-center gap-1">
+          <span className="text-3xl" aria-hidden="true">
+            🍺
+          </span>
+          <span className="text-lg font-bold tracking-tight text-gray-900">Beer App</span>
+        </div>
+
+        <h2 className="m-0 text-center text-xl font-bold">
+          {mode === 'login' ? 'Log in' : 'Create account'}
+        </h2>
+
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setMode('login')}
+            className={`flex-1 rounded-full border px-4 py-2 text-sm font-medium ${
+              mode === 'login' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 bg-white text-gray-700'
+            }`}
           >
-            {provider.label}
-          </a>
-        ))}
+            Login
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('register')}
+            className={`flex-1 rounded-full border px-4 py-2 text-sm font-medium ${
+              mode === 'register' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 bg-white text-gray-700'
+            }`}
+          >
+            Register
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-4 grid gap-3">
+          <label className="grid gap-1 text-sm font-medium text-gray-700">
+            Email
+            <input
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              className={inputClass}
+            />
+          </label>
+          <label className="grid gap-1 text-sm font-medium text-gray-700">
+            Password
+            <input
+              type="password"
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              className={inputClass}
+            />
+          </label>
+          {mode === 'register' && (
+            <>
+              <p className="m-0 text-xs text-gray-500">Passwords need at least 8 characters.</p>
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={marketingConsent}
+                  onChange={(e) => setMarketingConsent(e.target.checked)}
+                />
+                Send me marketing emails
+              </label>
+            </>
+          )}
+          <button
+            type="submit"
+            className="mt-1 rounded-full border-0 bg-gray-900 px-6 py-3 font-medium text-white hover:bg-gray-700"
+          >
+            {mode === 'login' ? 'Continue' : 'Create account'}
+          </button>
+        </form>
+
+        <div className="mt-4 grid gap-2">
+          {SOCIAL_PROVIDERS.map((provider) => (
+            <a
+              key={provider.id}
+              href={externalLoginUrl(provider.id)}
+              className="block rounded-full border border-gray-300 px-4 py-2 text-center text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              {provider.label}
+            </a>
+          ))}
+        </div>
+
+        {mode === 'login' && (
+          <p className="mt-4 text-center text-sm">
+            <Link to="/forgot-password" className="font-medium underline">
+              Forgot password?
+            </Link>
+          </p>
+        )}
+        {message && <p className="mt-3 text-center text-sm">{message}</p>}
       </div>
-      {mode === 'login' && (
-        <p>
-          <Link to="/forgot-password">Forgot password?</Link>
-        </p>
-      )}
-      {message && <p>{message}</p>}
     </div>
   );
 }

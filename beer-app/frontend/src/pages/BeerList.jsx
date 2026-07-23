@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { searchBeers } from '../lib/api';
+import { fetchMyProgress, searchBeers } from '../lib/api';
 
 const AVAILABILITY_FILTERS = [
   { value: '', label: 'In Stock' },
@@ -47,11 +47,21 @@ function BeerList() {
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [confirmedCount, setConfirmedCount] = useState(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchInput.trim()), 300);
     return () => clearTimeout(timer);
   }, [searchInput]);
+
+  // Drives the #70 first-visit hint: a brand-new customer's had/not-had filters have
+  // nothing to differentiate yet, so point them at style/bartender instead.
+  useEffect(() => {
+    if (!isSignedIn) return;
+    fetchMyProgress()
+      .then((data) => setConfirmedCount(data.confirmedCount))
+      .catch(() => {});
+  }, [isSignedIn]);
 
   useEffect(() => {
     setLoading(true);
@@ -95,6 +105,12 @@ function BeerList() {
           </button>
         ))}
       </div>
+
+      {isSignedIn && confirmedCount === 0 && (
+        <p className="m-0 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+          New here? Try filtering by style, or ask the bartender what&apos;s popular tonight.
+        </p>
+      )}
 
       {isSignedIn && (
         <div className="flex flex-wrap gap-2">

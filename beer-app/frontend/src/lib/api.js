@@ -78,14 +78,24 @@ export async function deleteBeer(id, reason) {
 
 export async function confirmBeer(beerId, pin) {
   const token = localStorage.getItem('beer-token');
-  const response = await fetch(`${API_BASE_URL}/api/confirmations`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify({ beerId, pin }),
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}/api/confirmations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ beerId, pin }),
+    });
+  } catch {
+    // fetch() itself throws (rather than resolving with a non-ok response) when there's
+    // no network path at all — no signal, airplane mode, dead connection. That's a
+    // distinct failure mode from a wrong/locked-out PIN and gets its own UI treatment.
+    const networkError = new Error('No network connection');
+    networkError.isNetworkError = true;
+    throw networkError;
+  }
 
   if (!response.ok) {
     const body = await response.json().catch(() => null);

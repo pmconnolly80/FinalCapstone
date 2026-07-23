@@ -1,12 +1,18 @@
 import { useState } from 'react';
 import { confirmBeer } from '../lib/api';
 
+// After this many consecutive failures, a wrong-PIN retry loop and a lockout look
+// identical to the bartender — nudge toward asking an admin without revealing which.
+const REPEATED_FAILURE_THRESHOLD = 3;
+
 // The one-device confirmation moment: this fills the CUSTOMER's screen, and the customer
 // hands the phone across the bar. The bartender verifies the beer name, keys their
 // personal 6-digit PIN, and hands it back showing the updated count.
 function ConfirmPinPad({ beer, onClose }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
+  const [isNetworkError, setIsNetworkError] = useState(false);
+  const [failureCount, setFailureCount] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
 
@@ -23,10 +29,14 @@ function ConfirmPinPad({ beer, onClose }) {
     }
     setSubmitting(true);
     try {
-      setResult(await confirmBeer(beer.id, pin));
+      const confirmation = await confirmBeer(beer.id, pin);
+      setResult(confirmation);
+      setFailureCount(0);
     } catch (err) {
       setError(err.message);
+      setIsNetworkError(Boolean(err.isNetworkError));
       setPin('');
+      if (!err.isNetworkError) setFailureCount((count) => count + 1);
     } finally {
       setSubmitting(false);
     }
@@ -74,7 +84,19 @@ function ConfirmPinPad({ beer, onClose }) {
             </button>
             <button type="button" onClick={onClose} style={{ padding: '8px 24px' }}>Cancel</button>
           </form>
-          {error && <p style={{ color: '#fca5a5', marginTop: 12 }}>{error}</p>}
+          {error && isNetworkError && (
+            <p style={{ color: '#fca5a5', marginTop: 12 }}>
+              No signal — ask the bartender to note it, an admin can add it later.
+            </p>
+          )}
+          {error && !isNetworkError && (
+            <p style={{ color: '#fca5a5', marginTop: 12 }}>{error}</p>
+          )}
+          {error && !isNetworkError && failureCount >= REPEATED_FAILURE_THRESHOLD && (
+            <p style={{ color: '#fbbf24', marginTop: 8 }}>
+              ⚠️ Still not working after several tries? If this keeps happening, ask an admin.
+            </p>
+          )}
         </>
       )}
     </div>
