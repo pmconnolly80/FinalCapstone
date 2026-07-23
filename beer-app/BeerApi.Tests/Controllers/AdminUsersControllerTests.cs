@@ -59,6 +59,12 @@ public class AdminUsersControllerTests
             return user;
         }
 
+        public async Task SeedActivePinAsync(string userId = TargetUserId)
+        {
+            Context.StaffPins.Add(new StaffPin { UserId = userId, PinHash = "hash", IsActive = true });
+            await Context.SaveChangesAsync();
+        }
+
         public AdminUsersController CreateController(string adminId = AdminId)
         {
             return new AdminUsersController(Context, UserManager, RoleManager)
@@ -152,5 +158,155 @@ public class AdminUsersControllerTests
         Assert.Equal("Bartender", audit.AfterSnapshot);
         Assert.Equal("promoted to staff", audit.Reason);
         Assert.True((DateTime.UtcNow - audit.CreatedAt).Duration() < TimeSpan.FromMinutes(1));
+    }
+
+    [Fact]
+    public async Task GetUsers_ListsRoleActiveStatusAndPinPresence()
+    {
+        using var fixture = new Fixture();
+        await fixture.SeedRolesAsync();
+        await fixture.SeedTargetUserAsync(currentRole: "Bartender");
+        await fixture.SeedActivePinAsync();
+        var controller = fixture.CreateController();
+
+        var result = await controller.GetUsers();
+
+        var rows = Assert.IsAssignableFrom<IReadOnlyList<AdminUserResponse>>(result.Value);
+        var row = Assert.Single(rows, r => r.Id == TargetUserId);
+        Assert.Equal("target@example.com", row.Email);
+        Assert.Equal("Bartender", row.Role);
+        Assert.True(row.IsActive);
+        Assert.True(row.HasActivePin);
+    }
+
+    [Fact]
+    public async Task GetUsers_DeactivatedUser_ReportsInactive_AndNoPin()
+    {
+        using var fixture = new Fixture();
+        await fixture.SeedRolesAsync();
+        await fixture.SeedTargetUserAsync();
+        var controller = fixture.CreateController();
+        await controller.DeactivateAccount(TargetUserId, new AccountActionRequest("policy violation"));
+
+        var result = await controller.GetUsers();
+
+        var rows = Assert.IsAssignableFrom<IReadOnlyList<AdminUserResponse>>(result.Value);
+        var row = Assert.Single(rows, r => r.Id == TargetUserId);
+        Assert.False(row.IsActive);
+        Assert.False(row.HasActivePin);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task DeactivateAccount_WithoutReason_ReturnsBadRequest_AndChangesNothing(string? reason)
+    {
+        using var fixture = new Fixture();
+        await fixture.SeedRolesAsync();
+        await fixture.SeedTargetUserAsync();
+        var controller = fixture.CreateController();
+
+        var result = await controller.DeactivateAccount(TargetUserId, new AccountActionRequest(reason!));
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        var reloaded = await fixture.UserManager.FindByIdAsync(TargetUserId);
+        Assert.False(await fixture.UserManager.IsLockedOutAsync(reloaded!));
+        Assert.Empty(fixture.Context.AdminAudits);
+    }
+
+    [Fact]
+    public async Task DeactivateAccount_UnknownUserId_ReturnsNotFound()
+    {
+        using var fixture = new Fixture();
+        await fixture.SeedRolesAsync();
+        var controller = fixture.CreateController();
+
+        var result = await controller.DeactivateAccount("nonexistent", new AccountActionRequest("policy violation"));
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task DeactivateAccount_LocksOutUser_DeactivatesPin_AndWritesAudit()
+    {
+        using var fixture = new Fixture();
+        await fixture.SeedRolesAsync();
+        await fixture.SeedTargetUserAsync(currentRole: "Bartender");
+        await fixture.SeedActivePinAsync();
+        var controller = fixture.CreateController();
+
+        var result = await controller.DeactivateAccount(TargetUserId, new AccountActionRequest("policy violation"));
+
+        Assert.IsType<NoContentResult>(result);
+        var reloaded = await fixture.UserManager.FindByIdAsync(TargetUserId);
+        Assert.True(await fixture.UserManager.IsLockedOutAsync(reloaded!));
+        var pin = await fixture.Context.StaffPins.FirstAsync(p => p.UserId == TargetUserId);
+        Assert.False(pin.IsActive);
+
+        var audit = Assert.Single(fixture.Context.AdminAudits);
+        Assert.Equal(AdminId, audit.AdminUserId);
+        Assert.Equal("User", audit.EntityType);
+        Assert.Equal(TargetUserId, audit.EntityId);
+        Assert.Equal("Deactivate", audit.Action);
+        Assert.Equal("Active", audit.BeforeSnapshot);
+        Assert.Equal("Deactivated", audit.AfterSnapshot);
+        Assert.Equal("policy violation", audit.Reason);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task ReactivateAccount_WithoutReason_ReturnsBadRequest_AndChangesNothing(string? reason)
+    {
+        using var fixture = new Fixture();
+        await fixture.SeedRolesAsync();
+        await fixture.SeedTargetUserAsync();
+        var controller = fixture.CreateController();
+        await controller.DeactivateAccount(TargetUserId, new AccountActionRequest("policy violation"));
+
+        var result = await controller.ReactivateAccount(TargetUserId, new AccountActionRequest(reason!));
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        var reloaded = await fixture.UserManager.FindByIdAsync(TargetUserId);
+        Assert.True(await fixture.UserManager.IsLockedOutAsync(reloaded!));
+        Assert.Single(fixture.Context.AdminAudits);
+    }
+
+    [Fact]
+    public async Task ReactivateAccount_UnknownUserId_ReturnsNotFound()
+    {
+        using var fixture = new Fixture();
+        await fixture.SeedRolesAsync();
+        var controller = fixture.CreateController();
+
+        var result = await controller.ReactivateAccount("nonexistent", new AccountActionRequest("appeal approved"));
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task ReactivateAccount_ClearsLockout_DoesNotRestorePin_AndWritesAudit()
+    {
+        using var fixture = new Fixture();
+        await fixture.SeedRolesAsync();
+        await fixture.SeedTargetUserAsync(currentRole: "Bartender");
+        await fixture.SeedActivePinAsync();
+        var controller = fixture.CreateController();
+        await controller.DeactivateAccount(TargetUserId, new AccountActionRequest("policy violation"));
+
+        var result = await controller.ReactivateAccount(TargetUserId, new AccountActionRequest("appeal approved"));
+
+        Assert.IsType<NoContentResult>(result);
+        var reloaded = await fixture.UserManager.FindByIdAsync(TargetUserId);
+        Assert.False(await fixture.UserManager.IsLockedOutAsync(reloaded!));
+        var pin = await fixture.Context.StaffPins.FirstAsync(p => p.UserId == TargetUserId);
+        Assert.False(pin.IsActive);
+
+        var audit = Assert.Single(fixture.Context.AdminAudits, a => a.Action == "Reactivate");
+        Assert.Equal("Deactivated", audit.BeforeSnapshot);
+        Assert.Equal("Active", audit.AfterSnapshot);
+        Assert.Equal("appeal approved", audit.Reason);
     }
 }

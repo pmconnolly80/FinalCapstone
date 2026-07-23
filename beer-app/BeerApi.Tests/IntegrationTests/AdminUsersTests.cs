@@ -10,8 +10,9 @@ using Xunit;
 
 namespace BeerApi.Tests.IntegrationTests;
 
-// HTTP-level coverage of #53: role gating on the admin user-role endpoint, plus the
-// role-reassignment flow end to end.
+// HTTP-level coverage of #53 (role gating on the admin user-role endpoint, plus the
+// role-reassignment flow end to end) and #54 (users list, deactivate/reactivate — the
+// deactivated user's login is actually blocked, and their PIN goes with it).
 [Collection("WebApplicationFactory")]
 public class AdminUsersTests : IDisposable
 {
@@ -89,6 +90,117 @@ public class AdminUsersTests : IDisposable
         var response = await _client.PutAsJsonAsync("/api/admin/users/nonexistent-id/role",
             new AssignRoleRequest("Bartender", "promote"));
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AccountActionEndpoints_WithoutToken_ReturnUnauthorized()
+    {
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await _client.GetAsync("/api/admin/users")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await _client.PostAsJsonAsync("/api/admin/users/some-id/deactivate", new AccountActionRequest("x"))).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await _client.PostAsJsonAsync("/api/admin/users/some-id/reactivate", new AccountActionRequest("x"))).StatusCode);
+    }
+
+    [Fact]
+    public async Task AccountActionEndpoints_WithCustomerOrBartenderToken_ReturnForbidden()
+    {
+        var customerToken = await RegisterCustomerAsync("account.customer@example.com");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", customerToken);
+        Assert.Equal(HttpStatusCode.Forbidden, (await _client.GetAsync("/api/admin/users")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await _client.PostAsJsonAsync("/api/admin/users/some-id/deactivate", new AccountActionRequest("x"))).StatusCode);
+
+        var bartenderToken = await LoginAsync("bartender@example.com", "Bartender1!");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", bartenderToken);
+        Assert.Equal(HttpStatusCode.Forbidden, (await _client.GetAsync("/api/admin/users")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await _client.PostAsJsonAsync("/api/admin/users/some-id/reactivate", new AccountActionRequest("x"))).StatusCode);
+    }
+
+    [Fact]
+    public async Task DeactivateEndpoint_UnknownUserId_ReturnsNotFound()
+    {
+        var adminToken = await CreateAdminAndLoginAsync("account.admin1@example.com", "AdminPassw0rd!");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+
+        var response = await _client.PostAsJsonAsync("/api/admin/users/nonexistent-id/deactivate",
+            new AccountActionRequest("policy violation"));
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetUsers_ListsRoleActiveStatusAndPinPresence()
+    {
+        var customerToken = await RegisterCustomerAsync("account.list@example.com");
+        var targetUserId = await GetUserIdAsync("account.list@example.com");
+
+        var adminToken = await CreateAdminAndLoginAsync("account.admin2@example.com", "AdminPassw0rd!");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+
+        await _client.PutAsJsonAsync($"/api/admin/users/{targetUserId}/role", new AssignRoleRequest("Bartender", "staffing up"));
+        var pinResult = await _client.PutAsJsonAsync($"/api/staff-pins/{targetUserId}", new SetPinRequest("135790"));
+        Assert.Equal(HttpStatusCode.NoContent, pinResult.StatusCode);
+
+        var users = await _client.GetFromJsonAsync<List<AdminUserResponse>>("/api/admin/users");
+        var row = Assert.Single(users!, u => u.Id == targetUserId);
+        Assert.Equal("account.list@example.com", row.Email);
+        Assert.Equal("Bartender", row.Role);
+        Assert.True(row.IsActive);
+        Assert.True(row.HasActivePin);
+    }
+
+    [Fact]
+    public async Task AccountFlow_DeactivateBlocksLoginAndDropsPin_ReactivateRestoresLoginNotPin()
+    {
+        var customerToken = await RegisterCustomerAsync("account.flow@example.com");
+        var targetUserId = await GetUserIdAsync("account.flow@example.com");
+
+        var adminToken = await CreateAdminAndLoginAsync("account.admin3@example.com", "AdminPassw0rd!");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+        await _client.PutAsJsonAsync($"/api/admin/users/{targetUserId}/role", new AssignRoleRequest("Bartender", "staffing up"));
+        await _client.PutAsJsonAsync($"/api/staff-pins/{targetUserId}", new SetPinRequest("246810"));
+
+        // Reason is mandatory — no silent deactivation.
+        var noReason = await _client.PostAsJsonAsync($"/api/admin/users/{targetUserId}/deactivate",
+            new AccountActionRequest(""));
+        Assert.Equal(HttpStatusCode.BadRequest, noReason.StatusCode);
+
+        var deactivated = await _client.PostAsJsonAsync($"/api/admin/users/{targetUserId}/deactivate",
+            new AccountActionRequest("policy violation"));
+        Assert.Equal(HttpStatusCode.NoContent, deactivated.StatusCode);
+
+        var listAfterDeactivate = await _client.GetFromJsonAsync<List<AdminUserResponse>>("/api/admin/users");
+        var rowAfterDeactivate = Assert.Single(listAfterDeactivate!, u => u.Id == targetUserId);
+        Assert.False(rowAfterDeactivate.IsActive);
+        Assert.False(rowAfterDeactivate.HasActivePin);
+
+        // The account can no longer log in at all.
+        var blockedLogin = await _client.PostAsJsonAsync("/api/auth/login",
+            new LoginRequest("account.flow@example.com", "Passw0rd!"));
+        Assert.Equal(HttpStatusCode.Unauthorized, blockedLogin.StatusCode);
+
+        var reactivated = await _client.PostAsJsonAsync($"/api/admin/users/{targetUserId}/reactivate",
+            new AccountActionRequest("appeal approved"));
+        Assert.Equal(HttpStatusCode.NoContent, reactivated.StatusCode);
+
+        var restoredLogin = await _client.PostAsJsonAsync("/api/auth/login",
+            new LoginRequest("account.flow@example.com", "Passw0rd!"));
+        Assert.Equal(HttpStatusCode.OK, restoredLogin.StatusCode);
+
+        // Reactivating the account does not silently restore the PIN.
+        var listAfterReactivate = await _client.GetFromJsonAsync<List<AdminUserResponse>>("/api/admin/users");
+        var rowAfterReactivate = Assert.Single(listAfterReactivate!, u => u.Id == targetUserId);
+        Assert.True(rowAfterReactivate.IsActive);
+        Assert.False(rowAfterReactivate.HasActivePin);
+
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var deactivateAudit = Assert.Single(context.AdminAudits, a => a.EntityId == targetUserId && a.Action == "Deactivate");
+        Assert.Equal("policy violation", deactivateAudit.Reason);
+        var reactivateAudit = Assert.Single(context.AdminAudits, a => a.EntityId == targetUserId && a.Action == "Reactivate");
+        Assert.Equal("appeal approved", reactivateAudit.Reason);
     }
 
     private async Task<string> RegisterCustomerAsync(string email)
