@@ -182,7 +182,7 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     auth-awareness, the reactive event).
 
 - **Sprint 4: Auth II** (milestone [#4](https://github.com/pmconnolly80/FinalCapstone/milestone/4),
-  in progress, implemented locally — not yet committed/PR'd):
+  in progress, [PR #47](https://github.com/pmconnolly80/FinalCapstone/pull/47) open):
   - #40 `ApplicationUser : IdentityUser` (`beer-app/backend/Models/ApplicationUser.cs`) with a
     `MarketingConsent` bool (default `false`); replaces the bare `IdentityUser` in
     `ApplicationDbContext`, `Program.cs`'s `AddIdentity<...>`, `AuthController`'s
@@ -249,10 +249,10 @@ frontend 99/99). **Sprint 4: Auth II** is in progress (milestone
 [#4](https://github.com/pmconnolly80/FinalCapstone/milestone/4), issues #40–#46, groomed
 2026-07-21). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md` for the full history. In order:
 
-1. ~~#40 (`ApplicationUser` + marketing-consent migration)~~ — done locally, not yet
-   committed/PR'd.
-2. ~~#41 (pluggable email sender)~~ — done locally, not yet committed/PR'd. → #42
-   (forgot/reset password, depends on #41) is next.
+1. ~~#40 (`ApplicationUser` + marketing-consent migration)~~ — done,
+   [PR #47](https://github.com/pmconnolly80/FinalCapstone/pull/47) (open).
+2. ~~#41 (pluggable email sender)~~ — done, [PR #47](https://github.com/pmconnolly80/FinalCapstone/pull/47)
+   (open). → #42 (forgot/reset password, depends on #41) is next.
 3. #43/#44/#45 (Google/Facebook/Apple external sign-in — independent of each other) → #46
    (social buttons + account linking + consent checkbox, depends on #40/#43/#44/#45).
 4. Then the remaining named sprints: Admin Experience, Engagement/Retention/Social,
