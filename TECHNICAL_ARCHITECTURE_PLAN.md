@@ -105,6 +105,36 @@ initialing the customer's own paper sheet.
   (rejected as primary — bartenders won't watch a queue mid-shift — but cheap to add
   later as an opt-in); Web NFC staff tap (not viable — no iPhone browser support).
 
+### Open architecture questions surfaced 2026-07-23 (not yet decided — flagged for future design)
+
+Two real gaps came out of a 2026-07-23 product/UX review (`USABILITY_TESTING.md`),
+neither resolved yet:
+
+- **Bartender identity model may not need a full account at all.** Today `StaffPin`
+  hangs off a full `ApplicationUser` (Identity account, email/password, the works),
+  requiring a bartender to have registered like any customer before an admin can
+  promote+PIN them. The user has floated a lighter model where the bartender stays
+  "out of the loop" entirely — no login, no self-service — and an admin directly
+  creates a staff record + PIN with no underlying Identity account, using the
+  bartender's birthday (`MMDDYYYY`, 8 digits) as an easy-to-remember PIN. This is a
+  bigger change than it looks: PIN length is hardcoded to 6 digits throughout
+  (`StaffPin`, lockout logic, the PIN pad UI), and decoupling `StaffPin` from
+  `ApplicationUser` touches `ConfirmedByUserId`'s FK and every place that resolves a
+  bartender's display name from their user record. Needs a real design pass before
+  it's ticketed — not a quick patch.
+- **Mid-shift availability update has no clean answer under the one-device rule.**
+  Only `[Authorize(Roles = "Admin")]` can flip a beer's availability (`PATCH
+  /api/beers/{id}/availability`), but nobody physically at the bar when a keg kicks
+  necessarily has that role, and the one-device rule means a bartender has no device
+  of their own to act from anyway. Three options are all still live and may end up
+  layered rather than mutually exclusive: (a) a narrow availability-only permission
+  for Bartenders — but this requires the bartender to actually be an authenticated
+  user, which is in direct tension with the account-model question above; (b) house
+  policy — bartender tells the admin by text/call, admin updates remotely; (c) a
+  customer-facing "flag as unavailable" crowd-sourced report surfaced to the admin as
+  a lightweight alert, independent of bartender auth entirely. Resolving the account-
+  model question first will determine whether (a) is even feasible.
+
 ## 4.2 Push notifications (planned July 2026)
 
 Standard Web Push, no native app required:

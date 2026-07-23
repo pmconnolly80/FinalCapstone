@@ -157,6 +157,25 @@ The app lives on the customer's phone; this phase makes that true rather than as
 - Owner analytics: most/least confirmed beers, member activity, lapsed-member list,
   consent-gated marketing segments (sign-in identity + in-app behavior)
 
+### External beer search + customer recommendations (groomed 2026-07-23 as Sprint 7)
+Flagged during 2026-07-23 live testing, now groomed into
+[#72](https://github.com/pmconnolly80/FinalCapstone/issues/72)/[#73](https://github.com/pmconnolly80/FinalCapstone/issues/73)
+(milestone [7](https://github.com/pmconnolly80/FinalCapstone/milestone/7)):
+- Customer-facing search mode against the external catalogs already integrated on the
+  admin side (`IBreweryLookupService`/Open Brewery DB, `ICatalogBeerService`/
+  Catalog.beer) — clearly separated in the UI from search of the tavern's own list, so
+  customers aren't confused about what the tavern actually serves
+  (`CLAUDE.md`'s core framing: the mug club tracks the tavern's own list, not a
+  generic catalog)
+- Log what customers search for via that mode as an ordering-decision signal for the
+  owner (which beers/breweries get searched but aren't on the tavern's list)
+- `BeerRecommendation`/`BeerRequest`-style entity: customer suggests a beer (optionally
+  sourced straight from an external search hit) for the tavern to stock
+- Admin-facing review/triage screen for incoming recommendations — needed before this
+  is actionable, not just a write-only inbox
+- Natural pairing with the existing want-list demand-aggregation idea above (same
+  "what do members want" signal, extended to beers not yet on the list at all)
+
 ## Phase 7 — Future enhancements
 
 - Public reviews and ratings

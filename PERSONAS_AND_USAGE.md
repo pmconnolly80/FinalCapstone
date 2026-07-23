@@ -24,7 +24,16 @@ Four personas, four very different relationships with the same data:
 
 Owner and Admin may be the same human at a small tavern, but they are different *hats*:
 the owner hat makes business decisions and talks to members; the admin hat maintains data.
-The role model should keep them separable (an owner can hire out admin work later).
+
+**Revised 2026-07-23** (a 2026-07-23 review found the code had already quietly merged
+these into one `Admin` role, contrary to this doc's original "keep them separable"
+framing — see `USABILITY_TESTING.md`): rather than a strict Owner/Admin permission
+split, the decided direction is **multiple Admin accounts, individually attributed**
+(every audited action already records its actor via `AdminAudit` — this is mostly
+already true), plus **one top-level account that can provision the others** — e.g. the
+tavern owner creates Admin accounts for staff who do data upkeep, without granting
+them the ability to create further Admin accounts themselves. Not yet built; see
+`TECHNICAL_ARCHITECTURE_PLAN.md` and `IMPLEMENTATION_BACKLOG.md` for backlog placement.
 
 ---
 
@@ -128,6 +137,16 @@ Owner/admin issues Marco a PIN when he's hired (he changes it on first use), res
 forgotten, deactivates it the day he leaves. A departed bartender's PIN stops working
 everywhere instantly — something a laminated paper sheet never offered.
 
+**Under review 2026-07-23:** onboarding today actually requires Marco to self-register
+like a customer *before* an admin can find and promote him — not the "one screen" this
+implies. A lighter model has been floated where Marco never has an account or logs in
+at all: the admin creates his staff record and PIN directly, using his birthday
+(`MMDDYYYY`) as an easy-to-remember 8-digit PIN instead of a random 6-digit one. Not
+decided — needs a real design pass (PIN length is hardcoded to 6 digits in several
+places, and this would decouple `StaffPin` from a full Identity account). See
+`TECHNICAL_ARCHITECTURE_PLAN.md` §4.1's "Open architecture questions" and
+`USABILITY_TESTING.md`.
+
 ---
 
 ## 3. Owner — "Terri", who pays for all this
@@ -135,14 +154,22 @@ everywhere instantly — something a laminated paper sheet never offered.
 Terri's question is always the same: *is the club putting people on stools?*
 
 ### Weekly ritual (laptop, Monday morning)
-- **Dashboard**: confirmations this week vs. last, active members, new sign-ups, members
-  one badge away from a milestone, lapsed members (no confirmation in 30/60 days).
-- **Beer intelligence**: most- and least-confirmed beers. The stout nobody's ordered in two
-  months informs the next distributor order; the hazy IPA that's carrying the month
-  suggests going deeper on that style. The rotating inventory finally produces data instead
-  of gut feel. Added July 2026: **want-list demand counts** ("31 members want beer X" — put
-  it on tap, and the app pushes exactly those 31 members) and **anonymized average ratings**
-  per beer — members tell her what to buy without being asked.
+- **Dashboard** (revised 2026-07-23 — see `USABILITY_TESTING.md`): the shipped Admin
+  Dashboard (#59) covers **operational health only** — total beers, confirmations
+  today, active members, mugs awarded, plus the anomaly panel. It deliberately does
+  *not* yet answer Terri's real "what should I order more of / who's about to lapse"
+  question below — that's explicitly deferred to a separate, later **Owner Analytics**
+  screen once the Engagement/Retention epic is groomed, rather than implied to already
+  be part of today's dashboard.
+- **Beer intelligence** (Owner Analytics — not yet built): most- and least-confirmed
+  beers. The stout nobody's ordered in two months informs the next distributor order;
+  the hazy IPA that's carrying the month suggests going deeper on that style. The
+  rotating inventory finally produces data instead of gut feel. Added July 2026:
+  **want-list demand counts** ("31 members want beer X" — put it on tap, and the app
+  pushes exactly those 31 members) and **anonymized average ratings** per beer —
+  members tell her what to buy without being asked. Most/least-confirmed beers is a
+  cheap first slice (a simple query over existing `BeerConfirmation` rows, no new
+  schema) worth pulling forward ahead of the rest of this list.
 - **Trust check**: the anomaly panel — off-hours confirmations, velocity spikes, one
   bartender's numbers looking unlike the others', and **unusual catalog activity** (a burst
   of beers added at once). Usually empty; priceless when it isn't. The catalog alert also
@@ -286,6 +313,14 @@ all still customer-phone-only, kept here so the exploration isn't lost:
    is comfortable moderating.
 4. **PIN policy**: 6 digits (decided); confirm lockout threshold, cooldown length, and
    rotation cadence with the owner.
-5. **Dead-phone policy**: is "admin back-fills tomorrow with a note" acceptable house
-   policy, or does that night's beer just not count?
+5. **Dead-phone policy — decided 2026-07-23**: no backfill capability for v1. A
+   customer with no signal or a dead phone simply can't get that beer confirmed that
+   night; the app shows a clear in-app message ("no signal — ask the bartender to note
+   it") rather than failing silently or looking broken. Admin backfill was considered
+   and explicitly deferred, not built. See `USABILITY_TESTING.md`.
 6. **Push tone and frequency caps**: how many owner-composed sends per week is too many?
+7. **First-time acquisition — decided 2026-07-23**: a QR code (table-tent/coaster,
+   physical/marketing, outside this codebase) pointing at an in-app
+   `/auth?mode=register` entry point is the v1 answer. Native app-store presence
+   (Google Play / Apple App Store) is a genuine future direction to explore — logged
+   as a backlog candidate, not scoped yet. See `IMPLEMENTATION_BACKLOG.md`.

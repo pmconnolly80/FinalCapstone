@@ -43,6 +43,24 @@ bartender. Browsing supports discovery; search supports the moment of use at the
   and browse default to what's in stock now; retired beers stay in the catalog and in member
   histories — confirmations are permanent and progress never goes backwards when the list
   changes.
+- **Beer-nerd external database search (groomed 2026-07-23 as [#72](https://github.com/pmconnolly80/FinalCapstone/issues/72), Sprint 7):** today's beer
+  search only searches the tavern's own ~200-beer list, by design (the mug club tracks
+  beers the tavern actually serves). Requested as an additional, clearly-separate mode:
+  let a customer search the *external* beer databases already integrated on the admin
+  side (Open Brewery DB, Catalog.beer) to look up any beer/brewery, not just what's on
+  the tavern's list. Two payoffs: a beer-nerd lookup feature in its own right, and a
+  source of real customer demand data (what people search for but the tavern doesn't
+  carry) the owner can use for ordering decisions — feeds the same
+  "recommendations/requests" idea below rather than being a separate data pipeline. Not
+  yet scoped/groomed — see `IMPLEMENTATION_BACKLOG.md` Phase 6/7 and
+  `EPICS_AND_SPRINTS.md`'s 2026-07-23 Live Testing Findings.
+- **Customer beer recommendations/requests (groomed 2026-07-23 as [#73](https://github.com/pmconnolly80/FinalCapstone/issues/73), Sprint 7):** let a
+  customer suggest a beer they'd like the tavern to stock — naturally pairs with the
+  external-search feature above (recommend directly from an external search result) and
+  with the existing want-list demand-aggregation idea in the Engagement & retention
+  section below (same owner-facing "what do members want" signal, this time for beers
+  not yet on the list at all). Needs an admin-facing review/triage screen before it's
+  actionable. Not yet scoped/groomed.
 
 ### Content management
 - Create a beer record

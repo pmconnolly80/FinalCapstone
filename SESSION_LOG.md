@@ -1104,3 +1104,128 @@ new).
 #60–#66). **Resume here:** groom the Engagement, Retention & Social epic into the next
 sprint once #66 merges — per this repo's "only the next epic gets fully broken into
 issues" convention, that grooming session hasn't happened yet.
+
+---
+
+## 2026-07-23 — Live testing findings triaged; dev admin + test customer seeded
+
+**Epic:** cross-cutting (not Sprint 5 scope, which is already closed)
+
+The user visited the live site and reported seven issues in one pass. Investigated each
+before touching anything, then triaged:
+
+- **Forgot-password emails never send** — confirmed not a code bug: SMTP host/from-address
+  are empty in `appsettings.json`, `docker-compose.yml`, and the untracked `.env` alike, so
+  `SmtpEmailSender` correctly no-ops per its existing design. Left as-is; tracked under
+  Deployment & Hardening in `EPICS_AND_SPRINTS.md`.
+- **Nav bar dislike / shouldn't show before login, and the top "tabs" don't make sense** —
+  confirmed via reading `App.jsx`: today's nav is a flat, always-visible link list with no
+  actual tab component anywhere in the app. Real UX gap, not implemented this session —
+  logged as the new **Mobile UI Polish** epic (`EPICS_AND_SPRINTS.md`) alongside the login
+  screen ask (logo + minimal fields, pending the bar's eventual color theme).
+- **"Beer list doesn't search the API"** — investigated `BeerList.jsx`, `api.js`, and
+  `BeersController.GetBeers`; found the existing search correctly wired end to end (debounce,
+  param names, endpoint). Asked the user for a repro and learned the actual expectation was
+  searching the *external* beer database (Open Brewery DB / Catalog.beer), not the tavern's
+  own ~200-beer list — a scope question, not a bug, per `CLAUDE.md`'s product framing. The
+  user then asked for this as a real feature, plus letting customers recommend beers for the
+  tavern to stock (using search activity as an ordering-decision signal too). Documented as a
+  candidate in `FEATURE_MAP.md` and `IMPLEMENTATION_BACKLOG.md` Phase 6 — not yet groomed into
+  a story; needs its own scoping session (new entities, admin triage UI, and how the
+  external-search UI stays clearly distinct from the tavern's-own-list search).
+- **Dev/testing admin + customer accounts** — actually implemented: `SeedData.cs` now seeds
+  `admin@tavern.local` / `admin1234` (`Admin` role) and `user1@gmail.com` / `1234User1#!`
+  (`Customer` role), following the same bootstrap pattern as the existing dev bartender.
+  Two adjustments from what was literally asked, both flagged to the user before coding:
+  the app has no username-only login (email+password throughout), so `admin@tavern.local`
+  stands in for a literal `admin` username; and the requested `admin` password is only 5
+  characters against the app's existing min-8 policy (`Program.cs`), so `admin1234` was used
+  instead. This is a dev/testing bootstrap only — doesn't replace the real admin-provisioning
+  fix already tracked under Deployment & Hardening. Caught a real test collision along the
+  way: `BeersAuthorizationTests` already hardcoded `admin@example.com` for its own ad hoc
+  admin fixtures, so the first seed email choice (`admin@example.com`) broke that test by
+  colliding on password — moved to `admin@tavern.local` instead.
+
+Added `BeerApi.Tests/Data/SeedDataTests.cs` coverage for both new accounts (role, password,
+idempotent re-seed). Full backend suite green: 239/239 (236 prior + 3 new). No frontend
+changes this session.
+
+See `EPICS_AND_SPRINTS.md`'s new "Live Testing Findings — 2026-07-23" section for the full
+per-item triage and epic placement.
+
+**Resume here:** groom the Engagement, Retention & Social epic (including the new
+external-search/recommendations candidate) or scope the new Mobile UI Polish epic into a
+sprint — neither has been broken into issues yet.
+
+---
+
+## 2026-07-23 — Product/UX gap analysis; Mobile UI Polish + Beer Discovery groomed into real issues
+
+**Epic:** cross-cutting (Sprint 6/7 grooming, plus `epic:admin`/`epic:retention` extensions)
+
+Continuation of the same day's live-testing session. Asked to go deeper than the seven
+surface-level bugs already logged: the user's own framing was that despite five sprints
+all marked "done," the app "does not fulfill its goals" for real users yet, and asked for
+the customer and admin/owner experience to be thoroughly stress-tested for holes, with
+findings turned into decisions rather than silently implemented.
+
+Ran a dedicated gap-analysis pass (general-purpose agent, grounded in `PROJECT_PLAN.md`,
+`PERSONAS_AND_USAGE.md`, `FEATURE_MAP.md`, `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1, and the
+actual shipped frontend/backend code) and surfaced 12 real gaps — 6 customer-facing, 6
+admin/owner-facing — each with 2-4 concrete resolution options. Worked through all 12
+with the user via three rounds of decision questions. Full list, decisions, and
+reasoning now live in a new living doc, `USABILITY_TESTING.md` (distinct from
+`POST_MORTEM.md`, which is a one-time Sprint 1–5 retrospective snapshot, not a doc meant
+to be updated as work continues).
+
+Two decisions turned out bigger than their original framing:
+- **Bartender onboarding** — the user's answer went past "add an admin invite flow" to
+  floating a genuinely different future architecture: bartenders might not need real
+  Identity accounts at all, with an admin directly creating a staff record + PIN using
+  the bartender's birthday (`MMDDYYYY`, 8 digits) as an easy-to-remember code. Documented
+  as an open architecture question in `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1 rather than
+  ticketed — it touches the hardcoded 6-digit PIN assumption and `StaffPin`'s FK to
+  `ApplicationUser` throughout the codebase, real design work needed first.
+- **Owner vs Admin roles** — `PERSONAS_AND_USAGE.md` had promised these stay separable,
+  but the code already merged them. The user's resolution wasn't a permission split;
+  it's multiple individually-attributed Admin accounts (mostly already true via
+  `AdminAudit`) plus one top-level account that can provision the others — also
+  documented, not yet designed/ticketed.
+- **Mid-shift availability update** — the user wanted elements of all three proposed
+  options combined, which surfaces a real tension: granting bartenders an
+  availability-only permission requires them to be authenticated users, directly
+  conflicting with the bartender-account-model question above. Flagged as an explicit
+  open dependency in `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1 rather than resolved by
+  picking one arbitrarily.
+
+Groomed the concrete, ticket-ready decisions into real GitHub issues (new labels
+`epic:ui-polish`, `epic:beer-discovery`, `epic:retention` created first — the last one
+existed only in docs before this):
+- **Milestone 6, Mobile UI Polish**: [#67](https://github.com/pmconnolly80/FinalCapstone/issues/67)–[#71](https://github.com/pmconnolly80/FinalCapstone/issues/71)
+  (bottom tab bar nav hidden pre-login, minimal branded login screen, bartender lockout
+  signal, cold-start search hint, graceful offline message)
+- **Milestone 7, Beer Discovery & Recommendations**: [#72](https://github.com/pmconnolly80/FinalCapstone/issues/72)–[#73](https://github.com/pmconnolly80/FinalCapstone/issues/73)
+  (customer-facing external beer-database search, beer recommendations + admin triage)
+- **Ungroomed into a sprint yet** (deliberate deviation from the "only next epic gets
+  ticketed" convention, per explicit user direction to narrow priorities across several
+  candidate epics at once): [#74](https://github.com/pmconnolly80/FinalCapstone/issues/74)
+  (`epic:retention`, rating-prompt + milestone pull-forward), [#75](https://github.com/pmconnolly80/FinalCapstone/issues/75)–[#78](https://github.com/pmconnolly80/FinalCapstone/issues/78)
+  (`epic:admin`, reason-field microcopy, user-table filter, bartender invite, dashboard
+  reframe)
+
+Also updated `PERSONAS_AND_USAGE.md` (role-separation framing, PIN-lifecycle note,
+owner-dashboard framing, three open questions resolved/added) and
+`TECHNICAL_ARCHITECTURE_PLAN.md` §4.1 (new "Open architecture questions" subsection) to
+carry these decisions forward as living plan content, not just session notes.
+
+Found (not fixed) an unrelated doc/GitHub drift while grooming: Milestone 4 ("Sprint 4:
+Auth II") is marked closed in GitHub, but issues #40–#46 are all still open — noted in
+`USABILITY_TESTING.md` for a future cleanup pass.
+
+No code changes this half of the session — pure planning/grooming. Backend suite
+unaffected (239/239 as of the seed-data changes earlier today).
+
+**Resume here:** pick which of Sprint 6 (Mobile UI Polish) or Sprint 7 (Beer Discovery &
+Recommendations) to actually start building, or continue narrowing the two open
+architecture questions (bartender account model, multi-admin/owner tiering) before they
+block #77/#A2's mid-shift-availability follow-up.
