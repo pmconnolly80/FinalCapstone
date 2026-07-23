@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { fetchMyProgress } from '../lib/api';
+import { Link, useNavigate } from 'react-router-dom';
+import { fetchMyProgress, getRolesFromToken } from '../lib/api';
 
 function SignedOutPitch() {
   return (
@@ -41,16 +41,28 @@ function SignedOutPitch() {
 }
 
 function Home() {
+  const navigate = useNavigate();
   const hasToken = Boolean(localStorage.getItem('beer-token'));
+  const isAdmin = getRolesFromToken().includes('Admin');
   const [progress, setProgress] = useState(null);
   const [error, setError] = useState('');
 
+  // #59: the Admin Dashboard is the landing page for the Admin role — the customer
+  // progress card below makes no sense for an admin account.
   useEffect(() => {
-    if (!hasToken) return;
+    if (isAdmin) navigate('/admin/dashboard', { replace: true });
+  }, [isAdmin, navigate]);
+
+  useEffect(() => {
+    if (!hasToken || isAdmin) return;
     fetchMyProgress()
       .then((data) => setProgress(data))
       .catch(() => setError('Could not load your progress. Try signing in again.'));
-  }, [hasToken]);
+  }, [hasToken, isAdmin]);
+
+  if (isAdmin) {
+    return null;
+  }
 
   if (!hasToken) {
     return <SignedOutPitch />;

@@ -139,6 +139,22 @@ export async function searchCatalogBeer(query) {
   return response.json();
 }
 
+export async function fetchDashboardSummary() {
+  const response = await fetch(`${API_BASE_URL}/api/admin/dashboard/summary`, {
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw new Error('Failed to load dashboard summary');
+  return response.json();
+}
+
+export async function fetchAdminAnomalies() {
+  const response = await fetch(`${API_BASE_URL}/api/admin/anomalies`, {
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw new Error('Failed to load anomalies');
+  return response.json();
+}
+
 export async function fetchAdminConfirmations() {
   const response = await fetch(`${API_BASE_URL}/api/admin/confirmations`, {
     headers: authHeaders(),
