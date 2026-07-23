@@ -916,3 +916,45 @@ regression test), frontend 131/131 (117 prior + 14 new).
 
 **Resume here:** #56 (API: audited beer edit/delete + inline availability update) once
 #62 merges — builds on #53's `AdminAudit`.
+
+---
+
+## 2026-07-23 — #62 merged; #56: audited beer edit/delete + inline availability
+
+**Epic:** `epic:admin`
+
+Merged PR #62 (#55) to `master`. Then built #56, the fourth story of Sprint 5:
+`BeersController`'s existing `PUT`/`DELETE` (already `[Authorize(Roles = "Admin")]`, but
+previously changeable with zero audit trail) now write an `AdminAudit` row per edit/
+delete, plus a new `PATCH /api/beers/{id}/availability` for the inline toggle #57's Beer
+Management Table needs.
+
+Format decision, confirmed with the user before implementing: #53/#54's
+`BeforeSnapshot`/`AfterSnapshot` only ever held short single-value strings (a role name,
+"Active"/"Deactivated") since each audited one scalar. A beer edit touches ~10 fields.
+Rather than introduce this codebase's first JSON-blob snapshot, went with a
+**changed-fields-only text diff** (a new `DescribeBeerDiff` helper) — only what actually
+changed, as readable text, matching the existing plain-string tone. A no-op edit
+(identical resubmission) writes no audit row. Per the issue, only delete requires an
+admin-supplied reason; edits and availability flips are audited automatically without
+one.
+
+Along the way, `PutBeer` gained a proper `404` for an unknown id (previously threw
+`DbUpdateConcurrencyException` from `SaveChangesAsync` — fetching the existing row for
+diffing makes the check free) and `DeleteBeer` gained a required `reason` query
+parameter (no existing frontend call to break, since beer deletion isn't wired up in
+the UI yet — that's #57's job).
+
+Manual end-to-end verification via `docker compose` + curl: created a beer, edited
+style/ABV (confirmed the diff-only audit text via `psql`), re-submitted identical values
+(confirmed no second audit row), flipped availability via PATCH, deleted without a
+reason (400) then with one (204) — all four audit rows correct.
+
+Suites green: backend 215/215 (199 prior + 16 new/updated). No frontend changes (API
+only, matching #53/#54's split from #55).
+
+- Branch: `feat/56-audited-beer-edit-delete` (off `master`)
+- PR: [#63](https://github.com/pmconnolly80/FinalCapstone/pull/63) (open, not yet merged)
+
+**Resume here:** #57 (UI: Beer Management Table) once #63 merges — wires up #56's
+audited edit/delete/availability endpoints.

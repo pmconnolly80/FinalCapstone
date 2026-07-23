@@ -144,7 +144,36 @@ public class BeersController : ControllerBase
             return BadRequest();
         }
 
+        var existing = await _context.Beers.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id);
+        if (existing == null)
+        {
+            return NotFound();
+        }
+
+        var adminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (adminId == null)
+        {
+            return Unauthorized();
+        }
+
+        var (before, after) = DescribeBeerDiff(existing, beer);
+
         _context.Entry(beer).State = EntityState.Modified;
+
+        if (before.Length > 0)
+        {
+            _context.AdminAudits.Add(new AdminAudit
+            {
+                AdminUserId = adminId,
+                EntityType = "Beer",
+                EntityId = id.ToString(),
+                Action = "Edit",
+                BeforeSnapshot = before,
+                AfterSnapshot = after,
+                Reason = string.Empty,
+            });
+        }
+
         await _context.SaveChangesAsync();
 
         return NoContent();
@@ -152,7 +181,45 @@ public class BeersController : ControllerBase
 
     [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteBeer(int id)
+    public async Task<IActionResult> DeleteBeer(int id, string? reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            return BadRequest(new { message = "A reason is required to delete a beer." });
+        }
+
+        var beer = await _context.Beers.FindAsync(id);
+        if (beer == null)
+        {
+            return NotFound();
+        }
+
+        var adminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (adminId == null)
+        {
+            return Unauthorized();
+        }
+
+        _context.AdminAudits.Add(new AdminAudit
+        {
+            AdminUserId = adminId,
+            EntityType = "Beer",
+            EntityId = id.ToString(),
+            Action = "Delete",
+            BeforeSnapshot = $"{beer.Name} ({beer.Brewery})",
+            AfterSnapshot = null,
+            Reason = reason.Trim(),
+        });
+
+        _context.Beers.Remove(beer);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPatch("{id}/availability")]
+    public async Task<IActionResult> UpdateAvailability(int id, UpdateAvailabilityRequest request)
     {
         var beer = await _context.Beers.FindAsync(id);
         if (beer == null)
@@ -160,10 +227,59 @@ public class BeersController : ControllerBase
             return NotFound();
         }
 
-        _context.Beers.Remove(beer);
+        var adminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (adminId == null)
+        {
+            return Unauthorized();
+        }
+
+        if (beer.Availability == request.Availability)
+        {
+            return NoContent();
+        }
+
+        var previous = beer.Availability;
+        beer.Availability = request.Availability;
+
+        _context.AdminAudits.Add(new AdminAudit
+        {
+            AdminUserId = adminId,
+            EntityType = "Beer",
+            EntityId = id.ToString(),
+            Action = "AvailabilityChange",
+            BeforeSnapshot = previous.ToString(),
+            AfterSnapshot = request.Availability.ToString(),
+            Reason = string.Empty,
+        });
+
         await _context.SaveChangesAsync();
 
         return NoContent();
+    }
+
+    // #56: a beer edit touches ~10 fields, but AdminAudit's BeforeSnapshot/AfterSnapshot
+    // are plain strings (#53/#54 only ever stored one scalar each) — rather than this
+    // codebase's first JSON-blob snapshot, this captures only what actually changed as
+    // short readable text, same tone as the rest of the audit trail.
+    private static (string Before, string After) DescribeBeerDiff(Beer before, Beer after)
+    {
+        var changes = new (string Label, string? Old, string? New)[]
+        {
+            ("Name", before.Name, after.Name),
+            ("Brewery", before.Brewery, after.Brewery),
+            ("Style", before.Style, after.Style),
+            ("Description", before.Description, after.Description),
+            ("Availability", before.Availability.ToString(), after.Availability.ToString()),
+            ("Abv", before.Abv?.ToString(), after.Abv?.ToString()),
+            ("Ibu", before.Ibu?.ToString(), after.Ibu?.ToString()),
+            ("StyleFamily", before.StyleFamily, after.StyleFamily),
+            ("Class", before.Class?.ToString(), after.Class?.ToString()),
+            ("ObdbBreweryId", before.ObdbBreweryId, after.ObdbBreweryId),
+        }.Where(c => c.Old != c.New).ToArray();
+
+        return (
+            string.Join("; ", changes.Select(c => $"{c.Label}: {c.Old ?? "(none)"}")),
+            string.Join("; ", changes.Select(c => $"{c.Label}: {c.New ?? "(none)"}")));
     }
 }
 
@@ -182,6 +298,8 @@ public record BeerSearchResponse(
     int Page,
     int PageSize,
     int TotalCount);
+
+public record UpdateAvailabilityRequest(BeerAvailability Availability);
 
 public record BeerDetailResponse(
     int Id,
