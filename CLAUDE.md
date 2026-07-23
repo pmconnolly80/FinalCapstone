@@ -289,7 +289,8 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     Apple Developer account is unverified in this environment; `ExternalLoginService`'s
     behavior with the "Apple" provider (including the relay-email non-linking case) has
     real test coverage.
-  - #46 (in progress, not yet PR'd) — **closes Sprint 4**: wires #43/#44/#45's backend into
+  - #46 ([PR #52](https://github.com/pmconnolly80/FinalCapstone/pull/52) open) — **closes
+    Sprint 4**: wires #43/#44/#45's backend into
     the actual customer-facing auth experience.
     - `AuthPage.jsx` gained three sign-in links (`<a href>`, not a fetch — the whole point
       is a full-page redirect through the provider) pointing at
@@ -387,7 +388,8 @@ frontend 99/99). **Sprint 4: Auth II** is in progress (milestone
    [PR #50](https://github.com/pmconnolly80/FinalCapstone/pull/50). ~~#45~~ (Apple) done,
    merged [PR #51](https://github.com/pmconnolly80/FinalCapstone/pull/51).
 5. #46 (social buttons + account linking + consent checkbox, depends on
-   #40/#43/#44/#45) — in progress, not yet PR'd. **Last story in Sprint 4.**
+   #40/#43/#44/#45) — done, [PR #52](https://github.com/pmconnolly80/FinalCapstone/pull/52)
+   (open). **Last story in Sprint 4.**
 6. Then the remaining named sprints: Admin Experience, Engagement/Retention/Social,
    Deployment & Hardening.
 
