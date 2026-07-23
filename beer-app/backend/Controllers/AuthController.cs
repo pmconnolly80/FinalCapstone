@@ -99,6 +99,15 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = "Invalid credentials." });
         }
 
+        // #54: an admin-deactivated account (AdminUsersController.DeactivateAccount) sets
+        // LockoutEnd via Identity's own lockout mechanism rather than a bespoke flag — this
+        // is the one place that actually enforces it, since Login builds its own JWT instead
+        // of going through SignInManager.
+        if (await _userManager.IsLockedOutAsync(user))
+        {
+            return Unauthorized(new { message = "This account has been deactivated." });
+        }
+
         var passwordValid = await _userManager.CheckPasswordAsync(user, request.Password);
         if (!passwordValid)
         {
