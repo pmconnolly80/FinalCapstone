@@ -850,3 +850,33 @@ Suite green at 181/181 (171 prior + 10 new).
 
 **Resume here:** #54 (API: user management + account actions) once #60 merges —
 builds on this story's `AdminAudit`/role-assignment work.
+
+---
+
+## 2026-07-23 — #54: user management + account actions API
+
+**Epic:** `epic:admin`
+
+Second story of Sprint 5, built on #53's still-open branch since it depends on that
+work. Extended `AdminUsersController` with `GET /api/admin/users` (role, active/locked
+status, and staff-PIN presence per user — a single batched `UserRoles`/`Roles` join for
+role, reusing `StaffPin.IsActive` rather than duplicating it, avoiding per-user round
+trips) and reversible `POST /api/admin/users/{id}/deactivate` /
+`.../reactivate`. Deactivation piggybacks on ASP.NET Identity's own lockout mechanism
+(`LockoutEnd`/`LockoutEnabled`) instead of a bespoke flag; discovered along the way that
+`AuthController.Login` builds its own JWT rather than going through `SignInManager`, so
+nothing was actually checking lockout status — added an `IsLockedOutAsync` check there
+so deactivation isn't a silent no-op. Per `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1,
+deactivating a bartender/admin also flips their `StaffPin.IsActive` to `false` in the
+same request; reactivating deliberately does not restore the PIN. Both actions require
+a reason and write an `AdminAudit` row, same pattern as #53. TDD as usual: unit tests
+extending `AdminUsersControllerTests` and integration tests extending `AdminUsersTests`
+(gating, validation, and a full deactivate → blocked login → reactivate → restored
+login flow). Suite green at 198/198 (181 prior + 17 new).
+
+- Branch: `feat/54-admin-user-management` (stacked on `feat/53-admin-audit-role-assignment`)
+- PR: [#61](https://github.com/pmconnolly80/FinalCapstone/pull/61) (open, based on #60's
+  branch, not yet merged)
+
+**Resume here:** #55 (UI: User Management screen) once #60/#61 merge — wires up #53's
+role assignment and #54's user list/deactivate/reactivate endpoints.

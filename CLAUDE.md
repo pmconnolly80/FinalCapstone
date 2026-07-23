@@ -340,11 +340,31 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     the model used everywhere else in the app), writes the audit row in the same save.
     Foundational for #54/#55 (user management API/screen) and #56/#57 (audited beer
     edit/delete).
+  - #54 (API: user management + account actions, [PR #61](https://github.com/pmconnolly80/FinalCapstone/pull/61),
+    open): `GET /api/admin/users` on the same `AdminUsersController` lists every user's
+    role, active/locked status, and whether they hold an active staff PIN — reusing
+    `StaffPin` rather than duplicating it (a single-query `UserRoles`/`Roles` join for
+    role, same join style already used in `StaffPinsController.IssuePin`, to avoid
+    per-user round trips). `POST /api/admin/users/{id}/deactivate` /
+    `.../reactivate` are reversible: deactivation piggybacks on ASP.NET Identity's own
+    lockout mechanism (`LockoutEnd`/`LockoutEnabled` via `UserManager`) rather than a
+    bespoke flag — the one place that actually enforces it is `AuthController.Login`,
+    which (per this story) now calls `IsLockedOutAsync` before checking the password,
+    since `Login` builds its own JWT rather than going through `SignInManager`. Per
+    `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1 ("deactivating a staff account deactivates
+    the PIN everywhere, instantly"), deactivating a bartender/admin also flips their
+    `StaffPin.IsActive` to `false` in the same request — mirroring
+    `StaffPinsController.DeactivatePin`'s existing logic rather than calling it.
+    Reactivating an account clears the lockout but deliberately does **not** restore
+    the PIN — silently re-enabling a possibly-compromised PIN isn't safe to do
+    implicitly; re-issuing one stays a distinct admin action via the existing PIN
+    endpoints. Both actions require a reason and write an `AdminAudit` row, same
+    pattern as #53's role assignment.
 
 **Not built** — next up per `EPICS_AND_SPRINTS.md`:
-- No admin UI to assign roles yet (#53's API exists; #55 is the screen)
-- No user management API beyond role assignment, no audited beer edit/delete, no
-  anomaly detection, no admin dashboard (#54/#56–#59)
+- No admin UI yet for role assignment or user management (#53/#54's APIs exist; #55 is
+  the screen)
+- No audited beer edit/delete, no anomaly detection, no admin dashboard (#56–#59)
 
 ## Testing policy (TDD)
 
@@ -397,14 +417,15 @@ frontend 117/117). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md` for the full 
 a generalized `AdminAudit` trail + role assignment (#53) → user management/account actions
 API (#54) and screen (#55); audited beer edit/delete + inline availability (#56) → Beer
 Management Table (#57); anomaly detection (#58, informational — bulk beer-add, confirmation
-velocity spikes, off-hours activity) → Admin Dashboard (#59, closes the sprint). #53 is done
-([PR #60](https://github.com/pmconnolly80/FinalCapstone/pull/60), open, not yet merged) — see
-the Sprint 5 bullet above for what it built. See `EPICS_AND_SPRINTS.md` for the full story
-list and dependency order. Engagement/Retention/Social and Deployment & Hardening follow
-after this.
+velocity spikes, off-hours activity) → Admin Dashboard (#59, closes the sprint). #53 and #54
+are done ([PR #60](https://github.com/pmconnolly80/FinalCapstone/pull/60) and
+[PR #61](https://github.com/pmconnolly80/FinalCapstone/pull/61), both open, not yet merged,
+#61 stacked on #60's branch since it depends on that work) — see the Sprint 5 bullets above
+for what they built. See `EPICS_AND_SPRINTS.md` for the full story list and dependency
+order. Engagement/Retention/Social and Deployment & Hardening follow after this.
 
-Next up once #60 merges: #54 (API: user management + account actions), which builds on
-#53's `AdminAudit`/role-assignment work.
+Next up once #60/#61 merge: #55 (UI: User Management screen), which wires up #53's role
+assignment and #54's user list/deactivate/reactivate endpoints.
 
 Local tooling note: only the .NET 10 SDK is on PATH but the projects target net8.0 — run
 backend tests with the SDK at `~/.dotnet8` (see `.claude/skills/verify/SKILL.md` for the
