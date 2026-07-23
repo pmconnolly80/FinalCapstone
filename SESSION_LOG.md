@@ -788,3 +788,65 @@ it doesn't read as an oversight later.
 
 **Resume here:** #40 (`ApplicationUser` + marketing-consent migration) — first story in
 Sprint 4, foundational for #42's consent capture and #46's UI.
+
+---
+
+## 2026-07-23 — Sprint 5 groomed: Admin Experience
+
+**Epic:** `epic:admin`
+
+Sprint 4 (Auth II, #40–#46, PRs #47–#52) closed 2026-07-23 with both test suites green
+(backend 171/171, frontend 117/117). Per the "only the next sprint gets ticketed" rule,
+groomed **Sprint 5: Admin Experience** into
+[milestone #5](https://github.com/pmconnolly80/FinalCapstone/milestone/5) and 7 issues
+(#53–#59), reading `FEATURE_MAP.md`'s Administration section, `IMPLEMENTATION_BACKLOG.md`
+Phase 5, and `MVP_SCREEN_PLAN.md`'s laptop admin screens, plus the existing
+`AdminConfirmationsController`/`StaffPinsController` code to scope what's already built
+(Sprint 2's confirmation audit/void and PIN issue/reset/deactivate API) versus what's
+still missing (any UI in front of PIN management, role assignment at all, and an audit
+trail on beer edits).
+
+Story order: #53 (`AdminAudit` trail generalizing Sprint 2's `ConfirmationAudit` pattern,
+plus role assignment) is foundational → #54/#55 (user management API/UI) and #56/#57
+(audited beer edit/delete + inline availability, Beer Management Table) build on it in
+parallel → #58 (anomaly detection: bulk beer-add, confirmation velocity, off-hours,
+informational only) is independent → #59 (Admin Dashboard) ties everything together and
+closes the sprint.
+
+Also closed out milestones #3 and #4 on GitHub, which had stayed open despite both
+sprints being marked complete in the docs since 2026-07-21/07-23 — a bookkeeping gap,
+not a scope change.
+
+No code written this session — grooming only. `EPICS_AND_SPRINTS.md` updated with the
+new Sprint 5 section and the Admin Experience epic status; `CLAUDE.md`'s "Likely next
+steps" updated to the new story order.
+
+**Resume here:** #53 (`AdminAudit` trail + role assignment API) — first story in
+Sprint 5, foundational for #54/#55's account actions and #56/#57's audited beer edits.
+
+---
+
+## 2026-07-23 — #53: generalized AdminAudit trail + role assignment API
+
+**Epic:** `epic:admin`
+
+First story of Sprint 5. Added `AdminAudit` (`beer-app/backend/Models/AdminAudit.cs`,
+`AddAdminAudit` migration) mirroring Sprint 2's `ConfirmationAudit` shape — actor,
+entity type/id, action, before/after snapshots, required reason, timestamp — additive
+to (not a replacement for) confirmations' existing audit trail. New
+`AdminUsersController` (`[Authorize(Roles = "Admin")]`) exposes
+`PUT /api/admin/users/{id}/role`: rejects a missing reason or an unrecognized role,
+replaces the target user's existing role(s) via `UserManager`/`RoleManager` (matching
+the app's single-role-per-user model), and writes the `AdminAudit` row in the same
+save. Followed the repo's TDD policy: unit tests
+(`BeerApi.Tests/Controllers/AdminUsersControllerTests.cs`, resolving `UserManager`/
+`RoleManager` from a small DI container rather than hand-constructing them) and
+integration tests (`BeerApi.Tests/IntegrationTests/AdminUsersTests.cs`, the usual
+401/403/204/404 gating plus a full round trip) written alongside the implementation.
+Suite green at 181/181 (171 prior + 10 new).
+
+- Branch: `feat/53-admin-audit-role-assignment`
+- PR: [#60](https://github.com/pmconnolly80/FinalCapstone/pull/60) (open, not yet merged)
+
+**Resume here:** #54 (API: user management + account actions) once #60 merges —
+builds on this story's `AdminAudit`/role-assignment work.

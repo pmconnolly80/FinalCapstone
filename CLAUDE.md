@@ -327,8 +327,24 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
       outcomes, the ticket-creation/listing endpoints' auth gating) has real test
       coverage.
 
+- **Sprint 5: Admin Experience** (milestone [#5](https://github.com/pmconnolly80/FinalCapstone/milestone/5), groomed 2026-07-23, in progress):
+  - #53 (`AdminAudit` trail + role assignment API, [PR #60](https://github.com/pmconnolly80/FinalCapstone/pull/60),
+    open): generalized `AdminAudit` entity (`beer-app/backend/Models/AdminAudit.cs`,
+    `AddAdminAudit` migration) mirroring Sprint 2's `ConfirmationAudit` shape — actor,
+    entity type/id, action, before/after snapshots, required reason, timestamp —
+    additive, doesn't replace confirmations' own audit trail. New
+    `[Authorize(Roles = "Admin")] AdminUsersController` at
+    `PUT /api/admin/users/{id}/role` (`beer-app/backend/Controllers/AdminUsersController.cs`):
+    rejects a missing reason or unrecognized role name, replaces the target user's
+    existing role(s) via `UserManager`/`RoleManager` (single-role-per-user, matching
+    the model used everywhere else in the app), writes the audit row in the same save.
+    Foundational for #54/#55 (user management API/screen) and #56/#57 (audited beer
+    edit/delete).
+
 **Not built** — next up per `EPICS_AND_SPRINTS.md`:
-- No admin UI to assign roles (currently DB-manual only; PIN management API exists)
+- No admin UI to assign roles yet (#53's API exists; #55 is the screen)
+- No user management API beyond role assignment, no audited beer edit/delete, no
+  anomaly detection, no admin dashboard (#54/#56–#59)
 
 ## Testing policy (TDD)
 
@@ -376,11 +392,19 @@ frontend 99/99), and **Sprint 4: Auth II** (milestone
 2026-07-21, closed 2026-07-23 — PRs #47–#52; suites at close: backend 171/171,
 frontend 117/117). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md` for the full history.
 
-Next up: the **Admin Experience** epic (dashboard + anomaly panel, user/role management UI,
-building on Sprint 2's confirmation-audit/correction API) is the next candidate for grooming
-into a sprint — per this repo's convention (`EPICS_AND_SPRINTS.md`), only the next epic gets
-fully broken into GitHub issues once it's actually up, and that grooming session hasn't
-happened yet. Engagement/Retention/Social and Deployment & Hardening follow after that.
+**Sprint 5: Admin Experience** was groomed 2026-07-23 into
+[milestone #5](https://github.com/pmconnolly80/FinalCapstone/milestone/5), issues #53–#59:
+a generalized `AdminAudit` trail + role assignment (#53) → user management/account actions
+API (#54) and screen (#55); audited beer edit/delete + inline availability (#56) → Beer
+Management Table (#57); anomaly detection (#58, informational — bulk beer-add, confirmation
+velocity spikes, off-hours activity) → Admin Dashboard (#59, closes the sprint). #53 is done
+([PR #60](https://github.com/pmconnolly80/FinalCapstone/pull/60), open, not yet merged) — see
+the Sprint 5 bullet above for what it built. See `EPICS_AND_SPRINTS.md` for the full story
+list and dependency order. Engagement/Retention/Social and Deployment & Hardening follow
+after this.
+
+Next up once #60 merges: #54 (API: user management + account actions), which builds on
+#53's `AdminAudit`/role-assignment work.
 
 Local tooling note: only the .NET 10 SDK is on PATH but the projects target net8.0 — run
 backend tests with the SDK at `~/.dotnet8` (see `.claude/skills/verify/SKILL.md` for the
