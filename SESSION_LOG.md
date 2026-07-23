@@ -1053,3 +1053,54 @@ Suites green: backend 229/229 (215 prior + 14 new). No frontend changes — that
 
 **Resume here:** #59 (UI: Admin Dashboard) once #65 merges — surfaces #58's anomaly
 feed and closes Sprint 5.
+
+---
+
+## 2026-07-23 — #65 merged; #59: Admin Dashboard — closes Sprint 5
+
+**Epic:** `epic:admin`
+
+Merged PR #65 (#58) to `master`. Then planned and built #59, the sixth and closing
+story of Sprint 5 — asked again to plan it out and look for issues before coding.
+
+Two real product/UX decisions surfaced during investigation, both resolved with the
+user before designing further:
+- **"Active members" had no fixed definition in the issue text.** This codebase's own
+  `PERSONAS_AND_USAGE.md` defines "active member" as engagement-based (confirmed a beer
+  recently), explicitly contrasted with "lapsed members" — not an account-status flag.
+  Decision: implement the real definition (distinct customers with ≥1 confirmation in
+  the last 30 days), not the cheaper "non-deactivated Customer account" reading.
+- **"Becomes the landing page for the Admin role" wasn't true** — `Home.jsx` had zero
+  role-awareness; every signed-in user, admins included, saw the customer progress
+  card. Decision: `Home.jsx` now redirects Admin-role users to `/admin/dashboard` on
+  load, matching the issue's literal wording, rather than just adding a nav link.
+
+Neither of the four summary numbers had a cheap existing endpoint (no count-only path
+on `GetConfirmations`, "active members" wasn't computable from anywhere at all), so
+this added one new backend endpoint, `GET /api/admin/dashboard/summary`
+(`AdminDashboardController`), returning all four as real `COUNT`/`COUNT(DISTINCT ...)`
+queries in one round trip — cleaner than stitching together several imprecise
+client-side counts. Same `public static` + explicit `DateTime now` testability pattern
+established in #58, for the same reason (deterministic "today"/"last 30 days"
+boundaries regardless of when tests run).
+
+New `AdminDashboard.jsx` at `/admin/dashboard`: summary cards, an anomaly panel
+rendering #58's `GET /api/admin/anomalies` (each item's `DeepLink` used directly as a
+`<Link>` target), and quick links to the three existing admin screens. The summary and
+anomalies fetches are independent `.then/.catch` chains, not a single `Promise.all`, so
+one endpoint failing only blanks its own section.
+
+Verified live: the dashboard's four numbers matched a direct `psql` cross-check
+exactly, and the anomaly panel rendered the live `BulkBeerAdd` anomaly left over from
+#58's own smoke test, with a working link to `/admin/beers`.
+
+Suites green: backend 236/236 (229 prior + 7 new), frontend 149/149 (140 prior + 9
+new).
+
+- Branch: `feat/59-admin-dashboard` (off `master`)
+- PR: [#66](https://github.com/pmconnolly80/FinalCapstone/pull/66) (open, not yet merged)
+
+**This closes Sprint 5: Admin Experience** (issues #53–#59, groomed 2026-07-23, PRs
+#60–#66). **Resume here:** groom the Engagement, Retention & Social epic into the next
+sprint once #66 merges — per this repo's "only the next epic gets fully broken into
+issues" convention, that grooming session hasn't happened yet.

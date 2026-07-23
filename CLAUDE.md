@@ -414,7 +414,7 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     admin-gated "Add Beer" link sitting in the main nav bar (removed) rather than under
     the admin section.
   - #58 (API: anomaly detection, [PR #65](https://github.com/pmconnolly80/FinalCapstone/pull/65),
-    open): new `GET /api/admin/anomalies` (`AdminAnomaliesController`), computed
+    merged): new `GET /api/admin/anomalies` (`AdminAnomaliesController`), computed
     on-demand from existing tables — no new tables, no background job (nothing in this
     issue's scope needs persisted state; §4.5's fuller "background job pipeline + push
     delivery" vision is a later epic). Three signals, each a `public static` method
@@ -435,9 +435,34 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     `DELETE`), which would have made bulk-add anomalies impossible to attribute to an
     admin account. Verified live: a real burst of 10 beers correctly fired a
     `BulkBeerAdd` anomaly attributed to the actual admin account.
+  - #59 (UI: Admin Dashboard, [PR #66](https://github.com/pmconnolly80/FinalCapstone/pull/66),
+    open) — **closes Sprint 5**: new `beer-app/frontend/src/pages/AdminDashboard.jsx`
+    at `/admin/dashboard`, backed by a new `GET /api/admin/dashboard/summary`
+    (`AdminDashboardController`) rather than stitching together client-side counts from
+    other screens' list endpoints — none of which have a cheap count-only path, and
+    "active members" wasn't computable from any existing endpoint at all. Real
+    `COUNT`/`COUNT(DISTINCT ...)` queries: total beers (all, regardless of
+    availability), confirmations today (UTC calendar day), active members (distinct
+    customers with ≥1 confirmation in the last 30 days — the codebase's own
+    `PERSONAS_AND_USAGE.md` defines "active member" as engagement-based, contrasted
+    with "lapsed," not an account-status flag, so this implements that real definition
+    rather than the cheaper "non-deactivated account" reading), and mugs awarded. Same
+    `public static` + explicit `DateTime now` testability pattern as #58's
+    `AdminAnomaliesController`. The anomaly panel calls #58's
+    `GET /api/admin/anomalies` directly and renders each item's `DeepLink` as a
+    `<Link>` — no transformation needed. The summary fetch and the anomalies fetch are
+    independent `.then/.catch` chains (not a single `Promise.all`), so one endpoint
+    failing only blanks its own section. **`Home.jsx` now redirects Admin-role users to
+    `/admin/dashboard` on load** (it previously showed every signed-in user, admins
+    included, the customer progress card — a real gap, since "becomes the landing page
+    for the Admin role" wasn't true until this change) — new `getRolesFromToken()`
+    check + `useNavigate`, confirmed with the user before implementing since it's a
+    genuine behavior change, not just a nav-link addition. Verified live: dashboard
+    numbers matched a direct `psql` cross-check exactly, and the anomaly panel rendered
+    the live `BulkBeerAdd` anomaly from #58's own smoke test with a working link.
 
-**Not built** — next up per `EPICS_AND_SPRINTS.md`:
-- No admin dashboard yet (#58's API exists; #59 is the screen)
+**Not built** — the Admin Experience epic is done as of Sprint 5. Next up per
+`EPICS_AND_SPRINTS.md`: Engagement, Retention & Social (not yet groomed into issues).
 
 ## Testing policy (TDD)
 
@@ -488,33 +513,33 @@ Manual (no Docker): `dotnet run` in `beer-app/backend/`, and
 
 ## Likely next steps
 
-**Sprints 1 through 4 are all done.** Sprint 1
+**Sprints 1 through 5 are all done.** Sprint 1
 ([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), 2026-07-14), Sprint 2
 (PRs #19–#25, milestone closed 2026-07-15), Sprint 3: Customer Phone Experience
 (PRs #33–#39, issues #26–#32, closed 2026-07-21; suites at close: backend 131/131,
-frontend 99/99), and **Sprint 4: Auth II** (milestone
+frontend 99/99), **Sprint 4: Auth II** (milestone
 [#4](https://github.com/pmconnolly80/FinalCapstone/milestone/4), issues #40–#46, groomed
 2026-07-21, closed 2026-07-23 — PRs #47–#52; suites at close: backend 171/171,
-frontend 117/117). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md` for the full history.
+frontend 117/117), and **Sprint 5: Admin Experience** (milestone
+[#5](https://github.com/pmconnolly80/FinalCapstone/milestone/5), issues #53–#59, groomed
+2026-07-23, closed 2026-07-23 — PRs #60–#66; suites at close: backend 236/236,
+frontend 149/149). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md` for the full history.
 
-**Sprint 5: Admin Experience** was groomed 2026-07-23 into
-[milestone #5](https://github.com/pmconnolly80/FinalCapstone/milestone/5), issues #53–#59:
-a generalized `AdminAudit` trail + role assignment (#53) → user management/account actions
-API (#54) and screen (#55); audited beer edit/delete + inline availability (#56) → Beer
-Management Table (#57); anomaly detection (#58, informational — bulk beer-add, confirmation
-velocity spikes, off-hours activity) → Admin Dashboard (#59, closes the sprint). #53
-through #57 are merged ([PR #60](https://github.com/pmconnolly80/FinalCapstone/pull/60),
-[PR #61](https://github.com/pmconnolly80/FinalCapstone/pull/61),
-[PR #62](https://github.com/pmconnolly80/FinalCapstone/pull/62),
-[PR #63](https://github.com/pmconnolly80/FinalCapstone/pull/63),
-[PR #64](https://github.com/pmconnolly80/FinalCapstone/pull/64)); #58 is done
-([PR #65](https://github.com/pmconnolly80/FinalCapstone/pull/65), open, not yet merged) —
-see the Sprint 5 bullets above for what they built. See `EPICS_AND_SPRINTS.md` for the
-full story list and dependency order. Engagement/Retention/Social and Deployment &
-Hardening follow after this.
+Sprint 5 built: a generalized `AdminAudit` trail + role assignment (#53) → user
+management/account actions API (#54) and screen (#55); audited beer edit/delete +
+inline availability (#56) → Beer Management Table (#57), which relocated the last
+customer-surface beer-CRUD remnant off the nav bar; anomaly detection (#58,
+informational — bulk beer-add, confirmation velocity spikes, off-hours activity) →
+Admin Dashboard (#59), which also made itself the actual landing page for the Admin
+role (`Home.jsx` now redirects admins there) and closed the sprint. See the Sprint 5
+bullets above for what each story built.
 
-Next up once #65 merges: #59 (UI: Admin Dashboard), which surfaces #58's anomaly feed
-and closes Sprint 5.
+Next up: the **Engagement, Retention & Social** epic (milestone badges, push
+notifications + owner composer, My Beers, social feed, journal, owner analytics) is the
+next candidate for grooming into a sprint — per this repo's convention
+(`EPICS_AND_SPRINTS.md`), only the next epic gets fully broken into GitHub issues once
+it's actually up, and that grooming session hasn't happened yet. Deployment & Hardening
+follows after that.
 
 Local tooling note: only the .NET 10 SDK is on PATH but the projects target net8.0 — run
 backend tests with the SDK at `~/.dotnet8` (see `.claude/skills/verify/SKILL.md` for the

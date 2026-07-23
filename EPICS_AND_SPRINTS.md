@@ -58,7 +58,7 @@ testing found the registration flow broken, see #17.)
 | Auth & Roles | `epic:auth` | ✅ Done for password auth ([PR #7](https://github.com/pmconnolly80/FinalCapstone/pull/7); registration bug [#17](https://github.com/pmconnolly80/FinalCapstone/issues/17) fixed in [PR #20](https://github.com/pmconnolly80/FinalCapstone/pull/20) — password policy now explicit length-only min 8) — 🔵 social sign-in + password reset groomed into Sprint 4 ([#40](https://github.com/pmconnolly80/FinalCapstone/issues/40)–[#46](https://github.com/pmconnolly80/FinalCapstone/issues/46), 2026-07-21), see `TECHNICAL_ARCHITECTURE_PLAN.md` §4.6 |
 | **Mug Club Progress & Bartender Confirmation** | `epic:mug-club` | ✅ **Done** — Sprint 1 ([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), 2026-07-14) + Sprint 2 (PRs [#21](https://github.com/pmconnolly80/FinalCapstone/pull/21)–[#25](https://github.com/pmconnolly80/FinalCapstone/pull/25), closed 2026-07-15). Built to the one-device rule: confirmation on the customer's phone, sealed by the bartender's personal 6-digit PIN, hardened with two-axis lockout, real PIN lifecycle, durable mug awards, and the admin correction path |
 | **Customer Phone Experience** (search-first UX, availability states for the rotating inventory, Open Brewery DB brewery enrichment, Catalog.beer pre-fill, mobile repair) | `epic:phone-experience` | ✅ **Done** — Sprint 3 ([#26](https://github.com/pmconnolly80/FinalCapstone/issues/26)–[#32](https://github.com/pmconnolly80/FinalCapstone/issues/32), groomed 2026-07-20, closed 2026-07-21, PRs #33–#39). First slice pulled forward 2026-07-14 as a Sprint 2 interrupt ([#18](https://github.com/pmconnolly80/FinalCapstone/issues/18), landing-page facelift) |
-| Admin Experience (dashboard + anomaly panel, user/role/PIN mgmt UI, full data correction with audit, catalog bulk-add guardrail) | `epic:admin` | 🔵 First slice shipped with Sprint 2 (confirmation audit/correction API + screen #15/#16, admin PIN issue/reset/deactivate API #13, mug-earner list #14) — Sprint 5 ([#53](https://github.com/pmconnolly80/FinalCapstone/issues/53)–[#59](https://github.com/pmconnolly80/FinalCapstone/issues/59), 2026-07-23) in progress: #53–#57 merged (PRs [#60](https://github.com/pmconnolly80/FinalCapstone/pull/60)/[#61](https://github.com/pmconnolly80/FinalCapstone/pull/61)/[#62](https://github.com/pmconnolly80/FinalCapstone/pull/62)/[#63](https://github.com/pmconnolly80/FinalCapstone/pull/63)/[#64](https://github.com/pmconnolly80/FinalCapstone/pull/64)), #58 done ([PR #65](https://github.com/pmconnolly80/FinalCapstone/pull/65) open) |
+| Admin Experience (dashboard + anomaly panel, user/role/PIN mgmt UI, full data correction with audit, catalog bulk-add guardrail) | `epic:admin` | ✅ **Done** — Sprint 2's first slice (confirmation audit/correction API + screen #15/#16, admin PIN issue/reset/deactivate API #13, mug-earner list #14) plus Sprint 5 ([#53](https://github.com/pmconnolly80/FinalCapstone/issues/53)–[#59](https://github.com/pmconnolly80/FinalCapstone/issues/59), groomed 2026-07-23, closed 2026-07-23 — PRs [#60](https://github.com/pmconnolly80/FinalCapstone/pull/60)–[#66](https://github.com/pmconnolly80/FinalCapstone/pull/66)) |
 | Engagement, Retention & Social (badges, push notifications + owner composer, My Beers — ratings/want list/personal stats viz, social feed/cheers/leaderboard, journal, owner analytics) | `epic:retention` | ⬜ Not started — the business-owner payoff, see `FEATURE_MAP.md` and `PERSONAS_AND_USAGE.md` |
 | Deployment & Hardening (AWS, CI/CD) | `epic:deployment` | ⬜ Not started |
 | Future Enhancements (public reviews, images, recommendations) | `epic:future-enhancements` | ⬜ Backlog, unscheduled |
@@ -185,7 +185,7 @@ login providers (not a hosted vendor), callback links-or-creates a local user ma
 verified email, the API keeps issuing its own JWT via `AuthController`'s existing
 `CreateToken` — same as password login today.
 
-### Sprint 5: Admin Experience — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/5) (groomed 2026-07-23)
+### Sprint 5: Admin Experience — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/5) (✅ complete — #53–#59 merged 2026-07-23)
 
 Admin dashboard with an anomaly panel, a beer management table (catalog CRUD's only
 home, replacing the last customer-surface remnants), user/role management + bartender
@@ -205,9 +205,9 @@ until the Engagement & Social epic actually ships a social layer to moderate.
 5. [#57 UI: Beer Management Table (admin)](https://github.com/pmconnolly80/FinalCapstone/issues/57)
    — depends on #56 — done, [PR #64](https://github.com/pmconnolly80/FinalCapstone/pull/64) (merged)
 6. [#58 API: anomaly detection (bulk add / confirmation velocity / off-hours)](https://github.com/pmconnolly80/FinalCapstone/issues/58)
-   — independent, surfaced in #59 — done, [PR #65](https://github.com/pmconnolly80/FinalCapstone/pull/65) (open)
+   — independent, surfaced in #59 — done, [PR #65](https://github.com/pmconnolly80/FinalCapstone/pull/65) (merged)
 7. [#59 UI: Admin Dashboard](https://github.com/pmconnolly80/FinalCapstone/issues/59)
-   — depends on #55, #57, #58 — closes the sprint
+   — depends on #55, #57, #58 — done, [PR #66](https://github.com/pmconnolly80/FinalCapstone/pull/66) (open) — closes the sprint
 
 Approach: `AdminAudit` (#53) mirrors `ConfirmationAudit`'s shape rather than replacing
 it — confirmations keep their own existing audit trail from Sprint 2. Anomaly detection
