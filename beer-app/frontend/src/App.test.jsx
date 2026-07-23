@@ -36,6 +36,12 @@ describe('App nav', () => {
     vi.resetAllMocks();
   });
 
+  it('shows a privacy policy link in the footer', () => {
+    renderApp();
+
+    expect(screen.getByRole('link', { name: 'Privacy policy' })).toBeInTheDocument();
+  });
+
   it('shows Sign in and hides Add Beer when signed out', () => {
     renderApp();
     const nav = within(screen.getByRole('navigation'));

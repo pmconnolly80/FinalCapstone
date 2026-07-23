@@ -11,6 +11,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import MyProgress from './pages/MyProgress';
 import MyPin from './pages/MyPin';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 const navLinkClass =
   'rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 hover:text-gray-900';
@@ -96,7 +97,14 @@ function App() {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
       </Routes>
+
+      <footer className="mt-10 border-t border-gray-200 pt-4 text-sm text-gray-500">
+        <Link className="hover:text-gray-700" to="/privacy">
+          Privacy policy
+        </Link>
+      </footer>
     </div>
   );
 }
