@@ -1,4 +1,5 @@
 using BeerApi.Data;
+using BeerApi.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,6 +47,42 @@ public class SeedDataTests : IDisposable
         await SeedData.InitializeAsync(scope.ServiceProvider);
 
         Assert.Equal(countAfterStartup, await db.Beers.CountAsync());
+    }
+
+    [Fact]
+    public async Task InitializeAsync_SeedsDevAdmin_WithAdminRole()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        var admin = await userManager.FindByEmailAsync(SeedData.DevAdminEmail);
+        Assert.NotNull(admin);
+        Assert.Contains("Admin", await userManager.GetRolesAsync(admin!));
+        Assert.True(await userManager.CheckPasswordAsync(admin!, SeedData.DevAdminPassword));
+    }
+
+    [Fact]
+    public async Task InitializeAsync_SeedsDevTestCustomer_WithCustomerRole()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        var customer = await userManager.FindByEmailAsync(SeedData.DevTestCustomerEmail);
+        Assert.NotNull(customer);
+        Assert.Contains("Customer", await userManager.GetRolesAsync(customer!));
+        Assert.True(await userManager.CheckPasswordAsync(customer!, SeedData.DevTestCustomerPassword));
+    }
+
+    [Fact]
+    public async Task InitializeAsync_CalledAgain_DoesNotDuplicateDevUsers()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        await SeedData.InitializeAsync(scope.ServiceProvider);
+
+        Assert.Equal(1, (await userManager.Users.CountAsync(u => u.Email == SeedData.DevAdminEmail)));
+        Assert.Equal(1, (await userManager.Users.CountAsync(u => u.Email == SeedData.DevTestCustomerEmail)));
     }
 
     public void Dispose() => _factory.Dispose();

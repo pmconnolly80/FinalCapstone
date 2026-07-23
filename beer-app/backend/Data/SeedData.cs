@@ -16,6 +16,14 @@ public static class SeedData
     public const string DevBartenderPassword = "Bartender1!";
     public const string DevBartenderPin = "123456";
 
+    // Dev/testing-only accounts. Rotate or remove before production — see
+    // TECHNICAL_ARCHITECTURE_PLAN.md's Deployment & Hardening scope.
+    public const string DevAdminEmail = "admin@tavern.local";
+    public const string DevAdminPassword = "admin1234";
+
+    public const string DevTestCustomerEmail = "user1@gmail.com";
+    public const string DevTestCustomerPassword = "1234User1#!";
+
     private static readonly Beer[] SampleBeers =
     {
         new() { Name = "Pale Ale", Brewery = "Sierra Nevada", Style = "American Pale Ale", Description = "Piney, citrusy hop character with a caramel malt backbone." },
@@ -70,6 +78,22 @@ public static class SeedData
                 PinHash = hasher.HashPassword(bartender, DevBartenderPin),
             });
             await db.SaveChangesAsync();
+        }
+
+        var admin = await userManager.FindByEmailAsync(DevAdminEmail);
+        if (admin == null)
+        {
+            admin = new ApplicationUser { UserName = DevAdminEmail, Email = DevAdminEmail };
+            await userManager.CreateAsync(admin, DevAdminPassword);
+            await userManager.AddToRoleAsync(admin, "Admin");
+        }
+
+        var testCustomer = await userManager.FindByEmailAsync(DevTestCustomerEmail);
+        if (testCustomer == null)
+        {
+            testCustomer = new ApplicationUser { UserName = DevTestCustomerEmail, Email = DevTestCustomerEmail };
+            await userManager.CreateAsync(testCustomer, DevTestCustomerPassword);
+            await userManager.AddToRoleAsync(testCustomer, "Customer");
         }
     }
 }
