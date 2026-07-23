@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Home from './Home';
-import { fetchMyProgress } from '../lib/api';
+import { fetchMyProgress, getRolesFromToken } from '../lib/api';
 
 vi.mock('../lib/api');
 
@@ -14,9 +14,21 @@ function renderHome() {
   );
 }
 
+function renderHomeWithDashboardRoute() {
+  return render(
+    <MemoryRouter initialEntries={['/']}>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/admin/dashboard" element={<div>Admin Dashboard Page</div>} />
+      </Routes>
+    </MemoryRouter>
+  );
+}
+
 describe('Home', () => {
   beforeEach(() => {
     localStorage.clear();
+    getRolesFromToken.mockReturnValue([]);
   });
 
   afterEach(() => {
@@ -93,5 +105,15 @@ describe('Home', () => {
     expect(
       await screen.findByText('Could not load your progress. Try signing in again.')
     ).toBeInTheDocument();
+  });
+
+  it('redirects a signed-in admin to the admin dashboard instead of showing progress', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    getRolesFromToken.mockReturnValue(['Admin']);
+
+    renderHomeWithDashboardRoute();
+
+    expect(await screen.findByText('Admin Dashboard Page')).toBeInTheDocument();
+    expect(fetchMyProgress).not.toHaveBeenCalled();
   });
 });

@@ -6,9 +6,11 @@ import {
   deactivateAccount,
   deactivateStaffPin,
   deleteBeer,
+  fetchAdminAnomalies,
   fetchAdminConfirmations,
   fetchBeer,
   fetchConfirmationAudits,
+  fetchDashboardSummary,
   fetchMyProgress,
   getAdminUsers,
   getRolesFromToken,
@@ -242,6 +244,30 @@ describe('api', () => {
     await expect(setMyPin('654321')).rejects.toThrow(
       'That PIN is already in use by another staff member.'
     );
+  });
+
+  it('fetchDashboardSummary GETs with the Authorization header', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    mockFetchOnce(true, { totalBeers: 8, confirmationsToday: 2, activeMembers: 3, mugsAwarded: 1 });
+
+    const summary = await fetchDashboardSummary();
+
+    const [url, init] = global.fetch.mock.calls[0];
+    expect(url).toContain('/api/admin/dashboard/summary');
+    expect(init.headers.Authorization).toBe('Bearer abc123');
+    expect(summary.totalBeers).toBe(8);
+  });
+
+  it('fetchAdminAnomalies GETs with the Authorization header', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    mockFetchOnce(true, [{ type: 'BulkBeerAdd', summary: '11 beers added within 60 minutes' }]);
+
+    const anomalies = await fetchAdminAnomalies();
+
+    const [url, init] = global.fetch.mock.calls[0];
+    expect(url).toContain('/api/admin/anomalies');
+    expect(init.headers.Authorization).toBe('Bearer abc123');
+    expect(anomalies[0].type).toBe('BulkBeerAdd');
   });
 
   it('fetchAdminConfirmations GETs with the Authorization header', async () => {

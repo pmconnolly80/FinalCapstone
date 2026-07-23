@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import AdminConfirmations from './pages/AdminConfirmations';
 import AdminUsers from './pages/AdminUsers';
 import AdminBeers from './pages/AdminBeers';
+import AdminDashboard from './pages/AdminDashboard';
 import BeerList from './pages/BeerList';
 import BeerDetail from './pages/BeerDetail';
 import BeerForm from './pages/BeerForm';
@@ -73,6 +74,11 @@ function App() {
             </Link>
           )}
           {auth.roles.includes('Admin') && (
+            <Link className={navLinkClass} to="/admin/dashboard">
+              Dashboard
+            </Link>
+          )}
+          {auth.roles.includes('Admin') && (
             <Link className={navLinkClass} to="/admin/confirmations">
               Admin
             </Link>
@@ -107,6 +113,7 @@ function App() {
         <Route path="/beers/:id/edit" element={<BeerForm />} />
         <Route path="/progress" element={<MyProgress />} />
         <Route path="/my-pin" element={<MyPin />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/confirmations" element={<AdminConfirmations />} />
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/beers" element={<AdminBeers />} />
