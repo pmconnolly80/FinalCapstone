@@ -408,7 +408,7 @@ public class BeersControllerTests
         await context.SaveChangesAsync();
         context.Entry(beer).State = EntityState.Detached;
 
-        var controller = CreateController(context);
+        var controller = CreateController(context, userId: "admin-1");
         var updated = new Beer { Id = beer.Id, Name = "Fat Tire", Brewery = "New Belgium", Style = "Amber Ale (updated)" };
 
         var result = await controller.PutBeer(beer.Id, updated);
@@ -418,27 +418,162 @@ public class BeersControllerTests
     }
 
     [Fact]
-    public async Task DeleteBeer_WithKnownId_RemovesBeer_AndReturnsNoContent()
+    public async Task PutBeer_UnknownId_ReturnsNotFound()
+    {
+        using var context = CreateContext();
+        var controller = CreateController(context, userId: "admin-1");
+        var beer = new Beer { Id = 999, Name = "Fat Tire", Brewery = "New Belgium", Style = "Amber Ale" };
+
+        var result = await controller.PutBeer(999, beer);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task PutBeer_WithChangedFields_WritesAuditWithOnlyChangedFields()
+    {
+        using var context = CreateContext();
+        var beer = new Beer
+        {
+            Name = "Fat Tire", Brewery = "New Belgium", Style = "Amber Ale",
+            Abv = 5.2, Ibu = 22,
+        };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        context.Entry(beer).State = EntityState.Detached;
+
+        var controller = CreateController(context, userId: "admin-1");
+        var updated = new Beer
+        {
+            Id = beer.Id, Name = "Fat Tire", Brewery = "New Belgium", Style = "Belgian Pale Ale",
+            Abv = 5.5, Ibu = 22,
+        };
+
+        var result = await controller.PutBeer(beer.Id, updated);
+
+        Assert.IsType<NoContentResult>(result);
+        var audit = Assert.Single(context.AdminAudits);
+        Assert.Equal("admin-1", audit.AdminUserId);
+        Assert.Equal("Beer", audit.EntityType);
+        Assert.Equal(beer.Id.ToString(), audit.EntityId);
+        Assert.Equal("Edit", audit.Action);
+        Assert.Equal("Style: Amber Ale; Abv: 5.2", audit.BeforeSnapshot);
+        Assert.Equal("Style: Belgian Pale Ale; Abv: 5.5", audit.AfterSnapshot);
+        Assert.Equal(string.Empty, audit.Reason);
+    }
+
+    [Fact]
+    public async Task PutBeer_WithNoActualChanges_WritesNoAudit()
+    {
+        using var context = CreateContext();
+        var beer = new Beer { Name = "Fat Tire", Brewery = "New Belgium", Style = "Amber Ale" };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        context.Entry(beer).State = EntityState.Detached;
+
+        var controller = CreateController(context, userId: "admin-1");
+        var resubmitted = new Beer { Id = beer.Id, Name = "Fat Tire", Brewery = "New Belgium", Style = "Amber Ale" };
+
+        var result = await controller.PutBeer(beer.Id, resubmitted);
+
+        Assert.IsType<NoContentResult>(result);
+        Assert.Empty(context.AdminAudits);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task DeleteBeer_WithoutReason_ReturnsBadRequest_AndDoesNotDelete(string? reason)
     {
         using var context = CreateContext();
         var beer = new Beer { Name = "Pilsner Urquell", Brewery = "Plzeňský Prazdroj", Style = "Czech Pilsner" };
         context.Beers.Add(beer);
         await context.SaveChangesAsync();
-        var controller = CreateController(context);
+        var controller = CreateController(context, userId: "admin-1");
 
-        var result = await controller.DeleteBeer(beer.Id);
+        var result = await controller.DeleteBeer(beer.Id, reason);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Single(context.Beers);
+        Assert.Empty(context.AdminAudits);
+    }
+
+    [Fact]
+    public async Task DeleteBeer_WithReason_RemovesBeer_AndWritesAudit()
+    {
+        using var context = CreateContext();
+        var beer = new Beer { Name = "Pilsner Urquell", Brewery = "Plzeňský Prazdroj", Style = "Czech Pilsner" };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        var controller = CreateController(context, userId: "admin-1");
+
+        var result = await controller.DeleteBeer(beer.Id, "discontinued by brewery");
 
         Assert.IsType<NoContentResult>(result);
         Assert.Empty(context.Beers);
+        var audit = Assert.Single(context.AdminAudits);
+        Assert.Equal("admin-1", audit.AdminUserId);
+        Assert.Equal("Beer", audit.EntityType);
+        Assert.Equal("Delete", audit.Action);
+        Assert.Equal("Pilsner Urquell (Plzeňský Prazdroj)", audit.BeforeSnapshot);
+        Assert.Null(audit.AfterSnapshot);
+        Assert.Equal("discontinued by brewery", audit.Reason);
     }
 
     [Fact]
     public async Task DeleteBeer_WithUnknownId_ReturnsNotFound()
     {
         using var context = CreateContext();
-        var controller = CreateController(context);
+        var controller = CreateController(context, userId: "admin-1");
 
-        var result = await controller.DeleteBeer(999);
+        var result = await controller.DeleteBeer(999, "cleanup");
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdateAvailability_ChangesValue_WritesAudit()
+    {
+        using var context = CreateContext();
+        var beer = new Beer { Name = "Winter Bock", Brewery = "Test Brewery", Style = "Bock", Availability = BeerAvailability.OnTap };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        var controller = CreateController(context, userId: "admin-1");
+
+        var result = await controller.UpdateAvailability(beer.Id, new UpdateAvailabilityRequest(BeerAvailability.OutOfStock));
+
+        Assert.IsType<NoContentResult>(result);
+        Assert.Equal(BeerAvailability.OutOfStock, (await context.Beers.FindAsync(beer.Id))!.Availability);
+        var audit = Assert.Single(context.AdminAudits);
+        Assert.Equal("Beer", audit.EntityType);
+        Assert.Equal("AvailabilityChange", audit.Action);
+        Assert.Equal("OnTap", audit.BeforeSnapshot);
+        Assert.Equal("OutOfStock", audit.AfterSnapshot);
+    }
+
+    [Fact]
+    public async Task UpdateAvailability_SameValue_IsNoOp_WritesNoAudit()
+    {
+        using var context = CreateContext();
+        var beer = new Beer { Name = "Winter Bock", Brewery = "Test Brewery", Style = "Bock", Availability = BeerAvailability.OnTap };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        var controller = CreateController(context, userId: "admin-1");
+
+        var result = await controller.UpdateAvailability(beer.Id, new UpdateAvailabilityRequest(BeerAvailability.OnTap));
+
+        Assert.IsType<NoContentResult>(result);
+        Assert.Empty(context.AdminAudits);
+    }
+
+    [Fact]
+    public async Task UpdateAvailability_UnknownId_ReturnsNotFound()
+    {
+        using var context = CreateContext();
+        var controller = CreateController(context, userId: "admin-1");
+
+        var result = await controller.UpdateAvailability(999, new UpdateAvailabilityRequest(BeerAvailability.Retired));
 
         Assert.IsType<NotFoundResult>(result);
     }
