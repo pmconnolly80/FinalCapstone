@@ -182,7 +182,7 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     auth-awareness, the reactive event).
 
 - **Sprint 4: Auth II** (milestone [#4](https://github.com/pmconnolly80/FinalCapstone/milestone/4),
-  in progress):
+  closed 2026-07-23, PRs #47–#52):
   - #40/#41 (merged [PR #47](https://github.com/pmconnolly80/FinalCapstone/pull/47)):
     `ApplicationUser : IdentityUser` (`beer-app/backend/Models/ApplicationUser.cs`) with a
     `MarketingConsent` bool (default `false`); replaces the bare `IdentityUser` in
@@ -289,7 +289,7 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     Apple Developer account is unverified in this environment; `ExternalLoginService`'s
     behavior with the "Apple" provider (including the relay-email non-linking case) has
     real test coverage.
-  - #46 ([PR #52](https://github.com/pmconnolly80/FinalCapstone/pull/52) open) — **closes
+  - #46 (merged [PR #52](https://github.com/pmconnolly80/FinalCapstone/pull/52)) — **closes
     Sprint 4**: wires #43/#44/#45's backend into
     the actual customer-facing auth experience.
     - `AuthPage.jsx` gained three sign-in links (`<a href>`, not a fetch — the whole point
@@ -367,31 +367,20 @@ Manual (no Docker): `dotnet run` in `beer-app/backend/`, and
 
 ## Likely next steps
 
-**Sprints 1, 2, and 3 are all done.** Sprint 1
+**Sprints 1 through 4 are all done.** Sprint 1
 ([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), 2026-07-14), Sprint 2
-(PRs #19–#25, milestone closed 2026-07-15), and **Sprint 3: Customer Phone Experience**
+(PRs #19–#25, milestone closed 2026-07-15), Sprint 3: Customer Phone Experience
 (PRs #33–#39, issues #26–#32, closed 2026-07-21; suites at close: backend 131/131,
-frontend 99/99). **Sprint 4: Auth II** is in progress (milestone
+frontend 99/99), and **Sprint 4: Auth II** (milestone
 [#4](https://github.com/pmconnolly80/FinalCapstone/milestone/4), issues #40–#46, groomed
-2026-07-21). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md` for the full history. In order:
+2026-07-21, closed 2026-07-23 — PRs #47–#52; suites at close: backend 171/171,
+frontend 117/117). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md` for the full history.
 
-1. ~~#40 (`ApplicationUser` + marketing-consent migration)~~ — done, merged
-   [PR #47](https://github.com/pmconnolly80/FinalCapstone/pull/47).
-2. ~~#41 (pluggable email sender)~~ — done, merged
-   [PR #47](https://github.com/pmconnolly80/FinalCapstone/pull/47).
-3. ~~#42 (forgot/reset password, depends on #41)~~ — done, merged
-   [PR #48](https://github.com/pmconnolly80/FinalCapstone/pull/48).
-4. #43/#44/#45 (Google/Facebook/Apple external sign-in — independent of each other, being
-   done in that order): ~~#43~~ done, merged
-   [PR #49](https://github.com/pmconnolly80/FinalCapstone/pull/49). ~~#44~~ (Facebook +
-   privacy policy + data deletion) done, merged
-   [PR #50](https://github.com/pmconnolly80/FinalCapstone/pull/50). ~~#45~~ (Apple) done,
-   merged [PR #51](https://github.com/pmconnolly80/FinalCapstone/pull/51).
-5. #46 (social buttons + account linking + consent checkbox, depends on
-   #40/#43/#44/#45) — done, [PR #52](https://github.com/pmconnolly80/FinalCapstone/pull/52)
-   (open). **Last story in Sprint 4.**
-6. Then the remaining named sprints: Admin Experience, Engagement/Retention/Social,
-   Deployment & Hardening.
+Next up: the **Admin Experience** epic (dashboard + anomaly panel, user/role management UI,
+building on Sprint 2's confirmation-audit/correction API) is the next candidate for grooming
+into a sprint — per this repo's convention (`EPICS_AND_SPRINTS.md`), only the next epic gets
+fully broken into GitHub issues once it's actually up, and that grooming session hasn't
+happened yet. Engagement/Retention/Social and Deployment & Hardening follow after that.
 
 Local tooling note: only the .NET 10 SDK is on PATH but the projects target net8.0 — run
 backend tests with the SDK at `~/.dotnet8` (see `.claude/skills/verify/SKILL.md` for the
