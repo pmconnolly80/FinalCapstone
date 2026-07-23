@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 
 namespace BeerApi.Controllers;
@@ -16,12 +17,15 @@ namespace BeerApi.Controllers;
 public class AuthController : ControllerBase
 {
     private const string DefaultRole = "Customer";
+    private const string LinkUserIdPropertiesKey = "linkUserId";
+    private static readonly TimeSpan LinkTicketLifetime = TimeSpan.FromMinutes(5);
 
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IEmailSender _emailSender;
     private readonly IExternalLoginService _externalLoginService;
     private readonly IAccountDeletionService _accountDeletionService;
+    private readonly IMemoryCache _cache;
     private readonly IConfiguration _configuration;
 
     public AuthController(
@@ -30,6 +34,7 @@ public class AuthController : ControllerBase
         IEmailSender emailSender,
         IExternalLoginService externalLoginService,
         IAccountDeletionService accountDeletionService,
+        IMemoryCache cache,
         IConfiguration configuration)
     {
         _userManager = userManager;
@@ -37,6 +42,7 @@ public class AuthController : ControllerBase
         _emailSender = emailSender;
         _externalLoginService = externalLoginService;
         _accountDeletionService = accountDeletionService;
+        _cache = cache;
         _configuration = configuration;
     }
 
@@ -159,12 +165,26 @@ public class AuthController : ControllerBase
     // Facebook, and (eventually) Apple all use Identity's external-login cookie for the
     // same link-or-create-by-verified-email flow (TECHNICAL_ARCHITECTURE_PLAN.md §4.6).
     // `provider` must be the exact registered authentication scheme name (e.g. "Google").
+    //
+    // #46: an optional `ticket` (from POST external-login-tickets below) turns this same
+    // challenge into an *account-linking* request instead of a sign-in — the ticket
+    // resolves to a signed-in user's id, which rides through the OAuth round trip in
+    // AuthenticationProperties.Items (the same mechanism RedirectUri already uses) since
+    // a full-page redirect can't carry an Authorization header. An invalid/expired/absent
+    // ticket just degrades to a normal anonymous sign-in.
     [AllowAnonymous]
     [HttpGet("external-login/{provider}")]
-    public IActionResult ExternalLogin(string provider)
+    public IActionResult ExternalLogin(string provider, string? ticket)
     {
         var redirectUrl = Url.Action(nameof(ExternalLoginCallback), "Auth", new { provider });
         var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
+
+        if (!string.IsNullOrWhiteSpace(ticket) && _cache.TryGetValue(LinkTicketCacheKey(ticket), out string? linkUserId))
+        {
+            _cache.Remove(LinkTicketCacheKey(ticket));
+            properties.Items[LinkUserIdPropertiesKey] = linkUserId;
+        }
+
         return Challenge(properties, provider);
     }
 
@@ -185,12 +205,31 @@ public class AuthController : ControllerBase
         var email = principal.FindFirstValue(ClaimTypes.Email);
         var displayName = principal.FindFirstValue(ClaimTypes.Name);
         var emailVerified = IsEmailVerified(provider, principal);
+        string? linkUserId = null;
+        authenticateResult.Properties?.Items.TryGetValue(LinkUserIdPropertiesKey, out linkUserId);
 
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
         if (string.IsNullOrWhiteSpace(providerKey) || string.IsNullOrWhiteSpace(email) || !emailVerified)
         {
-            return Redirect($"{frontendBaseUrl}/auth?error=email_not_verified");
+            var errorRedirect = linkUserId != null
+                ? $"{frontendBaseUrl}/account/linked-providers?error=email_not_verified"
+                : $"{frontendBaseUrl}/auth?error=email_not_verified";
+            return Redirect(errorRedirect);
+        }
+
+        if (linkUserId != null)
+        {
+            var linkTarget = await _userManager.FindByIdAsync(linkUserId);
+            if (linkTarget == null)
+            {
+                return Redirect($"{frontendBaseUrl}/account/linked-providers?error=account_not_found");
+            }
+
+            var linkResult = await _externalLoginService.LinkAdditionalProviderAsync(linkTarget, provider, providerKey, displayName);
+            return linkResult.Succeeded
+                ? Redirect($"{frontendBaseUrl}/account/linked-providers?linked={Uri.EscapeDataString(provider)}")
+                : Redirect($"{frontendBaseUrl}/account/linked-providers?error={Uri.EscapeDataString(linkResult.Error ?? "link_failed")}");
         }
 
         var result = await _externalLoginService.ProcessLoginAsync(provider, providerKey, email, displayName);
@@ -198,6 +237,42 @@ public class AuthController : ControllerBase
 
         return Redirect($"{frontendBaseUrl}/auth/callback?token={Uri.EscapeDataString(token)}");
     }
+
+    // #46: issues a short-lived, single-use ticket so the browser-redirect-based challenge
+    // above can resolve back to the currently-signed-in user without ever putting the JWT
+    // itself in a URL (URLs end up in server logs, browser history, referrer headers).
+    [Authorize]
+    [HttpPost("external-login-tickets")]
+    public IActionResult CreateExternalLoginTicket()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized();
+        }
+
+        var ticket = Guid.NewGuid().ToString("N");
+        _cache.Set(LinkTicketCacheKey(ticket), userId, LinkTicketLifetime);
+
+        return Ok(new { ticket });
+    }
+
+    [Authorize]
+    [HttpGet("external-logins")]
+    public async Task<IActionResult> GetExternalLogins()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var user = userId == null ? null : await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+
+        var logins = await _userManager.GetLoginsAsync(user);
+        return Ok(logins.Select(l => l.LoginProvider));
+    }
+
+    private static string LinkTicketCacheKey(string ticket) => $"external-login-ticket:{ticket}";
 
     // Facebook's required data-deletion callback (#44): a user removing this app from
     // their Facebook account triggers a signed POST here. https://developers.facebook.com/

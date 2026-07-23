@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
@@ -360,6 +361,74 @@ public class AuthControllerTests : IDisposable
         var response = await _client.PostAsync("/api/auth/facebook/data-deletion", form);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ExternalLogin_WithTicketQueryParam_StillRedirectsToProviderAuthorizeEndpoint()
+    {
+        using var noRedirectClient = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var response = await noRedirectClient.GetAsync("/api/auth/external-login/Google?ticket=not-a-real-ticket");
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("accounts.google.com", response.Headers.Location?.ToString());
+    }
+
+    [Fact]
+    public async Task CreateExternalLoginTicket_Unauthenticated_ReturnsUnauthorized()
+    {
+        var response = await _client.PostAsync("/api/auth/external-login-tickets", content: null);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateExternalLoginTicket_Authenticated_ReturnsTicket()
+    {
+        var token = await RegisterAndGetTokenAsync("ticket.owner@example.com");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _client.PostAsync("/api/auth/external-login-tickets", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.False(string.IsNullOrWhiteSpace(body.GetProperty("ticket").GetString()));
+    }
+
+    [Fact]
+    public async Task GetExternalLogins_Unauthenticated_ReturnsUnauthorized()
+    {
+        var response = await _client.GetAsync("/api/auth/external-logins");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetExternalLogins_Authenticated_ReturnsLinkedProviders()
+    {
+        const string email = "linked.providers@example.com";
+        var token = await RegisterAndGetTokenAsync(email);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var user = await userManager.FindByEmailAsync(email);
+            await userManager.AddLoginAsync(user!, new UserLoginInfo("Google", "google-linked-key", "Google"));
+        }
+
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await _client.GetAsync("/api/auth/external-logins");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var providers = await response.Content.ReadFromJsonAsync<string[]>();
+        Assert.Contains("Google", providers!);
+    }
+
+    private async Task<string> RegisterAndGetTokenAsync(string email)
+    {
+        var response = await _client.PostAsJsonAsync("/api/auth/register", new RegisterRequest(email, "Passw0rd!"));
+        var body = await response.Content.ReadFromJsonAsync<AuthResponse>();
+        return body!.Token;
     }
 
     public void Dispose() => _factory.Dispose();

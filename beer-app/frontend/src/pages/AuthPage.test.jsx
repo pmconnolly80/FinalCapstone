@@ -5,7 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AuthPage from './AuthPage';
 import { login, register } from '../lib/api';
 
-vi.mock('../lib/api');
+// externalLoginUrl/AUTH_CHANGED_EVENT keep their real implementations (pure, no network) —
+// only the network-touching calls need mocking.
+vi.mock('../lib/api', async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, login: vi.fn(), register: vi.fn() };
+});
 
 function renderAuthPage() {
   return render(
@@ -88,8 +93,39 @@ describe('AuthPage', () => {
     await user.type(screen.getByPlaceholderText('Password'), 'Passw0rd!');
     await user.click(screen.getByRole('button', { name: 'Create account' }));
 
-    expect(register).toHaveBeenCalledWith('new@example.com', 'Passw0rd!');
+    expect(register).toHaveBeenCalledWith('new@example.com', 'Passw0rd!', false);
     expect(await screen.findByText('Registered successfully.')).toBeInTheDocument();
+  });
+
+  it('registers with marketing consent checked', async () => {
+    register.mockResolvedValue({ token: 'jwt-token', email: 'consenting@example.com' });
+    const user = userEvent.setup();
+
+    renderAuthPage();
+    await user.click(screen.getByRole('button', { name: 'Register' }));
+    await user.type(screen.getByPlaceholderText('Email'), 'consenting@example.com');
+    await user.type(screen.getByPlaceholderText('Password'), 'Passw0rd!');
+    await user.click(screen.getByRole('checkbox', { name: /marketing emails/i }));
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+
+    expect(register).toHaveBeenCalledWith('consenting@example.com', 'Passw0rd!', true);
+  });
+
+  it('shows social sign-in links pointing at the external-login endpoints', () => {
+    renderAuthPage();
+
+    expect(screen.getByRole('link', { name: 'Continue with Google' })).toHaveAttribute(
+      'href',
+      expect.stringContaining('/api/auth/external-login/Google')
+    );
+    expect(screen.getByRole('link', { name: 'Continue with Facebook' })).toHaveAttribute(
+      'href',
+      expect.stringContaining('/api/auth/external-login/Facebook')
+    );
+    expect(screen.getByRole('link', { name: 'Continue with Apple' })).toHaveAttribute(
+      'href',
+      expect.stringContaining('/api/auth/external-login/Apple')
+    );
   });
 
   it('shows the password requirement in register mode before submitting', async () => {

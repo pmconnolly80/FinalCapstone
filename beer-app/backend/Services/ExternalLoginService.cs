@@ -57,6 +57,23 @@ public class ExternalLoginService : IExternalLoginService
         return new ExternalLoginResult(user, true);
     }
 
+    public async Task<LinkExternalLoginResult> LinkAdditionalProviderAsync(ApplicationUser user, string loginProvider, string providerKey, string? displayName)
+    {
+        var existingLogin = await _userManager.FindByLoginAsync(loginProvider, providerKey);
+        if (existingLogin != null)
+        {
+            return existingLogin.Id == user.Id
+                ? new LinkExternalLoginResult(true, null)
+                : new LinkExternalLoginResult(false, "already_linked_to_another_account");
+        }
+
+        var loginInfo = new UserLoginInfo(loginProvider, providerKey, displayName ?? loginProvider);
+        var result = await _userManager.AddLoginAsync(user, loginInfo);
+        return result.Succeeded
+            ? new LinkExternalLoginResult(true, null)
+            : new LinkExternalLoginResult(false, string.Join(" ", result.Errors.Select(e => e.Description)));
+    }
+
     private async Task LinkLoginAsync(ApplicationUser user, string loginProvider, string providerKey, string? displayName)
     {
         var loginInfo = new UserLoginInfo(loginProvider, providerKey, displayName ?? loginProvider);

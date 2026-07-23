@@ -163,7 +163,7 @@ truth for beers; data-sourcing principle is auto-enrich from open projects so st
 have to type beer data, manual entry as fallback/override. See `MVP_SCREEN_PLAN.md` and
 `TECHNICAL_ARCHITECTURE_PLAN.md` §6 for the Catalog.beer research.
 
-### Sprint 4: Auth II — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/4) (🔵 groomed 2026-07-21, not started)
+### Sprint 4: Auth II — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/4) (🔵 in progress — #40–#45 merged, #46 last)
 
 Social sign-in (Google/Facebook/Apple) via ASP.NET Core Identity external login providers,
 account linking on verified email, marketing-consent capture, a privacy policy page +

@@ -126,5 +126,71 @@ public class ExternalLoginServiceTests : IDisposable
         }
     }
 
+    [Fact]
+    public async Task LinkAdditionalProviderAsync_NewProviderForExistingUser_LinksSuccessfully()
+    {
+        var service = CreateService(out var scope);
+        using (scope)
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var user = new ApplicationUser { UserName = "link.target@example.com", Email = "link.target@example.com" };
+            await userManager.CreateAsync(user, "Passw0rd!");
+
+            var result = await service.LinkAdditionalProviderAsync(user, "Facebook", "fb-link-key", "Link Target");
+
+            Assert.True(result.Succeeded);
+            Assert.Null(result.Error);
+
+            var logins = await userManager.GetLoginsAsync(user);
+            Assert.Contains(logins, l => l.LoginProvider == "Facebook" && l.ProviderKey == "fb-link-key");
+        }
+    }
+
+    [Fact]
+    public async Task LinkAdditionalProviderAsync_AlreadyLinkedToSameUser_IsIdempotent()
+    {
+        var service = CreateService(out var scope);
+        using (scope)
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var user = new ApplicationUser { UserName = "relink.self@example.com", Email = "relink.self@example.com" };
+            await userManager.CreateAsync(user, "Passw0rd!");
+            await userManager.AddLoginAsync(user, new UserLoginInfo("Facebook", "fb-relink-key", "Facebook"));
+
+            var result = await service.LinkAdditionalProviderAsync(user, "Facebook", "fb-relink-key", "Relink Self");
+
+            Assert.True(result.Succeeded);
+
+            var logins = await userManager.GetLoginsAsync(user);
+            Assert.Single(logins, l => l.LoginProvider == "Facebook" && l.ProviderKey == "fb-relink-key");
+        }
+    }
+
+    [Fact]
+    public async Task LinkAdditionalProviderAsync_AlreadyLinkedToDifferentUser_Fails_WithoutStealingTheLogin()
+    {
+        var service = CreateService(out var scope);
+        using (scope)
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var owner = new ApplicationUser { UserName = "owner@example.com", Email = "owner@example.com" };
+            await userManager.CreateAsync(owner, "Passw0rd!");
+            await userManager.AddLoginAsync(owner, new UserLoginInfo("Facebook", "fb-contested-key", "Facebook"));
+
+            var wouldBeThief = new ApplicationUser { UserName = "attacker@example.com", Email = "attacker@example.com" };
+            await userManager.CreateAsync(wouldBeThief, "Passw0rd!");
+
+            var result = await service.LinkAdditionalProviderAsync(wouldBeThief, "Facebook", "fb-contested-key", "Attacker");
+
+            Assert.False(result.Succeeded);
+            Assert.Equal("already_linked_to_another_account", result.Error);
+
+            var ownerLogins = await userManager.GetLoginsAsync(owner);
+            Assert.Contains(ownerLogins, l => l.LoginProvider == "Facebook" && l.ProviderKey == "fb-contested-key");
+            var thiefLogins = await userManager.GetLoginsAsync(wouldBeThief);
+            Assert.Empty(thiefLogins);
+        }
+    }
+
     public void Dispose() => _factory.Dispose();
 }
