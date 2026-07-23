@@ -32,6 +32,15 @@ backend (`dotnet test`) and frontend (`npm test`) suites on every push/PR to `ma
 is enforced, not just stated. See `CLAUDE.md`'s "Testing policy (TDD)" section for where tests
 live and how to run them locally.
 
+## Branching
+
+One feature branch per PR, opened off `master`, merged before the next branch starts —
+sequential, not stacked. Stacking a new branch on top of an unmerged one means dragging
+its rebase/conflict risk into the next piece of work for no benefit in a solo, session-based
+project with no real review-wait latency. (Convention made explicit 2026-07-22 for #40/#41,
+[PR #47](https://github.com/pmconnolly80/FinalCapstone/pull/47) — every merged PR from #7
+onward already followed this in practice, it just hadn't been written down.)
+
 ## Bugs
 
 Defects against already-shipped work are filed as issues with the `bug` label plus the owning
