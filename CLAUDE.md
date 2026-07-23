@@ -329,7 +329,7 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
 
 - **Sprint 5: Admin Experience** (milestone [#5](https://github.com/pmconnolly80/FinalCapstone/milestone/5), groomed 2026-07-23, in progress):
   - #53 (`AdminAudit` trail + role assignment API, [PR #60](https://github.com/pmconnolly80/FinalCapstone/pull/60),
-    open): generalized `AdminAudit` entity (`beer-app/backend/Models/AdminAudit.cs`,
+    merged): generalized `AdminAudit` entity (`beer-app/backend/Models/AdminAudit.cs`,
     `AddAdminAudit` migration) mirroring Sprint 2's `ConfirmationAudit` shape — actor,
     entity type/id, action, before/after snapshots, required reason, timestamp —
     additive, doesn't replace confirmations' own audit trail. New
@@ -341,7 +341,7 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     Foundational for #54/#55 (user management API/screen) and #56/#57 (audited beer
     edit/delete).
   - #54 (API: user management + account actions, [PR #61](https://github.com/pmconnolly80/FinalCapstone/pull/61),
-    open): `GET /api/admin/users` on the same `AdminUsersController` lists every user's
+    merged): `GET /api/admin/users` on the same `AdminUsersController` lists every user's
     role, active/locked status, and whether they hold an active staff PIN — reusing
     `StaffPin` rather than duplicating it (a single-query `UserRoles`/`Roles` join for
     role, same join style already used in `StaffPinsController.IssuePin`, to avoid
@@ -360,10 +360,30 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     implicitly; re-issuing one stays a distinct admin action via the existing PIN
     endpoints. Both actions require a reason and write an `AdminAudit` row, same
     pattern as #53's role assignment.
+  - #55 (UI: User Management screen, [PR #62](https://github.com/pmconnolly80/FinalCapstone/pull/62),
+    open): new `beer-app/frontend/src/pages/AdminUsers.jsx` at `/admin/users` (nav entry
+    next to the existing "Admin" link, admin-gated the same convenience-check way
+    `AdminConfirmations.jsx` is — the API enforces Admin server-side regardless). Follows
+    `AdminConfirmations.jsx`'s exact shape: gate → load → table → per-row two-step
+    reason-guarded actions. One shared `pendingAction` state (`{ userId, type, role?,
+    pin? }`) covers all four gated actions per row (role change via a `<select>`,
+    deactivate, reactivate, PIN issue/reset) since there are several here instead of
+    just one; PIN deactivate needs no reason (the API doesn't require one) so it's a
+    direct button with no guard step. "Set PIN"/"Deactivate PIN" only render for
+    Bartender/Admin rows, matching `StaffPinsController.IssuePin`'s own staff-only
+    restriction; "Reactivate" only for inactive rows, "Deactivate" only for active
+    ones. 6 new `src/lib/api.js` functions (`getAdminUsers`, `assignRole`,
+    `deactivateAccount`, `reactivateAccount`, `issueOrResetStaffPin`,
+    `deactivateStaffPin`), each mirroring `voidConfirmation`'s error-surfacing shape.
+    **Bug found and fixed during this story's manual verification** (not a regression
+    from #54, just never exercised until a real multi-role user existed): `GetUsers`
+    used `ToDictionaryAsync` to build the per-user role lookup, which throws if any
+    user ever has more than one role row (the app's own `AssignRole` never creates
+    this, but a manual DB correction could) — 500ing the *entire* list for every user,
+    not just the affected one. Switched to a `GroupBy`-then-`ToDictionary` that just
+    picks one role, with a regression test.
 
 **Not built** — next up per `EPICS_AND_SPRINTS.md`:
-- No admin UI yet for role assignment or user management (#53/#54's APIs exist; #55 is
-  the screen)
 - No audited beer edit/delete, no anomaly detection, no admin dashboard (#56–#59)
 
 ## Testing policy (TDD)
@@ -417,12 +437,16 @@ frontend 117/117). See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md` for the full 
 a generalized `AdminAudit` trail + role assignment (#53) → user management/account actions
 API (#54) and screen (#55); audited beer edit/delete + inline availability (#56) → Beer
 Management Table (#57); anomaly detection (#58, informational — bulk beer-add, confirmation
-velocity spikes, off-hours activity) → Admin Dashboard (#59, closes the sprint). #53 and #54
-are done ([PR #60](https://github.com/pmconnolly80/FinalCapstone/pull/60) and
-[PR #61](https://github.com/pmconnolly80/FinalCapstone/pull/61), both open, not yet merged,
-#61 stacked on #60's branch since it depends on that work) — see the Sprint 5 bullets above
-for what they built. See `EPICS_AND_SPRINTS.md` for the full story list and dependency
-order. Engagement/Retention/Social and Deployment & Hardening follow after this.
+velocity spikes, off-hours activity) → Admin Dashboard (#59, closes the sprint). #53 and
+#54 are merged ([PR #60](https://github.com/pmconnolly80/FinalCapstone/pull/60) and
+[PR #61](https://github.com/pmconnolly80/FinalCapstone/pull/61)); #55 is done
+([PR #62](https://github.com/pmconnolly80/FinalCapstone/pull/62), open, not yet merged) —
+see the Sprint 5 bullets above for what they built. See `EPICS_AND_SPRINTS.md` for the
+full story list and dependency order. Engagement/Retention/Social and Deployment &
+Hardening follow after this.
+
+Next up once #62 merges: #56 (API: audited beer edit/delete + inline availability
+update), which builds on #53's `AdminAudit`.
 
 Next up once #60/#61 merge: #55 (UI: User Management screen), which wires up #53's role
 assignment and #54's user list/deactivate/reactivate endpoints.

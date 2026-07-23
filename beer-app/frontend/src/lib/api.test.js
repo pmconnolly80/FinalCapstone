@@ -1,14 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   AUTH_CHANGED_EVENT,
+  assignRole,
   confirmBeer,
+  deactivateAccount,
+  deactivateStaffPin,
   fetchAdminConfirmations,
   fetchBeer,
   fetchConfirmationAudits,
   fetchMyProgress,
+  getAdminUsers,
   getRolesFromToken,
+  issueOrResetStaffPin,
   login,
   logout,
+  reactivateAccount,
   register,
   saveBeer,
   searchBeers,
@@ -243,6 +249,97 @@ describe('api', () => {
     await expect(voidConfirmation(7, '')).rejects.toThrow(
       'A reason is required to void a confirmation.'
     );
+  });
+
+  it('getAdminUsers GETs with the Authorization header', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    mockFetchOnce(true, [{ id: 'u1', email: 'a@example.com', role: 'Customer' }]);
+
+    const users = await getAdminUsers();
+
+    const [url, init] = global.fetch.mock.calls[0];
+    expect(url).toContain('/api/admin/users');
+    expect(init.headers.Authorization).toBe('Bearer abc123');
+    expect(users[0].email).toBe('a@example.com');
+  });
+
+  it('assignRole PUTs the role and reason, and surfaces API errors', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    mockFetchOnce(true, null);
+
+    await assignRole('u1', 'Bartender', 'promoted to staff');
+
+    const [url, init] = global.fetch.mock.calls[0];
+    expect(url).toContain('/api/admin/users/u1/role');
+    expect(init.method).toBe('PUT');
+    expect(JSON.parse(init.body)).toEqual({ role: 'Bartender', reason: 'promoted to staff' });
+
+    mockFetchOnce(false, { message: 'Invalid role.' });
+    await expect(assignRole('u1', 'SuperAdmin', 'x')).rejects.toThrow('Invalid role.');
+  });
+
+  it('deactivateAccount POSTs the reason, and surfaces API errors', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    mockFetchOnce(true, null);
+
+    await deactivateAccount('u1', 'policy violation');
+
+    const [url, init] = global.fetch.mock.calls[0];
+    expect(url).toContain('/api/admin/users/u1/deactivate');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body)).toEqual({ reason: 'policy violation' });
+
+    mockFetchOnce(false, { message: 'A reason is required to deactivate an account.' });
+    await expect(deactivateAccount('u1', '')).rejects.toThrow(
+      'A reason is required to deactivate an account.'
+    );
+  });
+
+  it('reactivateAccount POSTs the reason, and surfaces API errors', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    mockFetchOnce(true, null);
+
+    await reactivateAccount('u1', 'appeal approved');
+
+    const [url, init] = global.fetch.mock.calls[0];
+    expect(url).toContain('/api/admin/users/u1/reactivate');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body)).toEqual({ reason: 'appeal approved' });
+
+    mockFetchOnce(false, { message: 'User not found.' });
+    await expect(reactivateAccount('u1', 'x')).rejects.toThrow('User not found.');
+  });
+
+  it('issueOrResetStaffPin PUTs the pin, and surfaces API errors', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    mockFetchOnce(true, null);
+
+    await issueOrResetStaffPin('u1', '135790');
+
+    const [url, init] = global.fetch.mock.calls[0];
+    expect(url).toContain('/api/staff-pins/u1');
+    expect(init.method).toBe('PUT');
+    expect(JSON.parse(init.body)).toEqual({ pin: '135790' });
+
+    mockFetchOnce(false, { message: 'That PIN is already in use by another staff member.' });
+    await expect(issueOrResetStaffPin('u1', '135790')).rejects.toThrow(
+      'That PIN is already in use by another staff member.'
+    );
+  });
+
+  it('deactivateStaffPin DELETEs with the Authorization header, and surfaces API errors', async () => {
+    localStorage.setItem('beer-token', 'abc123');
+    mockFetchOnce(true, null);
+
+    await deactivateStaffPin('u1');
+
+    const [url, init] = global.fetch.mock.calls[0];
+    expect(url).toContain('/api/staff-pins/u1');
+    expect(init.method).toBe('DELETE');
+    expect(init.headers.Authorization).toBe('Bearer abc123');
+
+    mockFetchOnce(false, { message: 'No PIN exists for that user.' });
+    await expect(deactivateStaffPin('u1')).rejects.toThrow('No PIN exists for that user.');
   });
 
   it('searchBreweries GETs with the query string and Authorization header', async () => {

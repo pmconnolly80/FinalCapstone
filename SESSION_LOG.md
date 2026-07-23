@@ -880,3 +880,39 @@ login flow). Suite green at 198/198 (181 prior + 17 new).
 
 **Resume here:** #55 (UI: User Management screen) once #60/#61 merge — wires up #53's
 role assignment and #54's user list/deactivate/reactivate endpoints.
+
+---
+
+## 2026-07-23 — #60/#61 merged; #55: User Management screen
+
+**Epic:** `epic:admin`
+
+Merged PR #60 (#53) to `master`, retargeted PR #61 (#54) from #60's branch to `master`,
+merged that too — both green in CI. Then built #55, the third story of Sprint 5: new
+`AdminUsers.jsx` at `/admin/users` (nav entry, admin-gated), following
+`AdminConfirmations.jsx`'s exact gate → load → table → two-step reason-guarded action
+shape. A `<select>` per row wires role changes to #53's endpoint; Deactivate/Reactivate
+buttons wire to #54's; new Set PIN/Deactivate PIN actions (staff rows only) wire up
+Sprint 2's `StaffPinsController`, which never had any admin UI in front of it at all
+until now. 6 new `src/lib/api.js` functions, all colocated tests (Vitest + RTL).
+
+Manual end-to-end verification via `docker compose` + curl (no browser automation
+available) caught a real bug: `AdminUsersController.GetUsers` built its per-user role
+lookup with `ToDictionaryAsync`, which throws — 500ing the whole list — if any user
+ever has more than one role row. The app's own `AssignRole` never produces that state,
+but a manual DB correction could, and the verification flow's own admin-bootstrap step
+(promoting a test user to Admin via raw SQL) hit exactly that. Fixed with a
+`GroupBy`-then-`ToDictionary` that just picks one role, plus a regression test. Not a
+regression from #54 — just never exercised until a real multi-role row existed.
+
+Full flow verified live: role assignment (reason required), PIN issue, deactivate
+(reason required, drops the PIN, blocks login with a clear message), reactivate
+(restores login, PIN stays off). Suites green: backend 199/199 (198 prior + 1 bug-fix
+regression test), frontend 131/131 (117 prior + 14 new).
+
+- Branch: `feat/55-admin-user-management-ui` (off `master`, since #53/#54 are merged —
+  no stacking needed this time)
+- PR: [#62](https://github.com/pmconnolly80/FinalCapstone/pull/62) (open, not yet merged)
+
+**Resume here:** #56 (API: audited beer edit/delete + inline availability update) once
+#62 merges — builds on #53's `AdminAudit`.
