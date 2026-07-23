@@ -4,6 +4,7 @@ import { AUTH_CHANGED_EVENT, getRolesFromToken, logout } from './lib/api';
 import Home from './pages/Home';
 import AdminConfirmations from './pages/AdminConfirmations';
 import AdminUsers from './pages/AdminUsers';
+import AdminBeers from './pages/AdminBeers';
 import BeerList from './pages/BeerList';
 import BeerDetail from './pages/BeerDetail';
 import BeerForm from './pages/BeerForm';
@@ -63,11 +64,6 @@ function App() {
           <Link className={navLinkClass} to="/progress">
             My Progress
           </Link>
-          {auth.roles.includes('Admin') && (
-            <Link className={navLinkClass} to="/beers/new">
-              Add Beer
-            </Link>
-          )}
           <Link className={navLinkClass} to="/my-pin">
             My PIN
           </Link>
@@ -84,6 +80,11 @@ function App() {
           {auth.roles.includes('Admin') && (
             <Link className={navLinkClass} to="/admin/users">
               Users
+            </Link>
+          )}
+          {auth.roles.includes('Admin') && (
+            <Link className={navLinkClass} to="/admin/beers">
+              Manage Beers
             </Link>
           )}
           {auth.signedIn ? (
@@ -108,6 +109,7 @@ function App() {
         <Route path="/my-pin" element={<MyPin />} />
         <Route path="/admin/confirmations" element={<AdminConfirmations />} />
         <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/beers" element={<AdminBeers />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />

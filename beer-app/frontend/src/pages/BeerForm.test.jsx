@@ -30,7 +30,7 @@ function renderAt(path) {
       <Routes>
         <Route path="/beers/new" element={<BeerForm />} />
         <Route path="/beers/:id/edit" element={<BeerForm />} />
-        <Route path="/beers" element={<div>Beer List Page</div>} />
+        <Route path="/admin/beers" element={<div>Admin Beers Page</div>} />
       </Routes>
     </MemoryRouter>
   );
@@ -81,7 +81,7 @@ describe('BeerForm', () => {
       }),
       undefined
     );
-    expect(await screen.findByText('Beer List Page')).toBeInTheDocument();
+    expect(await screen.findByText('Admin Beers Page')).toBeInTheDocument();
   });
 
   it('loads and pre-fills the existing beer in edit mode', async () => {

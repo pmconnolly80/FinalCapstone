@@ -42,34 +42,34 @@ describe('App nav', () => {
     expect(screen.getByRole('link', { name: 'Privacy policy' })).toBeInTheDocument();
   });
 
-  it('shows Sign in and hides Add Beer when signed out', () => {
+  it('shows Sign in and hides Manage Beers when signed out', () => {
     renderApp();
     const nav = within(screen.getByRole('navigation'));
 
     expect(nav.getByRole('link', { name: 'Sign in' })).toBeInTheDocument();
-    expect(nav.queryByRole('link', { name: 'Add Beer' })).not.toBeInTheDocument();
+    expect(nav.queryByRole('link', { name: 'Manage Beers' })).not.toBeInTheDocument();
     expect(nav.queryByRole('button', { name: 'Sign out' })).not.toBeInTheDocument();
     expect(nav.queryByRole('link', { name: 'Linked accounts' })).not.toBeInTheDocument();
   });
 
-  it('hides Add Beer for a signed-in customer, shows Linked accounts', () => {
+  it('hides Manage Beers for a signed-in customer, shows Linked accounts', () => {
     localStorage.setItem('beer-token', fakeJwt({ [roleClaim]: 'Customer' }));
 
     renderApp();
     const nav = within(screen.getByRole('navigation'));
 
-    expect(nav.queryByRole('link', { name: 'Add Beer' })).not.toBeInTheDocument();
+    expect(nav.queryByRole('link', { name: 'Manage Beers' })).not.toBeInTheDocument();
     expect(nav.getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
     expect(nav.getByRole('link', { name: 'Linked accounts' })).toBeInTheDocument();
   });
 
-  it('shows Add Beer for a signed-in admin', () => {
+  it('shows Manage Beers for a signed-in admin', () => {
     localStorage.setItem('beer-token', fakeJwt({ [roleClaim]: 'Admin' }));
 
     renderApp();
     const nav = within(screen.getByRole('navigation'));
 
-    expect(nav.getByRole('link', { name: 'Add Beer' })).toBeInTheDocument();
+    expect(nav.getByRole('link', { name: 'Manage Beers' })).toBeInTheDocument();
   });
 
   it('reacts to the auth-changed event without a page reload', async () => {
@@ -83,7 +83,7 @@ describe('App nav', () => {
     });
 
     await waitFor(() => expect(nav.getByRole('button', { name: 'Sign out' })).toBeInTheDocument());
-    expect(nav.getByRole('link', { name: 'Add Beer' })).toBeInTheDocument();
+    expect(nav.getByRole('link', { name: 'Manage Beers' })).toBeInTheDocument();
   });
 
   it('clicking Sign out calls logout', async () => {
