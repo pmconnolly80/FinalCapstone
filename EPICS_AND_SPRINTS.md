@@ -232,20 +232,27 @@ it — confirmations keep their own existing audit trail from Sprint 2. Anomaly 
   CORS, no admin/bartender account bootstrap)
 - **Future Enhancements** — public reviews/ratings, images, recommendations
 
-### Sprint 6: Mobile UI Polish — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/6) (groomed 2026-07-23, not started)
+### Sprint 6: Mobile UI Polish — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/6) (groomed 2026-07-23, built 2026-07-23 — [PR #84](https://github.com/pmconnolly80/FinalCapstone/pull/84), open)
 
 Phone-first nav and login-screen fixes plus several small UX gaps, all surfaced by
 2026-07-23 live/usability testing (full findings in `USABILITY_TESTING.md`).
 
-1. [#67 UI: replace top nav with a bottom tab bar, hidden until signed in](https://github.com/pmconnolly80/FinalCapstone/issues/67)
-2. [#68 UI: minimal branded login screen (placeholder logo, pending color theme)](https://github.com/pmconnolly80/FinalCapstone/issues/68)
-3. [#69 UI: bartender-visible signal after repeated PIN confirmation failures](https://github.com/pmconnolly80/FinalCapstone/issues/69)
-4. [#70 UI: first-visit empty-state hint on beer search for 0-confirmation customers](https://github.com/pmconnolly80/FinalCapstone/issues/70)
-5. [#71 UI: graceful offline/no-signal message on confirmation failure](https://github.com/pmconnolly80/FinalCapstone/issues/71)
-6. [#82 UI: Account/Profile hub screen](https://github.com/pmconnolly80/FinalCapstone/issues/82)
+1. [#67 UI: replace top nav with a bottom tab bar, hidden until signed in](https://github.com/pmconnolly80/FinalCapstone/issues/67) — done
+2. [#68 UI: minimal branded login screen (placeholder logo, pending color theme)](https://github.com/pmconnolly80/FinalCapstone/issues/68) — done
+3. [#69 UI: bartender-visible signal after repeated PIN confirmation failures](https://github.com/pmconnolly80/FinalCapstone/issues/69) — done
+4. [#70 UI: first-visit empty-state hint on beer search for 0-confirmation customers](https://github.com/pmconnolly80/FinalCapstone/issues/70) — done
+5. [#71 UI: graceful offline/no-signal message on confirmation failure](https://github.com/pmconnolly80/FinalCapstone/issues/71) — done
+6. [#82 UI: Account/Profile hub screen](https://github.com/pmconnolly80/FinalCapstone/issues/82) — done
    (added 2026-07-23 coverage review) — depends on/delivered alongside #67, since the
    bottom tab bar's "Account" tab needs somewhere to actually send My PIN, Linked
    Accounts, Privacy Policy, and Sign Out
+
+Approach: all 6 issues shipped in one PR since each is small and touches overlapping
+UI (the tab bar and the Account hub are two halves of the same change). No backend
+changes — a pure frontend sprint. Manual click-through on a real phone/LAN device is
+still outstanding (no browser automation available in this environment); frontend
+suite (158/158) and backend suite (239/239, unaffected) both pass, plus a clean
+`npm run build`.
 
 ### Sprint 7: Beer Discovery & Recommendations — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/7) (groomed 2026-07-23, not started)
 
