@@ -18,6 +18,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<FailedConfirmationAttempt> FailedConfirmationAttempts => Set<FailedConfirmationAttempt>();
     public DbSet<MugAward> MugAwards => Set<MugAward>();
     public DbSet<ConfirmationAudit> ConfirmationAudits => Set<ConfirmationAudit>();
+    public DbSet<AdminAudit> AdminAudits => Set<AdminAudit>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
