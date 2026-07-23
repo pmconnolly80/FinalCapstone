@@ -216,7 +216,7 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     test double (`beer-app/BeerApi.Tests/TestDoubles/`) wired into
     `TestWebApplicationFactory` so integration tests can assert on sent emails without a
     real SMTP server.
-  - #43 ([PR #49](https://github.com/pmconnolly80/FinalCapstone/pull/49) open): Google external sign-in via
+  - #43 (merged [PR #49](https://github.com/pmconnolly80/FinalCapstone/pull/49)): Google external sign-in via
     `Microsoft.AspNetCore.Authentication.Google`. New shared
     `IExternalLoginService`/`ExternalLoginService` (`beer-app/backend/Services/`) — the
     link-or-create-by-verified-email rule #44/#45 will reuse: an existing password-auth
@@ -239,11 +239,34 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     developer-console app hasn't been exercised end-to-end in this environment and needs
     manual verification before real users hit it. No frontend UI yet (buttons, the
     `/auth/callback` receiving page, account linking) — that's #46's job.
+  - #44 ([PR #50](https://github.com/pmconnolly80/FinalCapstone/pull/50) open): Facebook external sign-in via
+    `Microsoft.AspNetCore.Authentication.Facebook`, same challenge/callback/
+    `ExternalLoginService` pattern as #43 (`Authentication:Facebook:AppId`/`AppSecret`,
+    same empty-by-default convention); Facebook's Graph API only ever returns
+    addresses it has itself verified, so `IsEmailVerified` just checks the email claim's
+    presence for this provider — no separate verified flag to check. Plus, bundled per
+    the issue's Facebook app-review requirements: a `PrivacyPolicy.jsx` page at `/privacy`
+    (linked from a new app-shell footer), and Facebook's required data-deletion callback —
+    `POST /api/auth/facebook/data-deletion` verifies Facebook's signed HMAC-SHA256
+    `signed_request` payload (`FacebookSignedRequestParser`, `beer-app/backend/Services/`,
+    a pure static parser with no DI so it's directly unit-testable) and, on a match,
+    **anonymizes rather than hard-deletes** via new `IAccountDeletionService`/
+    `AccountDeletionService`: scrubs email/username to `deleted-{id}@deleted.local`,
+    removes the password and every linked external login, but leaves the
+    `BeerConfirmation`/`MugAward`/`ConfirmationAudit` rows alone. Those key off
+    `CustomerId` (a plain string FK to `AspNetUsers.Id`, not a navigation property with a
+    cascade path), and preserving them keeps the tavern's own confirmed-beer ledger
+    intact — the same way removing a name from a paper punch-card doesn't erase the
+    tavern's own record that a mug was earned. Responds with the
+    `{url, confirmation_code}` shape Facebook's contract requires regardless of whether a
+    matching account existed, mirroring the same account-enumeration-avoidance pattern as
+    `/forgot-password`. **Same caveat as #43**: the challenge/callback wiring against a
+    live Facebook app is unverified in this environment; the signed-request verification
+    and anonymization logic have real test coverage.
 
 **Not built** — next up per `EPICS_AND_SPRINTS.md`:
 - No admin UI to assign roles (currently DB-manual only; PIN management API exists)
-- Sprint 4 #44–#46 (Facebook + privacy policy + data deletion, Apple sign-in, social
-  buttons/account linking UI)
+- Sprint 4 #45–#46 (Apple sign-in, social buttons/account linking UI)
 
 ## Testing policy (TDD)
 
@@ -297,8 +320,10 @@ frontend 99/99). **Sprint 4: Auth II** is in progress (milestone
 3. ~~#42 (forgot/reset password, depends on #41)~~ — done, merged
    [PR #48](https://github.com/pmconnolly80/FinalCapstone/pull/48).
 4. #43/#44/#45 (Google/Facebook/Apple external sign-in — independent of each other, being
-   done in that order): #43 done, [PR #49](https://github.com/pmconnolly80/FinalCapstone/pull/49)
-   (open) → #44/#45 next → #46 (social buttons + account linking + consent checkbox,
+   done in that order): ~~#43~~ done, merged
+   [PR #49](https://github.com/pmconnolly80/FinalCapstone/pull/49). #44 (Facebook +
+   privacy policy + data deletion) done, [PR #50](https://github.com/pmconnolly80/FinalCapstone/pull/50)
+   (open) → #45 next → #46 (social buttons + account linking + consent checkbox,
    depends on #40/#43/#44/#45).
 5. Then the remaining named sprints: Admin Experience, Engagement/Retention/Social,
    Deployment & Hardening.

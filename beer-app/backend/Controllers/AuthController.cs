@@ -21,6 +21,7 @@ public class AuthController : ControllerBase
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IEmailSender _emailSender;
     private readonly IExternalLoginService _externalLoginService;
+    private readonly IAccountDeletionService _accountDeletionService;
     private readonly IConfiguration _configuration;
 
     public AuthController(
@@ -28,12 +29,14 @@ public class AuthController : ControllerBase
         RoleManager<IdentityRole> roleManager,
         IEmailSender emailSender,
         IExternalLoginService externalLoginService,
+        IAccountDeletionService accountDeletionService,
         IConfiguration configuration)
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _emailSender = emailSender;
         _externalLoginService = externalLoginService;
+        _accountDeletionService = accountDeletionService;
         _configuration = configuration;
     }
 
@@ -194,6 +197,27 @@ public class AuthController : ControllerBase
         var token = await CreateToken(result.User);
 
         return Redirect($"{frontendBaseUrl}/auth/callback?token={Uri.EscapeDataString(token)}");
+    }
+
+    // Facebook's required data-deletion callback (#44): a user removing this app from
+    // their Facebook account triggers a signed POST here. https://developers.facebook.com/
+    // docs/facebook-login/features-reference/deletion-callback
+    [AllowAnonymous]
+    [HttpPost("facebook/data-deletion")]
+    public async Task<IActionResult> FacebookDataDeletion([FromForm(Name = "signed_request")] string? signedRequest)
+    {
+        var appSecret = _configuration["Authentication:Facebook:AppSecret"];
+        if (string.IsNullOrWhiteSpace(signedRequest) || string.IsNullOrWhiteSpace(appSecret) ||
+            !FacebookSignedRequestParser.TryParse(signedRequest, appSecret, out var facebookUserId) ||
+            facebookUserId == null)
+        {
+            return BadRequest(new { message = "Invalid signed request." });
+        }
+
+        var confirmationCode = await _accountDeletionService.AnonymizeAsync("Facebook", facebookUserId);
+        var statusUrl = $"{ResolveFrontendBaseUrl()}/privacy?deletion={Uri.EscapeDataString(confirmationCode)}";
+
+        return Ok(new { url = statusUrl, confirmation_code = confirmationCode });
     }
 
     // Each provider proves "verified" differently: Google's userinfo response carries an

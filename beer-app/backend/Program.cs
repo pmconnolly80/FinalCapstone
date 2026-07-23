@@ -27,6 +27,7 @@ builder.Services.AddHttpClient<ICatalogBeerService, CatalogBeerService>(client =
 builder.Services.AddSingleton<ISmtpClientFactory, SmtpClientFactory>();
 builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
 builder.Services.AddScoped<IExternalLoginService, ExternalLoginService>();
+builder.Services.AddScoped<IAccountDeletionService, AccountDeletionService>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? "Host=localhost;Port=5432;Database=beerdb;Username=beeruser;Password=beerpass";
@@ -80,6 +81,13 @@ builder.Services.AddAuthentication(options =>
     googleOptions.ClientId = string.IsNullOrWhiteSpace(googleClientId) ? "placeholder" : googleClientId;
     googleOptions.ClientSecret = string.IsNullOrWhiteSpace(googleClientSecret) ? "placeholder" : googleClientSecret;
     googleOptions.ClaimActions.MapJsonKey("email_verified", "verified_email");
+}).AddFacebook(facebookOptions =>
+{
+    facebookOptions.SignInScheme = IdentityConstants.ExternalScheme;
+    var facebookAppId = builder.Configuration["Authentication:Facebook:AppId"];
+    var facebookAppSecret = builder.Configuration["Authentication:Facebook:AppSecret"];
+    facebookOptions.AppId = string.IsNullOrWhiteSpace(facebookAppId) ? "placeholder" : facebookAppId;
+    facebookOptions.AppSecret = string.IsNullOrWhiteSpace(facebookAppSecret) ? "placeholder" : facebookAppSecret;
 });
 
 builder.Services.AddAuthorization();

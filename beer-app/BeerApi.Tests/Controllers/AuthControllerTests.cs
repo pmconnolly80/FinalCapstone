@@ -1,5 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using BeerApi.Controllers;
 using BeerApi.Models;
 using Microsoft.AspNetCore.Identity;
@@ -274,6 +277,78 @@ public class AuthControllerTests : IDisposable
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Contains("accounts.google.com", response.Headers.Location?.ToString());
+    }
+
+    [Fact]
+    public async Task ExternalLogin_Facebook_RedirectsToFacebookAuthorizeEndpoint()
+    {
+        using var noRedirectClient = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var response = await noRedirectClient.GetAsync("/api/auth/external-login/Facebook");
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("facebook.com", response.Headers.Location?.ToString());
+    }
+
+    private static string BuildFacebookSignedRequest(string userId, string appSecret)
+    {
+        var payloadJson = JsonSerializer.Serialize(new { algorithm = "HMAC-SHA256", user_id = userId });
+        var encodedPayload = Base64UrlEncode(Encoding.UTF8.GetBytes(payloadJson));
+        var signature = HMACSHA256.HashData(Encoding.UTF8.GetBytes(appSecret), Encoding.UTF8.GetBytes(encodedPayload));
+        return $"{Base64UrlEncode(signature)}.{encodedPayload}";
+    }
+
+    private static string Base64UrlEncode(byte[] bytes) =>
+        Convert.ToBase64String(bytes).Replace('+', '-').Replace('/', '_').TrimEnd('=');
+
+    [Fact]
+    public async Task FacebookDataDeletion_ValidSignedRequest_AnonymizesLinkedAccount_AndReturnsConfirmation()
+    {
+        string userId;
+        using (var setupScope = _factory.Services.CreateScope())
+        {
+            var userManager = setupScope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var user = new ApplicationUser { UserName = "fb.controller.delete@example.com", Email = "fb.controller.delete@example.com" };
+            await userManager.CreateAsync(user);
+            await userManager.AddLoginAsync(user, new UserLoginInfo("Facebook", "fb-controller-key", "Facebook"));
+            userId = user.Id;
+        }
+
+        var signedRequest = BuildFacebookSignedRequest("fb-controller-key", TestWebApplicationFactory.FacebookAppSecret);
+        var form = new FormUrlEncodedContent(new Dictionary<string, string> { ["signed_request"] = signedRequest });
+
+        var response = await _client.PostAsync("/api/auth/facebook/data-deletion", form);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.False(string.IsNullOrWhiteSpace(body.GetProperty("confirmation_code").GetString()));
+        Assert.Contains("/privacy", body.GetProperty("url").GetString());
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var verifyUserManager = verifyScope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var reloaded = await verifyUserManager.FindByIdAsync(userId);
+        Assert.NotEqual("fb.controller.delete@example.com", reloaded!.Email);
+    }
+
+    [Fact]
+    public async Task FacebookDataDeletion_InvalidSignature_ReturnsBadRequest()
+    {
+        var signedRequest = BuildFacebookSignedRequest("fb-someone", "wrong-secret");
+        var form = new FormUrlEncodedContent(new Dictionary<string, string> { ["signed_request"] = signedRequest });
+
+        var response = await _client.PostAsync("/api/auth/facebook/data-deletion", form);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task FacebookDataDeletion_MissingSignedRequest_ReturnsBadRequest()
+    {
+        var form = new FormUrlEncodedContent(new Dictionary<string, string>());
+
+        var response = await _client.PostAsync("/api/auth/facebook/data-deletion", form);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     public void Dispose() => _factory.Dispose();
