@@ -7,6 +7,8 @@ import BeerList from './pages/BeerList';
 import BeerDetail from './pages/BeerDetail';
 import BeerForm from './pages/BeerForm';
 import AuthPage from './pages/AuthPage';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import MyProgress from './pages/MyProgress';
 import MyPin from './pages/MyPin';
 
@@ -92,6 +94,8 @@ function App() {
         <Route path="/my-pin" element={<MyPin />} />
         <Route path="/admin/confirmations" element={<AdminConfirmations />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     </div>
   );

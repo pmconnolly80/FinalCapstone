@@ -24,6 +24,10 @@ services:
       Email__Password: ${EMAIL_PASSWORD:-}
       Email__FromAddress: ${EMAIL_FROM_ADDRESS:-}
       Email__FromName: ${EMAIL_FROM_NAME:-The Tavern}
+      # Unset by default so password-reset links fall back to the request's Origin header,
+      # same LAN-IP-friendly logic as the frontend's own API base URL derivation (#32). Set
+      # only for a real deployment where the API isn't reached at the same host as the SPA.
+      Frontend__BaseUrl: ${FRONTEND_BASE_URL:-}
     depends_on:
       - db
     ports:
