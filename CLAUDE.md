@@ -399,7 +399,7 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     single-field inline-toggle endpoint #57's table needs; a same-value PATCH is a no-op,
     also audited, no reason required (only delete requires one, per the issue).
   - #57 (UI: Beer Management Table, [PR #64](https://github.com/pmconnolly80/FinalCapstone/pull/64),
-    open): new `beer-app/frontend/src/pages/AdminBeers.jsx` at `/admin/beers`
+    merged): new `beer-app/frontend/src/pages/AdminBeers.jsx` at `/admin/beers`
     ("Manage Beers" nav entry), same admin-gate-then-load shape as
     `AdminUsers.jsx`/`AdminConfirmations.jsx`. Reuses `searchBeers` (defaulting
     `availability: 'all'`, not the customer default of in-stock-only) for search;
@@ -413,9 +413,31 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     `BeerList.jsx` itself had no CRUD markup to remove; the only actual remnant was the
     admin-gated "Add Beer" link sitting in the main nav bar (removed) rather than under
     the admin section.
+  - #58 (API: anomaly detection, [PR #65](https://github.com/pmconnolly80/FinalCapstone/pull/65),
+    open): new `GET /api/admin/anomalies` (`AdminAnomaliesController`), computed
+    on-demand from existing tables — no new tables, no background job (nothing in this
+    issue's scope needs persisted state; §4.5's fuller "background job pipeline + push
+    delivery" vision is a later epic). Three signals, each a `public static` method
+    taking an explicit `DateTime now` parameter rather than reading `DateTime.UtcNow`
+    internally, so unit tests are deterministic regardless of when they run: bulk
+    beer-add bursts (bucketed by `Anomalies:BulkBeerAdd:WindowMinutes`, attributed to an
+    admin via the new `PostBeer` audit row below), confirmation velocity spikes
+    (overall and per-bartender, each against its own trailing baseline average, with a
+    `MinimumCount` floor so a near-zero baseline doesn't trip on 1-2 confirmations), and
+    off-hours confirmations (config-driven tavern hours that can wrap past midnight,
+    e.g. open 10am/close 2am, with an optional `TimeZoneId` since `ConfirmedAt` is
+    stored in UTC but "off-hours" is inherently local time). Thresholds live under a
+    new `Anomalies` section in `appsettings.json`, same `IConfiguration`-direct-read
+    pattern as `CatalogBeer`/`Email` (no options-class binding exists anywhere in this
+    codebase). **Also extends `PostBeer` to write an `AdminAudit` row** (`Action =
+    "Create"`) — a gap found during this story's investigation: neither `Beer` nor any
+    audit table recorded who created a beer before this (#56 only audited `PUT`/
+    `DELETE`), which would have made bulk-add anomalies impossible to attribute to an
+    admin account. Verified live: a real burst of 10 beers correctly fired a
+    `BulkBeerAdd` anomaly attributed to the actual admin account.
 
 **Not built** — next up per `EPICS_AND_SPRINTS.md`:
-- No anomaly detection, no admin dashboard (#58–#59)
+- No admin dashboard yet (#58's API exists; #59 is the screen)
 
 ## Testing policy (TDD)
 
@@ -432,6 +454,18 @@ before it's considered done, not backfilled after. See `EPICS_AND_SPRINTS.md`'s
   next to the file under test. Page tests mock `src/lib/api.js`; `api.js` itself mocks `fetch`.
   Run locally with `npm test` from `beer-app/frontend` (after `npm install`).
 - **CI**: `.github/workflows/tests.yml` runs both suites on every push/PR to `master`.
+
+## Planning conventions
+
+Plan files (`.claude/plans/*.md`) and `SESSION_LOG.md` entries must never present
+pseudocode or a design sketch as if it were finished, working code. If a draft plan
+needs a rough sketch to work through an approach, label it explicitly as a sketch (e.g.
+"pseudocode — not real code" / "sketch, see below for the actual version") rather than
+putting it in the same code-fence style as intended-to-be-correct code. This surfaced
+during #58's planning: an earlier draft left a broken, unlabeled `.Cast<...>().Append(...)`
+sketch in a controller-code block, indistinguishable from the real logic around it — a
+follow-up session (or the same one, after context compaction) could easily have
+mistaken it for decided, working code and implemented it as-is.
 
 ## Known doc inconsistencies (flagged, not yet fixed)
 
@@ -469,18 +503,18 @@ a generalized `AdminAudit` trail + role assignment (#53) → user management/acc
 API (#54) and screen (#55); audited beer edit/delete + inline availability (#56) → Beer
 Management Table (#57); anomaly detection (#58, informational — bulk beer-add, confirmation
 velocity spikes, off-hours activity) → Admin Dashboard (#59, closes the sprint). #53
-through #56 are merged ([PR #60](https://github.com/pmconnolly80/FinalCapstone/pull/60),
+through #57 are merged ([PR #60](https://github.com/pmconnolly80/FinalCapstone/pull/60),
 [PR #61](https://github.com/pmconnolly80/FinalCapstone/pull/61),
 [PR #62](https://github.com/pmconnolly80/FinalCapstone/pull/62),
-[PR #63](https://github.com/pmconnolly80/FinalCapstone/pull/63)); #57 is done
-([PR #64](https://github.com/pmconnolly80/FinalCapstone/pull/64), open, not yet merged) —
+[PR #63](https://github.com/pmconnolly80/FinalCapstone/pull/63),
+[PR #64](https://github.com/pmconnolly80/FinalCapstone/pull/64)); #58 is done
+([PR #65](https://github.com/pmconnolly80/FinalCapstone/pull/65), open, not yet merged) —
 see the Sprint 5 bullets above for what they built. See `EPICS_AND_SPRINTS.md` for the
 full story list and dependency order. Engagement/Retention/Social and Deployment &
 Hardening follow after this.
 
-Next up once #64 merges: #58 (API: anomaly detection — bulk beer-add, confirmation
-velocity spikes, off-hours activity), independent of the beer/user work, surfaced by
-#59's Admin Dashboard which closes the sprint.
+Next up once #65 merges: #59 (UI: Admin Dashboard), which surfaces #58's anomaly feed
+and closes Sprint 5.
 
 Local tooling note: only the .NET 10 SDK is on PATH but the projects target net8.0 — run
 backend tests with the SDK at `~/.dotnet8` (see `.claude/skills/verify/SKILL.md` for the

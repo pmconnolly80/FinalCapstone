@@ -350,7 +350,7 @@ public class BeersControllerTests
     public async Task PostBeer_AddsBeer_AndReturnsCreatedAtAction()
     {
         using var context = CreateContext();
-        var controller = CreateController(context);
+        var controller = CreateController(context, userId: "admin-1");
         var beer = new Beer { Name = "Duvel", Brewery = "Duvel Moortgat", Style = "Belgian Strong Golden Ale" };
 
         var result = await controller.PostBeer(beer);
@@ -358,6 +358,23 @@ public class BeersControllerTests
         var created = Assert.IsType<CreatedAtActionResult>(result.Result);
         Assert.Equal(nameof(BeersController.GetBeer), created.ActionName);
         Assert.Single(context.Beers);
+    }
+
+    [Fact]
+    public async Task PostBeer_WritesCreateAudit()
+    {
+        using var context = CreateContext();
+        var controller = CreateController(context, userId: "admin-1");
+        var beer = new Beer { Name = "Duvel", Brewery = "Duvel Moortgat", Style = "Belgian Strong Golden Ale" };
+
+        await controller.PostBeer(beer);
+
+        var audit = Assert.Single(context.AdminAudits);
+        Assert.Equal("admin-1", audit.AdminUserId);
+        Assert.Equal("Beer", audit.EntityType);
+        Assert.Equal("Create", audit.Action);
+        Assert.Null(audit.BeforeSnapshot);
+        Assert.Equal("Duvel (Duvel Moortgat)", audit.AfterSnapshot);
     }
 
     [Fact]
@@ -372,7 +389,7 @@ public class BeersControllerTests
     public async Task PostBeer_PersistsExplicitAvailability()
     {
         using var context = CreateContext();
-        var controller = CreateController(context);
+        var controller = CreateController(context, userId: "admin-1");
         var beer = new Beer
         {
             Name = "Winter Bock",

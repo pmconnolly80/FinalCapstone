@@ -1003,3 +1003,53 @@ Suites green: frontend 140/140 (131 prior + 9 new). No backend changes.
 
 **Resume here:** #58 (API: anomaly detection) once #64 merges — independent of the
 beer/user work, surfaced by #59's Admin Dashboard which closes the sprint.
+
+---
+
+## 2026-07-23 — #64 merged; #58: anomaly detection (with a planning-process fix)
+
+**Epic:** `epic:admin`
+
+Merged PR #64 (#57) to `master`. Then planned and built #58 — asked explicitly to
+review the plan against the project docs and look for issues before implementing, so
+this one got an extra pass before coding started.
+
+Findings from that review, each addressed in the design:
+- **Bulk-add attribution gap**: neither `Beer` nor any audit table recorded who created
+  a beer — #56 only audited `PUT`/`DELETE`. Since the whole point of the bulk-add
+  anomaly is flagging a possibly-compromised admin account, an un-attributable burst
+  is much less useful. Confirmed with the user: extended `PostBeer` to write an
+  `AdminAudit` row too (`Action = "Create"`).
+- **Test-time flakiness**: bucket-boundary and off-hours logic depending on
+  `DateTime.UtcNow` would make unit tests wall-clock-dependent. Each of the three
+  detection methods (`DetectBulkBeerAddAsync`/`DetectConfirmationVelocityAsync`/
+  `DetectOffHoursActivityAsync` on the new `AdminAnomaliesController`) is `public
+  static` and takes an explicit `DateTime now` parameter instead.
+- **Timezone/wraparound**: `ConfirmedAt` is UTC but "off-hours" is local time for one
+  physical tavern; config gets an optional `TimeZoneId`. Tavern hours can span midnight
+  (open 10am, close 2am), so the in-hours check handles `CloseHour <= OpenHour` as a
+  wrap rather than a plain range.
+- **Velocity noise floor**: added a `MinimumCount` so a near-zero baseline doesn't trip
+  the multiplier on 1-2 confirmations.
+- **A real bug caught in the plan itself, not just the code**: re-reviewing the draft
+  plan before implementing found a broken, unlabeled pseudocode sketch (a
+  `.Cast<IGrouping<string?, dynamic>>().Append(null)` fragment) sitting in the same
+  code-fence style as the real logic around it, plus a separate `int.Parse(a.EntityId)`
+  inside an EF LINQ predicate that would have thrown at runtime (EF Core can't
+  translate `int.Parse`). Both fixed before writing any code. Per explicit request,
+  **`CLAUDE.md` gained a new "Planning conventions" section**: pseudocode/sketches in
+  plan files or session log entries must be labeled as such, never presented like
+  finished code.
+
+Thresholds live in a new `Anomalies` config section (`appsettings.json` +
+`docker-compose.yml` overrides), same `IConfiguration`-direct-read pattern as
+`CatalogBeer`/`Email`. Verified live: a real burst of 10 beers correctly fired a
+`BulkBeerAdd` anomaly attributed to the actual admin account that created them.
+
+Suites green: backend 229/229 (215 prior + 14 new). No frontend changes — that's #59.
+
+- Branch: `feat/58-anomaly-detection` (off `master`)
+- PR: [#65](https://github.com/pmconnolly80/FinalCapstone/pull/65) (open, not yet merged)
+
+**Resume here:** #59 (UI: Admin Dashboard) once #65 merges — surfaces #58's anomaly
+feed and closes Sprint 5.
