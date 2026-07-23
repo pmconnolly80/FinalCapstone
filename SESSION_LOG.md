@@ -958,3 +958,48 @@ only, matching #53/#54's split from #55).
 
 **Resume here:** #57 (UI: Beer Management Table) once #63 merges — wires up #56's
 audited edit/delete/availability endpoints.
+
+---
+
+## 2026-07-23 — #63 merged; #57: Beer Management Table
+
+**Epic:** `epic:admin`
+
+Merged PR #63 (#56) to `master`. Then built #57, the fifth story of Sprint 5 and the
+last one this session: new `AdminBeers.jsx` at `/admin/beers` ("Manage Beers" nav
+entry), the admin-only table `MVP_SCREEN_PLAN.md` calls "the only place catalog CRUD
+appears."
+
+Investigation before implementing found the actual scope narrower than the issue title
+suggests: `BeerList.jsx` (the customer-facing list) has no CRUD markup at all to
+remove — the one real "customer-surface remnant" was the admin-gated "Add Beer" link
+sitting in the main nav bar next to "Beers" rather than under the admin section.
+Removed that, added the new admin nav entry instead. `BeerForm.jsx` is reused entirely
+unchanged for Add/Edit per the issue (its OBDB autocomplete and Catalog.beer pre-fill
+untouched) — only its post-save redirect moved from `/beers` to `/admin/beers` so the
+admin round-trips to the new table instead of the customer list.
+
+Availability changes fire immediately on the inline `<select>` (#56's PATCH endpoint
+needs no reason); Delete is the one action gated behind a reason, reusing #55's
+`AdminUsers.jsx` two-step `pendingAction` guard pattern exactly. 2 new `api.js`
+functions (`updateBeerAvailability`, `deleteBeer` — the latter puts its reason in the
+query string, matching how #56's backend binds it, unlike the POST+JSON-body reason
+pattern `deactivateAccount`/`voidConfirmation` use).
+
+4 existing tests needed updating rather than just adding new ones: `App.test.jsx`'s
+"Add Beer" nav assertions became "Manage Beers" assertions (same hidden/shown-per-role
+logic), and `BeerForm.test.jsx`'s post-save redirect test target changed from a
+`/beers` placeholder route to `/admin/beers`.
+
+Verified live: rebuilt `web`, confirmed the dev server serves the new page and the nav
+no longer shows "Add Beer" but does show "Manage Beers" wired to `/admin/beers`;
+confirmed `GET /api/beers?availability=all` (what the page's search call relies on)
+returns the full catalog including out-of-stock/retired beers, not just in-stock.
+
+Suites green: frontend 140/140 (131 prior + 9 new). No backend changes.
+
+- Branch: `feat/57-beer-management-table-ui` (off `master`)
+- PR: [#64](https://github.com/pmconnolly80/FinalCapstone/pull/64) (open, not yet merged)
+
+**Resume here:** #58 (API: anomaly detection) once #64 merges — independent of the
+beer/user work, surfaced by #59's Admin Dashboard which closes the sprint.
