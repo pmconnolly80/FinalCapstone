@@ -6,6 +6,8 @@ import AdminConfirmations from './pages/AdminConfirmations';
 import AdminUsers from './pages/AdminUsers';
 import AdminBeers from './pages/AdminBeers';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminRecommendations from './pages/AdminRecommendations';
+import AdminSearchDemand from './pages/AdminSearchDemand';
 import BeerList from './pages/BeerList';
 import BeerDetail from './pages/BeerDetail';
 import BeerForm from './pages/BeerForm';
@@ -15,6 +17,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import MyProgress from './pages/MyProgress';
 import MyPin from './pages/MyPin';
+import RecommendBeer from './pages/RecommendBeer';
 import LinkedAccounts from './pages/LinkedAccounts';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Account from './pages/Account';
@@ -86,10 +89,13 @@ function App() {
         <Route path="/progress" element={<MyProgress />} />
         <Route path="/account" element={<Account />} />
         <Route path="/my-pin" element={<MyPin />} />
+        <Route path="/recommend" element={<RecommendBeer />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/confirmations" element={<AdminConfirmations />} />
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/beers" element={<AdminBeers />} />
+        <Route path="/admin/recommendations" element={<AdminRecommendations />} />
+        <Route path="/admin/search-demand" element={<AdminSearchDemand />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />

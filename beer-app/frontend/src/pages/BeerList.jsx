@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { fetchMyProgress, searchBeers } from '../lib/api';
+import { Link, useNavigate } from 'react-router-dom';
+import { fetchMyProgress, searchBeerLookup, searchBeers } from '../lib/api';
 
 const AVAILABILITY_FILTERS = [
   { value: '', label: 'In Stock' },
@@ -37,7 +37,13 @@ function quickFilterChips(beers, field) {
 }
 
 function BeerList() {
+  const navigate = useNavigate();
   const isSignedIn = Boolean(localStorage.getItem('beer-token'));
+
+  // #72: "look up any beer" is a deliberately separate mode from the tavern's own list,
+  // so customers aren't confused about what's actually served — reuses the same search
+  // input/debounce pattern rather than a second page.
+  const [mode, setMode] = useState('catalog');
 
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -49,10 +55,35 @@ function BeerList() {
   const [error, setError] = useState('');
   const [confirmedCount, setConfirmedCount] = useState(null);
 
+  const [lookupInput, setLookupInput] = useState('');
+  const [debouncedLookup, setDebouncedLookup] = useState('');
+  const [lookupResults, setLookupResults] = useState(null);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupError, setLookupError] = useState('');
+
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchInput.trim()), 300);
     return () => clearTimeout(timer);
   }, [searchInput]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedLookup(lookupInput.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [lookupInput]);
+
+  useEffect(() => {
+    if (mode !== 'lookup' || !isSignedIn) return;
+    if (!debouncedLookup) {
+      setLookupResults(null);
+      return;
+    }
+    setLookupLoading(true);
+    setLookupError('');
+    searchBeerLookup(debouncedLookup)
+      .then(setLookupResults)
+      .catch((err) => setLookupError(err.message))
+      .finally(() => setLookupLoading(false));
+  }, [mode, isSignedIn, debouncedLookup]);
 
   // Drives the #70 first-visit hint: a brand-new customer's had/not-had filters have
   // nothing to differentiate yet, so point them at style/bartender instead.
@@ -86,6 +117,88 @@ function BeerList() {
     <div className="grid gap-4">
       <h2 className="m-0 text-xl font-bold">Beer List</h2>
 
+      {isSignedIn && (
+        <div className="flex flex-wrap gap-2">
+          {[
+            { value: 'catalog', label: "What's on our list" },
+            { value: 'lookup', label: 'Look up any beer' },
+          ].map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setMode(tab.value)}
+              className={`${CHIP_BASE} ${mode === tab.value ? CHIP_ACTIVE : CHIP_INACTIVE}`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {mode === 'lookup' && isSignedIn ? (
+        <div className="grid gap-4">
+          <p className="m-0 text-sm text-gray-500">
+            Searches outside beer databases — not what the tavern actually carries.
+          </p>
+          <input
+            value={lookupInput}
+            onChange={(e) => setLookupInput(e.target.value)}
+            placeholder="Search any beer or brewery"
+            className="w-full"
+          />
+
+          {lookupError && <p className="text-red-700">{lookupError}</p>}
+
+          {lookupLoading && <p>Searching…</p>}
+
+          {!lookupLoading && lookupResults && lookupResults.beers.length === 0 && lookupResults.breweries.length === 0 && (
+            <p>No results.</p>
+          )}
+
+          {lookupResults && lookupResults.beers.length > 0 && (
+            <div className="grid gap-3">
+              {lookupResults.beers.map((beer) => (
+                <div
+                  key={beer.id}
+                  className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-[0_8px_24px_rgba(0,0,0,0.06)]"
+                >
+                  <strong>{beer.name}</strong>
+                  <div className="text-gray-600">
+                    {beer.brewerName} • {beer.style}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate('/recommend', {
+                        state: { beerName: beer.name, breweryName: beer.brewerName, externalCatalogBeerId: beer.id },
+                      })
+                    }
+                    className="mt-2 rounded-full border-0 bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
+                  >
+                    Recommend this beer
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {lookupResults && lookupResults.breweries.length > 0 && (
+            <div className="grid gap-3">
+              {lookupResults.breweries.map((brewery) => (
+                <div key={brewery.id} className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                  <strong>{brewery.name}</strong>
+                  <div className="text-gray-600">
+                    {brewery.city}
+                    {brewery.city && brewery.state ? ', ' : ''}
+                    {brewery.state}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
       <input
         value={searchInput}
         onChange={(e) => setSearchInput(e.target.value)}
@@ -181,6 +294,8 @@ function BeerList() {
             );
           })}
         </div>
+      )}
+        </>
       )}
     </div>
   );

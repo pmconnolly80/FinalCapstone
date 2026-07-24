@@ -19,6 +19,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<MugAward> MugAwards => Set<MugAward>();
     public DbSet<ConfirmationAudit> ConfirmationAudits => Set<ConfirmationAudit>();
     public DbSet<AdminAudit> AdminAudits => Set<AdminAudit>();
+    public DbSet<ExternalSearchLog> ExternalSearchLogs => Set<ExternalSearchLog>();
+    public DbSet<BeerRecommendation> BeerRecommendations => Set<BeerRecommendation>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -31,6 +33,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
         builder.Entity<Beer>()
             .Property(b => b.Class)
+            .HasConversion<string>();
+
+        builder.Entity<BeerRecommendation>()
+            .Property(r => r.Status)
             .HasConversion<string>();
 
         // A beer counts once per customer, ever — the paper sheet has one initial per line.

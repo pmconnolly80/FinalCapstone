@@ -1379,3 +1379,64 @@ visually too, not just DOM checks.
 **Resume here:** Sprint 6 is done. Sprint 7 (Beer Discovery & Recommendations,
 #72/#73/#83) and Sprint 8 (Admin & Engagement UX Follow-ups, #74–#81) are both still
 groomed and ready to build next.
+
+---
+
+## 2026-07-23 — Sprint 7: Beer Discovery & Recommendations
+
+**Epic:** `epic:beer-discovery`
+
+Built all three groomed Sprint 7 issues in one pass, in dependency order (#72 → #73 →
+#83, matching how each depends on the one before it):
+
+- #72: new `BeerLookupController` (`GET /api/beer-lookup/search`) reuses the existing
+  `ICatalogBeerService`/`IBreweryLookupService` (previously Admin-only via
+  `CatalogBeerController`/`BreweriesController`) behind a signed-in-only endpoint,
+  returning `{ beers, breweries }`. Rate-limited to 20 requests/minute per user —
+  ASP.NET Core's built-in `RateLimiter` was net-new to this codebase, wired up in
+  `Program.cs` as a `"PerUserExternalSearch"` fixed-window policy partitioned by
+  `ClaimTypes.NameIdentifier`, with `RejectionStatusCode` explicitly set to 429 (the
+  default is 503). Every call logs to a new `ExternalSearchLog` table, computing
+  `MatchedTavernCatalog` by reusing `BeersController`'s own substring-match logic.
+  `BeerList.jsx` gained a "What's on our list" / "Look up any beer" mode toggle
+  (signed-in only), with lookup results in visually distinct amber-bordered cards and
+  a "Recommend this beer" button per hit.
+- #73: new `BeerRecommendation` entity (`Status` enum New/Reviewed/Added/Declined,
+  text-converted like `BeerAvailability`) plus `RecommendationsController` (customer
+  submission, only `BeerName` required) and `AdminRecommendationsController`
+  (filterable list + `PATCH .../status`, no reason required — closer to the
+  availability PATCH's immediate toggle than confirmation-void's reason guard). New
+  `RecommendBeer.jsx` (`/recommend`, prefillable from a lookup-mode search hit via
+  `location.state`) and `AdminRecommendations.jsx` (`/admin/recommendations`).
+- #83: new `AdminExternalSearchController` (`GET /api/admin/external-search-demand`)
+  aggregates unmatched `ExternalSearchLog` rows by frequency via a `public static
+  ComputeDemandAsync(context, now, sinceDays, topN)` — same explicit-`now`-parameter
+  testability pattern as `AdminAnomaliesController`/`AdminDashboardController`. New
+  `AdminSearchDemand.jsx` (`/admin/search-demand`) renders the table with its own
+  independent fetch/error state, matching `AdminDashboard.jsx`'s anomalies panel.
+
+`Account.jsx` gained "Recommend a beer" (all signed-in users) and
+"Recommendations"/"Search Demand" (Admin-only) links.
+
+Suites: backend 271/271 (+32 new: `BeerLookupControllerTests`,
+`RecommendationsControllerTests`, `AdminRecommendationsControllerTests`,
+`AdminExternalSearchControllerTests`, plus HTTP-level auth/rate-limit integration
+tests for each new endpoint). Frontend 175/175 (+17 new: `BeerList.test.jsx`'s new
+"#72 external lookup mode" describe block, `RecommendBeer.test.jsx`,
+`AdminRecommendations.test.jsx`, `AdminSearchDemand.test.jsx`, extended
+`Account.test.jsx`). Clean `npm run build`.
+
+Verified live against the Docker stack (no browser automation available, so via curl
+per the `verify` skill): real Catalog.beer/Open Brewery DB results for "duvel", a
+plain-text and a search-hit recommendation both submitted and triaged to `Added` by
+the seeded admin (`admin@tavern.local`) with the change persisting across a re-fetch,
+the demand report showing one unmatched query after a gibberish search, the tavern's
+own catalog search (`GET /api/beers?search=`) unaffected, anonymous requests to
+`/api/beer-lookup/search` rejected with 401, and the rate limit correctly tripping to
+429 on the 20th+ request from one user within a minute.
+
+- Branch: `sprint-7-beer-discovery-recommendations` — PR opened against `master`,
+  not yet merged.
+
+**Resume here:** once this PR merges, Sprint 8 (Admin & Engagement UX Follow-ups,
+#74–#81) is groomed and ready to build next.

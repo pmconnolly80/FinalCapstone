@@ -61,7 +61,7 @@ testing found the registration flow broken, see #17.)
 | Admin Experience (dashboard + anomaly panel, user/role/PIN mgmt UI, full data correction with audit, catalog bulk-add guardrail) | `epic:admin` | ✅ **Done** for the original scope — Sprint 2's first slice (confirmation audit/correction API + screen #15/#16, admin PIN issue/reset/deactivate API #13, mug-earner list #14) plus Sprint 5 ([#53](https://github.com/pmconnolly80/FinalCapstone/issues/53)–[#59](https://github.com/pmconnolly80/FinalCapstone/issues/59), groomed/closed 2026-07-23 — PRs [#60](https://github.com/pmconnolly80/FinalCapstone/pull/60)–[#66](https://github.com/pmconnolly80/FinalCapstone/pull/66)). 🔵 Four more UX-gap issues groomed into **Sprint 8** below ([#75](https://github.com/pmconnolly80/FinalCapstone/issues/75)–[#78](https://github.com/pmconnolly80/FinalCapstone/issues/78)) |
 | Engagement, Retention & Social (badges, push notifications + owner composer, My Beers — ratings/want list/personal stats viz, social feed/cheers/leaderboard, journal, owner analytics) | `epic:retention` | ⬜ Not started — the business-owner payoff, see `FEATURE_MAP.md` and `PERSONAS_AND_USAGE.md`. 🔵 One pull-forward story groomed into **Sprint 8** below ([#74](https://github.com/pmconnolly80/FinalCapstone/issues/74): rating prompt + minimal milestone) |
 | **Mobile UI Polish** (nav bar redesign for phone-first use + hidden pre-login, minimal branded login screen, several small UX-gap fixes) | `epic:ui-polish` | 🔵 Groomed 2026-07-23 as **Sprint 6** ([milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/6), issues [#67](https://github.com/pmconnolly80/FinalCapstone/issues/67)–[#71](https://github.com/pmconnolly80/FinalCapstone/issues/71)), not yet started |
-| **Beer Discovery & Recommendations** (customer-facing external beer-database search, beer recommendations/requests + admin triage) | `epic:beer-discovery` | 🔵 Groomed 2026-07-23 as **Sprint 7** ([milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/7), issues [#72](https://github.com/pmconnolly80/FinalCapstone/issues/72)–[#73](https://github.com/pmconnolly80/FinalCapstone/issues/73)), not yet started |
+| **Beer Discovery & Recommendations** (customer-facing external beer-database search, beer recommendations/requests + admin triage) | `epic:beer-discovery` | 🟡 Built 2026-07-23 — Sprint 7 ([#72](https://github.com/pmconnolly80/FinalCapstone/issues/72)–[#73](https://github.com/pmconnolly80/FinalCapstone/issues/73), [#83](https://github.com/pmconnolly80/FinalCapstone/issues/83)), PR open pending review/merge |
 | Deployment & Hardening (AWS, CI/CD) | `epic:deployment` | ⬜ Not started — also covers wiring real SMTP credentials so forgot-password emails actually send (currently silently no-ops, flagged 2026-07-23) |
 | Future Enhancements (public reviews, images) | `epic:future-enhancements` | ⬜ Backlog, unscheduled |
 
@@ -258,7 +258,7 @@ account, the BeerList first-visit hint, and both the offline and repeated-PIN-fa
 messages on the confirmation PIN pad. #71 didn't auto-close from the merge commit's
 closing keywords (closed manually, cross-referencing PR #84).
 
-### Sprint 7: Beer Discovery & Recommendations — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/7) (groomed 2026-07-23, not started)
+### Sprint 7: Beer Discovery & Recommendations — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/7) (groomed 2026-07-23, built 2026-07-23)
 
 Customer-facing external beer-database search (distinct from the tavern's-own-list
 search) plus a customer beer-recommendation/request feature with admin triage.
@@ -272,6 +272,27 @@ search) plus a customer beer-recommendation/request feature with admin triage.
 3. [#83 Admin: external-search demand report](https://github.com/pmconnolly80/FinalCapstone/issues/83)
    (added 2026-07-23 coverage review) — depends on #72; surfaces what #72 logs
    (searched-but-not-carried beers) since nothing else in this sprint displays it
+
+> **Status (2026-07-23):** all three stories built in one pass, in dependency order
+> (#72 → #73 → #83). New `BeerLookupController` (`GET /api/beer-lookup/search`) reuses
+> the existing `ICatalogBeerService`/`IBreweryLookupService` behind a signed-in-only,
+> per-user-rate-limited endpoint (ASP.NET Core's built-in `RateLimiter`, 20 req/min via
+> a fixed-window policy partitioned by the caller's user id) and logs every call to a
+> new `ExternalSearchLog` table (query text + whether it matched the tavern's own
+> catalog). `BeerList.jsx` grew a "What's on our list" / "Look up any beer" toggle
+> (signed-in only) so the two search modes stay visually distinct. New
+> `RecommendationsController`/`AdminRecommendationsController` give customers a
+> `BeerRecommendation` submission path (plain-text or pre-filled from a lookup hit) and
+> admins a filterable triage screen (`/admin/recommendations`, status
+> New/Reviewed/Added/Declined, no reason required — closer to the availability PATCH's
+> immediate toggle than confirmation-void's reason guard). New
+> `AdminExternalSearchController` (`/admin/search-demand`) aggregates unmatched
+> `ExternalSearchLog` rows by frequency, closing the loop #83 flagged. Suites: backend
+> 271/271 (+32), frontend 175/175 (+17), clean `npm run build`. Verified live against
+> the Docker stack: real Catalog.beer/Open Brewery DB results for "duvel", a plain-text
+> and a search-hit recommendation both submitted and triaged to `Added` by the seeded
+> admin, the demand report showing an unmatched query, the tavern's own catalog search
+> unaffected, and the rate limit tripping to 429 on the 20th+ request in a window.
 
 ### Sprint 8: Admin & Engagement UX Follow-ups — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/8) (groomed 2026-07-23, not started)
 
