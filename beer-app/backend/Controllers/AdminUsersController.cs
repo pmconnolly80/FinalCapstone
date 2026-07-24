@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using BeerApi.Data;
 using BeerApi.Models;
+using BeerApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +21,12 @@ namespace BeerApi.Controllers;
 // account also deactivates their PIN everywhere, instantly — reactivating an account does
 // NOT restore the PIN, since silently re-enabling a possibly-compromised PIN isn't safe
 // to do implicitly.
+//
+// #77: admin-initiated bartender invite — creates the ApplicationUser (Bartender role)
+// directly instead of requiring the new hire to self-register as a Customer first, then
+// reuses the existing forgot/reset-password token flow (AuthController) as the "set your
+// password" link, since ResetPasswordAsync works the same whether or not a password was
+// ever set. No separate "set password" page needed — ResetPassword.jsx already does this.
 [ApiController]
 [Route("api/admin/users")]
 [Authorize(Roles = "Admin")]
@@ -28,15 +35,91 @@ public class AdminUsersController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly IEmailSender _emailSender;
+    private readonly IConfiguration _configuration;
 
     public AdminUsersController(
         ApplicationDbContext context,
         UserManager<ApplicationUser> userManager,
-        RoleManager<IdentityRole> roleManager)
+        RoleManager<IdentityRole> roleManager,
+        IEmailSender emailSender,
+        IConfiguration configuration)
     {
         _context = context;
         _userManager = userManager;
         _roleManager = roleManager;
+        _emailSender = emailSender;
+        _configuration = configuration;
+    }
+
+    [HttpPost("invite-bartender")]
+    public async Task<IActionResult> InviteBartender(InviteBartenderRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email))
+        {
+            return BadRequest(new { message = "Email is required." });
+        }
+
+        var existingUser = await _userManager.FindByEmailAsync(request.Email);
+        if (existingUser != null)
+        {
+            return Conflict(new { message = "A user with that email already exists." });
+        }
+
+        var adminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (adminId == null)
+        {
+            return Unauthorized();
+        }
+
+        var user = new ApplicationUser { UserName = request.Email, Email = request.Email };
+        var createResult = await _userManager.CreateAsync(user);
+        if (!createResult.Succeeded)
+        {
+            return BadRequest(new { message = string.Join(" ", createResult.Errors.Select(e => e.Description)) });
+        }
+
+        if (!await _roleManager.RoleExistsAsync("Bartender"))
+        {
+            await _roleManager.CreateAsync(new IdentityRole("Bartender"));
+        }
+        await _userManager.AddToRoleAsync(user, "Bartender");
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var setPasswordLink = $"{ResolveFrontendBaseUrl()}/reset-password?email={Uri.EscapeDataString(request.Email)}&token={Uri.EscapeDataString(token)}";
+        await _emailSender.SendAsync(
+            request.Email,
+            "You've been invited to join The Tavern's staff",
+            $"An admin has set up a bartender account for you. Use the link below to set your password:\n\n{setPasswordLink}");
+
+        _context.AdminAudits.Add(new AdminAudit
+        {
+            AdminUserId = adminId,
+            EntityType = "User",
+            EntityId = user.Id,
+            Action = "Invite",
+            BeforeSnapshot = null,
+            AfterSnapshot = $"Bartender ({user.Email})",
+            Reason = string.Empty,
+        });
+        await _context.SaveChangesAsync();
+
+        return Ok(new AdminUserResponse(user.Id, user.Email!, "Bartender", true, false));
+    }
+
+    // A configured Frontend:BaseUrl always wins for the same reason AuthController's
+    // ResolveFrontendBaseUrl prefers it — an invite link needs to survive being opened
+    // later, possibly on a different device, not just whatever Origin sent this request.
+    private string ResolveFrontendBaseUrl()
+    {
+        var configured = _configuration["Frontend:BaseUrl"];
+        if (!string.IsNullOrWhiteSpace(configured))
+        {
+            return configured.TrimEnd('/');
+        }
+
+        var origin = Request.Headers.Origin.FirstOrDefault();
+        return (!string.IsNullOrWhiteSpace(origin) ? origin : "http://localhost:3001").TrimEnd('/');
     }
 
     [HttpGet]
@@ -222,3 +305,4 @@ public class AdminUsersController : ControllerBase
 public record AssignRoleRequest(string Role, string Reason);
 public record AccountActionRequest(string Reason);
 public record AdminUserResponse(string Id, string Email, string Role, bool IsActive, bool HasActivePin);
+public record InviteBartenderRequest(string Email);

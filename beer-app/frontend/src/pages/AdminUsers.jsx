@@ -5,6 +5,7 @@ import {
   deactivateStaffPin,
   getAdminUsers,
   getRolesFromToken,
+  inviteBartender,
   issueOrResetStaffPin,
   reactivateAccount,
 } from '../lib/api';
@@ -28,6 +29,10 @@ const PIN_BADGES = {
 // admin-gate-then-load shape and two-step reason-guarded action pattern as
 // AdminConfirmations.jsx; the role check here is a convenience, the API enforces
 // Admin server-side regardless.
+//
+// #77: the invite form is a direct, un-guarded submit (no reason step) — inviting a new
+// bartender isn't a correction to an existing account the way role/deactivate/reactivate
+// are, so it doesn't fit that pattern.
 function AdminUsers() {
   const isAdmin = getRolesFromToken().includes('Admin');
   const [users, setUsers] = useState([]);
@@ -35,6 +40,8 @@ function AdminUsers() {
   const [reason, setReason] = useState('');
   const [pin, setPin] = useState('');
   const [message, setMessage] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteMessage, setInviteMessage] = useState('');
 
   const load = () => {
     getAdminUsers()
@@ -110,6 +117,20 @@ function AdminUsers() {
     }
   };
 
+  const handleInvite = async (event) => {
+    event.preventDefault();
+    setInviteMessage('');
+    const email = inviteEmail.trim();
+    try {
+      await inviteBartender(email);
+      setInviteMessage(`Invited ${email} — they'll get an email to set their password.`);
+      setInviteEmail('');
+      load();
+    } catch (error) {
+      setInviteMessage(error.message);
+    }
+  };
+
   return (
     <section className="rounded-2xl bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
       <h2 className="m-0 text-xl font-bold">User management</h2>
@@ -117,6 +138,24 @@ function AdminUsers() {
         Change a user&apos;s role, deactivate or reactivate their account, and manage their
         staff PIN. Role changes and account status changes require a reason.
       </p>
+
+      <form onSubmit={handleInvite} className="mt-4 flex flex-wrap items-end gap-2 rounded-xl bg-gray-50 p-4">
+        <label className="flex flex-col gap-1 text-sm text-gray-600">
+          Invite a new bartender
+          <input
+            type="email"
+            required
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            placeholder="newhire@example.com"
+            className="w-64"
+          />
+        </label>
+        <button type="submit" className="border-0 bg-blue-700 text-white">
+          Invite bartender
+        </button>
+      </form>
+      {inviteMessage && <p className="mt-2 text-sm">{inviteMessage}</p>}
 
       {message && <p className="mt-3 text-red-700">{message}</p>}
 

@@ -61,7 +61,7 @@ testing found the registration flow broken, see #17.)
 | Admin Experience (dashboard + anomaly panel, user/role/PIN mgmt UI, full data correction with audit, catalog bulk-add guardrail) | `epic:admin` | ✅ **Done** for the original scope — Sprint 2's first slice (confirmation audit/correction API + screen #15/#16, admin PIN issue/reset/deactivate API #13, mug-earner list #14) plus Sprint 5 ([#53](https://github.com/pmconnolly80/FinalCapstone/issues/53)–[#59](https://github.com/pmconnolly80/FinalCapstone/issues/59), groomed/closed 2026-07-23 — PRs [#60](https://github.com/pmconnolly80/FinalCapstone/pull/60)–[#66](https://github.com/pmconnolly80/FinalCapstone/pull/66)). 🔵 Four more UX-gap issues groomed into **Sprint 8** below ([#75](https://github.com/pmconnolly80/FinalCapstone/issues/75)–[#78](https://github.com/pmconnolly80/FinalCapstone/issues/78)) |
 | Engagement, Retention & Social (badges, push notifications + owner composer, My Beers — ratings/want list/personal stats viz, social feed/cheers/leaderboard, journal, owner analytics) | `epic:retention` | ⬜ Not started — the business-owner payoff, see `FEATURE_MAP.md` and `PERSONAS_AND_USAGE.md`. 🔵 One pull-forward story groomed into **Sprint 8** below ([#74](https://github.com/pmconnolly80/FinalCapstone/issues/74): rating prompt + minimal milestone) |
 | **Mobile UI Polish** (nav bar redesign for phone-first use + hidden pre-login, minimal branded login screen, several small UX-gap fixes) | `epic:ui-polish` | 🔵 Groomed 2026-07-23 as **Sprint 6** ([milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/6), issues [#67](https://github.com/pmconnolly80/FinalCapstone/issues/67)–[#71](https://github.com/pmconnolly80/FinalCapstone/issues/71)), not yet started |
-| **Beer Discovery & Recommendations** (customer-facing external beer-database search, beer recommendations/requests + admin triage) | `epic:beer-discovery` | 🟡 Built 2026-07-23 — Sprint 7 ([#72](https://github.com/pmconnolly80/FinalCapstone/issues/72)–[#73](https://github.com/pmconnolly80/FinalCapstone/issues/73), [#83](https://github.com/pmconnolly80/FinalCapstone/issues/83)), [PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85) open pending review/merge |
+| **Beer Discovery & Recommendations** (customer-facing external beer-database search, beer recommendations/requests + admin triage) | `epic:beer-discovery` | ✅ **Done** — Sprint 7 ([#72](https://github.com/pmconnolly80/FinalCapstone/issues/72)–[#73](https://github.com/pmconnolly80/FinalCapstone/issues/73), [#83](https://github.com/pmconnolly80/FinalCapstone/issues/83)), [PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85) merged 2026-07-23 |
 | Deployment & Hardening (AWS, CI/CD) | `epic:deployment` | ⬜ Not started — also covers wiring real SMTP credentials so forgot-password emails actually send (currently silently no-ops, flagged 2026-07-23) |
 | Future Enhancements (public reviews, images) | `epic:future-enhancements` | ⬜ Backlog, unscheduled |
 
@@ -294,20 +294,23 @@ search) plus a customer beer-recommendation/request feature with admin triage.
 > admin, the demand report showing an unmatched query, the tavern's own catalog search
 > unaffected, and the rate limit tripping to 429 on the 20th+ request in a window.
 
-### Sprint 8: Admin & Engagement UX Follow-ups — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/8) (groomed 2026-07-23, not started)
+### Sprint 8: Admin & Engagement UX Follow-ups — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/8) (groomed 2026-07-23, in progress)
 
 Small admin/engagement UX-gap fixes from the 2026-07-23 review, extending
 `epic:retention`/`epic:admin` ahead of those epics' full grooming — bundled together
 since each is small and independent rather than because they share one epic, per
 explicit user direction to narrow priorities now rather than wait for strict
-sequencing.
+sequencing. One PR per issue (not one combined Sprint-7-style PR), per explicit
+direction at planning time — see the build-order note below.
 
 1. [#74 UI + API: pull forward 'How was it?' rating prompt + minimal milestone moment](https://github.com/pmconnolly80/FinalCapstone/issues/74) (`epic:retention`) —
    acceptance criteria amended 2026-07-23 to add a rating view/edit affordance on beer
    detail, since My Beers doesn't exist yet
-2. [#75 UI: inline consequence microcopy on audited admin actions](https://github.com/pmconnolly80/FinalCapstone/issues/75) (`epic:admin`)
-3. [#76 UI: staff-only filter + search on the User Management table](https://github.com/pmconnolly80/FinalCapstone/issues/76) (`epic:admin`)
-4. [#77 API + UI: admin-initiated bartender account invite](https://github.com/pmconnolly80/FinalCapstone/issues/77) (`epic:admin`)
+2. [#75 UI: staff-only filter + search on the User Management table](https://github.com/pmconnolly80/FinalCapstone/issues/75) (`epic:admin`) —
+   this repo's list had #75/#76 titles swapped relative to GitHub; fixed 2026-07-23
+3. [#76 UI: inline consequence microcopy on audited admin actions](https://github.com/pmconnolly80/FinalCapstone/issues/76) (`epic:admin`)
+4. [#77 API + UI: admin-initiated bartender account invite](https://github.com/pmconnolly80/FinalCapstone/issues/77) (`epic:admin`) —
+   ✅ built 2026-07-23, branch `sprint-8-bartender-invite`, PR not yet opened
 5. [#78 UI + API: reframe Admin Dashboard as operational health; pull forward most/least-confirmed beers](https://github.com/pmconnolly80/FinalCapstone/issues/78) (`epic:admin`)
 6. [#79 API + UI: support variable-length staff PINs (e.g. birthday format)](https://github.com/pmconnolly80/FinalCapstone/issues/79) (`epic:admin`) —
    acceptance criteria amended 2026-07-23 to explicitly call out 3 files with hardcoded
@@ -316,6 +319,14 @@ sequencing.
    acceptance criteria amended 2026-07-23 to support toggling back to available (not
    just out-of-stock) and to require a deliberate confirm step
 8. [#81 API + UI: customer-facing 'flag beer as unavailable' report](https://github.com/pmconnolly80/FinalCapstone/issues/81) (`epic:admin`)
+
+> **Build order (2026-07-23 planning session):** `AdminUsers.jsx` is touched by
+> #75/#76/#79/#77 and `ConfirmPinPad.jsx`/`BeerDetail.jsx` by #79/#80/#74/#81, so those
+> two chains build sequentially — each merged before the next in the chain branches —
+> to avoid stacking conflicts: #75 → #76 → #79 → #77, then #80 → #74 → #81. #78 touches
+> only `AdminDashboard.jsx` and can build any time. #77 was built first regardless,
+> out of that order per explicit direction, since it branched off a clean `master`
+> before anything else in the chain had landed.
 
 ## Live Testing Findings — 2026-07-23
 
