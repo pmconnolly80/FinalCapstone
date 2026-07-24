@@ -1,10 +1,12 @@
 using BeerApi.Controllers;
 using BeerApi.Data;
 using BeerApi.Models;
+using BeerApi.Tests.TestDoubles;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Security.Claims;
 using Xunit;
@@ -26,6 +28,8 @@ public class AdminUsersControllerTests
         public ApplicationDbContext Context { get; }
         public UserManager<ApplicationUser> UserManager { get; }
         public RoleManager<IdentityRole> RoleManager { get; }
+        public FakeEmailSender EmailSender { get; } = new();
+        public IConfiguration Configuration { get; } = new ConfigurationBuilder().Build();
         private readonly ServiceProvider _provider;
         private readonly IServiceScope _scope;
 
@@ -34,7 +38,8 @@ public class AdminUsersControllerTests
             var services = new ServiceCollection();
             services.AddDbContext<ApplicationDbContext>(o => o.UseInMemoryDatabase(Guid.NewGuid().ToString()));
             services.AddIdentity<ApplicationUser, IdentityRole>()
-                .AddEntityFrameworkStores<ApplicationDbContext>();
+                .AddEntityFrameworkStores<ApplicationDbContext>()
+                .AddDefaultTokenProviders();
             services.AddLogging();
             _provider = services.BuildServiceProvider();
             _scope = _provider.CreateScope();
@@ -67,7 +72,7 @@ public class AdminUsersControllerTests
 
         public AdminUsersController CreateController(string adminId = AdminId)
         {
-            return new AdminUsersController(Context, UserManager, RoleManager)
+            return new AdminUsersController(Context, UserManager, RoleManager, EmailSender, Configuration)
             {
                 ControllerContext = new ControllerContext
                 {
@@ -327,5 +332,70 @@ public class AdminUsersControllerTests
         Assert.Equal("Deactivated", audit.BeforeSnapshot);
         Assert.Equal("Active", audit.AfterSnapshot);
         Assert.Equal("appeal approved", audit.Reason);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task InviteBartender_MissingEmail_ReturnsBadRequest_AndCreatesNoAccount(string? email)
+    {
+        using var fixture = new Fixture();
+        await fixture.SeedRolesAsync();
+        var controller = fixture.CreateController();
+
+        var result = await controller.InviteBartender(new InviteBartenderRequest(email!));
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Empty(fixture.EmailSender.SentEmails);
+        Assert.Empty(fixture.Context.AdminAudits);
+    }
+
+    [Fact]
+    public async Task InviteBartender_ExistingEmail_ReturnsConflict()
+    {
+        using var fixture = new Fixture();
+        await fixture.SeedRolesAsync();
+        await fixture.SeedTargetUserAsync();
+        var controller = fixture.CreateController();
+
+        var result = await controller.InviteBartender(new InviteBartenderRequest("target@example.com"));
+
+        Assert.IsType<ConflictObjectResult>(result);
+        Assert.Empty(fixture.EmailSender.SentEmails);
+    }
+
+    [Fact]
+    public async Task InviteBartender_CreatesBartenderAccount_SendsSetPasswordEmail_AndWritesAudit()
+    {
+        using var fixture = new Fixture();
+        await fixture.SeedRolesAsync();
+        var controller = fixture.CreateController();
+
+        var result = await controller.InviteBartender(new InviteBartenderRequest("newhire@example.com"));
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<AdminUserResponse>(okResult.Value);
+        Assert.Equal("newhire@example.com", response.Email);
+        Assert.Equal("Bartender", response.Role);
+        Assert.True(response.IsActive);
+        Assert.False(response.HasActivePin);
+
+        var created = await fixture.UserManager.FindByEmailAsync("newhire@example.com");
+        Assert.NotNull(created);
+        Assert.Contains("Bartender", await fixture.UserManager.GetRolesAsync(created!));
+
+        var sent = Assert.Single(fixture.EmailSender.SentEmails);
+        Assert.Equal("newhire@example.com", sent.ToEmail);
+        Assert.Contains("reset-password", sent.Body);
+        Assert.Contains("token=", sent.Body);
+
+        var audit = Assert.Single(fixture.Context.AdminAudits);
+        Assert.Equal(AdminId, audit.AdminUserId);
+        Assert.Equal("User", audit.EntityType);
+        Assert.Equal(created!.Id, audit.EntityId);
+        Assert.Equal("Invite", audit.Action);
+        Assert.Null(audit.BeforeSnapshot);
+        Assert.Equal("Bartender (newhire@example.com)", audit.AfterSnapshot);
     }
 }

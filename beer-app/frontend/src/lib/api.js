@@ -213,6 +213,20 @@ export async function getAdminUsers() {
   return response.json();
 }
 
+export async function inviteBartender(email) {
+  const response = await fetch(`${API_BASE_URL}/api/admin/users/invite-bartender`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ email }),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || 'Failed to invite bartender');
+  }
+  return response.json();
+}
+
 export async function assignRole(id, role, reason) {
   const response = await fetch(`${API_BASE_URL}/api/admin/users/${id}/role`, {
     method: 'PUT',

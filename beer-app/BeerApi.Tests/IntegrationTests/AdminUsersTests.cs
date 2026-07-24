@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using BeerApi.Controllers;
 using BeerApi.Data;
 using BeerApi.Models;
+using BeerApi.Tests.TestDoubles;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -201,6 +202,80 @@ public class AdminUsersTests : IDisposable
         Assert.Equal("policy violation", deactivateAudit.Reason);
         var reactivateAudit = Assert.Single(context.AdminAudits, a => a.EntityId == targetUserId && a.Action == "Reactivate");
         Assert.Equal("appeal approved", reactivateAudit.Reason);
+    }
+
+    [Fact]
+    public async Task InviteEndpoint_WithoutToken_ReturnsUnauthorized()
+    {
+        var response = await _client.PostAsJsonAsync("/api/admin/users/invite-bartender", new InviteBartenderRequest("new@example.com"));
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task InviteEndpoint_WithCustomerOrBartenderToken_ReturnsForbidden()
+    {
+        var customerToken = await RegisterCustomerAsync("invite.customer@example.com");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", customerToken);
+        var asCustomer = await _client.PostAsJsonAsync("/api/admin/users/invite-bartender", new InviteBartenderRequest("new@example.com"));
+        Assert.Equal(HttpStatusCode.Forbidden, asCustomer.StatusCode);
+
+        var bartenderToken = await LoginAsync("bartender@example.com", "Bartender1!");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", bartenderToken);
+        var asBartender = await _client.PostAsJsonAsync("/api/admin/users/invite-bartender", new InviteBartenderRequest("new@example.com"));
+        Assert.Equal(HttpStatusCode.Forbidden, asBartender.StatusCode);
+    }
+
+    [Fact]
+    public async Task InviteEndpoint_ExistingEmail_ReturnsConflict()
+    {
+        await RegisterCustomerAsync("invite.existing@example.com");
+        var adminToken = await CreateAdminAndLoginAsync("invite.admin1@example.com", "AdminPassw0rd!");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+
+        var response = await _client.PostAsJsonAsync("/api/admin/users/invite-bartender",
+            new InviteBartenderRequest("invite.existing@example.com"));
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task InviteFlow_CreatesBartenderAccount_AndSetPasswordLinkActuallyLogsIn()
+    {
+        var adminToken = await CreateAdminAndLoginAsync("invite.admin2@example.com", "AdminPassw0rd!");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+
+        const string newHireEmail = "invite.newhire@example.com";
+        var invited = await _client.PostAsJsonAsync("/api/admin/users/invite-bartender", new InviteBartenderRequest(newHireEmail));
+        Assert.Equal(HttpStatusCode.OK, invited.StatusCode);
+        var created = await invited.Content.ReadFromJsonAsync<AdminUserResponse>();
+        Assert.Equal(newHireEmail, created!.Email);
+        Assert.Equal("Bartender", created.Role);
+
+        var sent = Assert.Single(_factory.EmailSender.SentEmails, e => e.ToEmail == newHireEmail);
+        var token = ExtractTokenFromSetPasswordEmail(sent);
+
+        // The invite link reuses the existing reset-password endpoint to let the new
+        // hire set their first password, then they can log in as a Bartender.
+        _client.DefaultRequestHeaders.Authorization = null;
+        var setPassword = await _client.PostAsJsonAsync("/api/auth/reset-password",
+            new ResetPasswordRequest(newHireEmail, token, "NewHirePassw0rd!"));
+        Assert.Equal(HttpStatusCode.OK, setPassword.StatusCode);
+
+        var login = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest(newHireEmail, "NewHirePassw0rd!"));
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var audit = Assert.Single(context.AdminAudits, a => a.EntityId == created.Id);
+        Assert.Equal("Invite", audit.Action);
+        Assert.Equal("User", audit.EntityType);
+        Assert.Null(audit.BeforeSnapshot);
+    }
+
+    private static string ExtractTokenFromSetPasswordEmail(FakeEmailSender.SentEmail email)
+    {
+        var tokenParam = email.Body.Split("token=").Last().Split('\n', ' ').First();
+        return Uri.UnescapeDataString(tokenParam);
     }
 
     private async Task<string> RegisterCustomerAsync(string email)

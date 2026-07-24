@@ -1436,8 +1436,53 @@ own catalog search (`GET /api/beers?search=`) unaffected, anonymous requests to
 429 on the 20th+ request from one user within a minute.
 
 - Branch: `sprint-7-beer-discovery-recommendations` —
-  [PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85) opened against `master`,
-  not yet merged.
+  [PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85), merged to `master`.
 
-**Resume here:** once this PR merges, Sprint 8 (Admin & Engagement UX Follow-ups,
-#74–#81) is groomed and ready to build next.
+## 2026-07-23 — Sprint 8 planning: PR #85 merged, build order set, #77 built
+
+**Epic:** `epic:admin`
+
+Planning session for Sprint 8 (Admin & Engagement UX Follow-ups, #74–#81, already
+groomed). First merged PR #85 (Sprint 7) to `master` (CI green) so Sprint 8 branches
+off a clean base. Then mapped file overlap across the 8 issues to set a one-PR-per-issue
+build order rather than the single-combined-PR approach Sprint 7 used (per this
+session's explicit direction): `AdminUsers.jsx` is touched by #75/#76/#79/#77 and
+`ConfirmPinPad.jsx`/`BeerDetail.jsx` by #79/#80/#74/#81, so those two chains build
+sequentially (#75 → #76 → #79 → #77, then #80 → #74 → #81) with #78 (fully
+independent, `AdminDashboard.jsx` only) free to slot anywhere.
+
+Built #77 (admin-initiated bartender invite) first, out of that proposed order (per
+explicit direction), since nothing else had touched `AdminUsers.jsx` yet on a clean
+`master` — no conflict risk from skipping ahead:
+
+- New `POST /api/admin/users/invite-bartender` on `AdminUsersController` (`Admin`-only,
+  no reason required — an account-creation action, not a correction to an existing one,
+  so it doesn't fit the reason-guard pattern #53–#56 use). Creates the `ApplicationUser`
+  directly in the `Bartender` role, then reuses `AuthController`'s existing
+  `GeneratePasswordResetTokenAsync`/`reset-password` flow as the "set your password"
+  link — `ResetPasswordAsync` works identically whether or not a password was ever set,
+  so no new frontend page was needed; `ResetPassword.jsx` already does this. Writes an
+  `AdminAudit` row (`Action = "Invite"`, no reason, same as `PostBeer`'s `"Create"` audit
+  from #58). Existing-email invites 409 rather than creating a duplicate account.
+- `AdminUsers.jsx` gained a direct (un-guarded, no reason step) "Invite a new bartender"
+  email form above the table, wired through a new `inviteBartender()` in `api.js`.
+
+Suites: backend 280/280 (+9 new: unit tests on `AdminUsersControllerTests` covering
+missing-email/existing-email/happy-path+audit, and integration tests on
+`IntegrationTests/AdminUsersTests.cs` covering auth gating and a full invite →
+extract-token-from-email → `reset-password` → `login` round trip). Frontend 177/177
+(+2 new on `AdminUsers.test.jsx`). Clean `npm run build`.
+
+Verified live against the Docker stack via curl (per the `verify` skill, no browser
+automation available): invited `livetest.bartender@example.com` as the seeded admin
+(`admin@tavern.local`), confirmed the account landed in the `Bartender` role and the
+`AdminAudit` row was written via direct `psql`, unauthenticated invite rejected with
+401, and a duplicate invite rejected with 409. SMTP isn't configured in this
+environment (a known, existing gap — see `EPICS_AND_SPRINTS.md`'s deployment-epic
+note), so the invite email itself silently no-ops rather than sending, same as
+`forgot-password` already does.
+
+- Branch: `sprint-8-bartender-invite`, not yet opened as a PR.
+
+**Resume here:** open the PR for #77, then continue the build order above starting
+with #75 (staff-only filter/search on the User Management table).

@@ -9,6 +9,7 @@ import {
   deactivateStaffPin,
   getAdminUsers,
   getRolesFromToken,
+  inviteBartender,
   issueOrResetStaffPin,
   reactivateAccount,
 } from '../lib/api';
@@ -148,6 +149,33 @@ describe('AdminUsers', () => {
     await user.click(screen.getByRole('button', { name: 'Deactivate PIN' }));
 
     expect(deactivateStaffPin).toHaveBeenCalledWith('bart-1');
+  });
+
+  it('invites a bartender by email with no reason step, then reloads the list', async () => {
+    const user = userEvent.setup();
+    inviteBartender.mockResolvedValue({ id: 'new-1', email: 'newhire@example.com', role: 'Bartender', isActive: true, hasActivePin: false });
+    renderPage();
+    await screen.findByText('customer@example.com');
+
+    await user.type(screen.getByPlaceholderText('newhire@example.com'), 'newhire@example.com');
+    await user.click(screen.getByRole('button', { name: 'Invite bartender' }));
+
+    expect(inviteBartender).toHaveBeenCalledWith('newhire@example.com');
+    expect(await screen.findByText(/invited newhire@example.com/i)).toBeInTheDocument();
+    expect(getAdminUsers).toHaveBeenCalledTimes(2);
+  });
+
+  it('surfaces an error from a failed invite without clearing the typed email', async () => {
+    const user = userEvent.setup();
+    inviteBartender.mockRejectedValue(new Error('A user with that email already exists.'));
+    renderPage();
+    await screen.findByText('customer@example.com');
+
+    await user.type(screen.getByPlaceholderText('newhire@example.com'), 'customer@example.com');
+    await user.click(screen.getByRole('button', { name: 'Invite bartender' }));
+
+    expect(await screen.findByText('A user with that email already exists.')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('newhire@example.com')).toHaveValue('customer@example.com');
   });
 
   it('surfaces API errors from a failed action', async () => {

@@ -501,8 +501,8 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
 
 - **Sprint 7: Beer Discovery & Recommendations** (milestone
   [#7](https://github.com/pmconnolly80/FinalCapstone/milestone/7), groomed 2026-07-23,
-  built 2026-07-23 — [PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85), open
-  pending review/merge): all three stories built in one pass,
+  closed 2026-07-23 — [PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85),
+  merged): all three stories built in one pass,
   in dependency order:
   - #72 API + UI: customer-facing external beer database search — new
     `BeerLookupController` (`GET /api/beer-lookup/search`, `[Authorize]`, any signed-in
@@ -549,10 +549,35 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     unaffected, and the rate limit correctly tripping to 429 on the 20th+ request in a
     one-minute window.
 
+- **Sprint 8: Admin & Engagement UX Follow-ups** (milestone
+  [#8](https://github.com/pmconnolly80/FinalCapstone/milestone/8), groomed 2026-07-23,
+  in progress — one PR per issue, per explicit direction, rather than Sprint 7's
+  single combined PR):
+  - #77 (API + UI: admin-initiated bartender invite, branch
+    `sprint-8-bartender-invite`, not yet a PR): new
+    `POST /api/admin/users/invite-bartender` on `AdminUsersController` (`Admin`-only,
+    no reason required — an account-creation action, not a correction to an existing
+    one, so it doesn't fit the reason-guard pattern #53–#56 use). Creates the
+    `ApplicationUser` directly in the `Bartender` role, then reuses `AuthController`'s
+    existing `GeneratePasswordResetTokenAsync`/`reset-password` flow as the "set your
+    password" link — `ResetPasswordAsync` works identically whether or not a password
+    was ever set, so no new frontend page was needed; `ResetPassword.jsx` already does
+    this. Writes an `AdminAudit` row (`Action = "Invite"`, no reason, same shape as
+    `PostBeer`'s `"Create"` audit from #58). An already-registered email 409s rather
+    than creating a duplicate account. `AdminUsers.jsx` gained a direct (un-guarded,
+    no reason step) "Invite a new bartender" email form above the table, wired
+    through a new `inviteBartender()` in `api.js`. Suites: backend 280/280 (+9 new),
+    frontend 177/177 (+2 new), clean `npm run build`. Verified live via curl (per the
+    `verify` skill): invited account landed in the `Bartender` role and the
+    `AdminAudit` row was written (confirmed via `psql`), unauthenticated invite
+    401s, duplicate invite 409s. SMTP isn't configured in this environment, so (same
+    as `forgot-password`) the invite email itself silently no-ops rather than
+    sending.
+
 **Not built** — the Admin Experience epic is done as of Sprint 5; Sprint 6 (Mobile UI
-Polish) and Sprint 7 (Beer Discovery & Recommendations) are both built (Sprint 7's PR
-still open, pending merge). Next up per `EPICS_AND_SPRINTS.md`: Sprint 8 (Admin &
-Engagement UX Follow-ups), already groomed and ready to build; the Engagement,
+Polish) and Sprint 7 (Beer Discovery & Recommendations) are both done and merged.
+Sprint 8 (Admin & Engagement UX Follow-ups) is in progress — #77 built, #74–#76/#78–#81
+remaining, see `EPICS_AND_SPRINTS.md` for the planned build order. The Engagement,
 Retention & Social epic is not yet groomed into issues.
 
 ## Testing policy (TDD)
@@ -604,7 +629,7 @@ Manual (no Docker): `dotnet run` in `beer-app/backend/`, and
 
 ## Likely next steps
 
-**Sprints 1 through 6 are all done.** Sprint 1
+**Sprints 1 through 7 are all done; Sprint 8 is in progress.** Sprint 1
 ([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), 2026-07-14), Sprint 2
 (PRs #19–#25, milestone closed 2026-07-15), Sprint 3: Customer Phone Experience
 (PRs #33–#39, issues #26–#32, closed 2026-07-21; suites at close: backend 131/131,
@@ -614,11 +639,18 @@ frontend 99/99), **Sprint 4: Auth II** (milestone
 frontend 117/117), **Sprint 5: Admin Experience** (milestone
 [#5](https://github.com/pmconnolly80/FinalCapstone/milestone/5), issues #53–#59, groomed
 2026-07-23, closed 2026-07-23 — PRs #60–#66; suites at close: backend 236/236,
-frontend 149/149), and **Sprint 6: Mobile UI Polish** (milestone
+frontend 149/149), **Sprint 6: Mobile UI Polish** (milestone
 [#6](https://github.com/pmconnolly80/FinalCapstone/milestone/6), issues #67–71 + #82,
 groomed 2026-07-23, closed 2026-07-23 — [PR #84](https://github.com/pmconnolly80/FinalCapstone/pull/84);
-suites at close: backend 239/239, frontend 158/158). See `EPICS_AND_SPRINTS.md` and
-`SESSION_LOG.md` for the full history.
+suites at close: backend 239/239, frontend 158/158), and **Sprint 7: Beer Discovery &
+Recommendations** (milestone [#7](https://github.com/pmconnolly80/FinalCapstone/milestone/7),
+issues #72–#73 + #83, groomed 2026-07-23, closed 2026-07-23 —
+[PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85); suites at close:
+backend 271/271, frontend 175/175). **Sprint 8: Admin & Engagement UX Follow-ups**
+(milestone [#8](https://github.com/pmconnolly80/FinalCapstone/milestone/8), issues
+#74–#81, groomed 2026-07-23) is in progress: #77 built (backend 280/280, frontend
+177/177), #74–#76/#78–#81 remaining. See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md`
+for the full history.
 
 Sprint 5 built: a generalized `AdminAudit` trail + role assignment (#53) → user
 management/account actions API (#54) and screen (#55); audited beer edit/delete +
@@ -638,20 +670,27 @@ Playwright-driven manual verification done before merging.
 
 **Sprint 7: Beer Discovery & Recommendations** (milestone
 [#7](https://github.com/pmconnolly80/FinalCapstone/milestone/7), issues #72–#73 + #83,
-groomed 2026-07-23, built 2026-07-23 —
-[PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85), open pending review/merge)
-built: the
+groomed 2026-07-23, closed 2026-07-23 —
+[PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85), merged) built: the
 customer-facing "look up any beer" external search (rate-limited, signed-in only,
 logged), customer beer recommendations + admin triage, and the admin search-demand
 report. See the bullet above for full detail, including live-stack verification.
 
-Next up: **Sprint 8** (Admin & Engagement UX Follow-ups, issues #74–#81) is already
-groomed and ready to build. After that, the **Engagement, Retention & Social** epic
-(milestone badges, push notifications + owner composer, My Beers, social feed,
-journal, owner analytics) is the next candidate for grooming into a sprint — per this
-repo's convention (`EPICS_AND_SPRINTS.md`), only the next epic gets fully broken into
-GitHub issues once it's actually up, and that grooming session hasn't happened yet.
-Deployment & Hardening follows after that.
+**Sprint 8: Admin & Engagement UX Follow-ups** (milestone
+[#8](https://github.com/pmconnolly80/FinalCapstone/milestone/8), issues #74–#81,
+groomed 2026-07-23, in progress — one PR per issue rather than one combined PR):
+#77 (admin-initiated bartender invite) is built (branch `sprint-8-bartender-invite`,
+PR not yet opened); #74–#76/#78–#81 remain. See `EPICS_AND_SPRINTS.md`'s Sprint 8
+section for the planned build order (two file-overlap chains through
+`AdminUsers.jsx` and `ConfirmPinPad.jsx`/`BeerDetail.jsx`) and the bullet above for
+#77's detail.
+
+After Sprint 8, the **Engagement, Retention & Social** epic (milestone badges, push
+notifications + owner composer, My Beers, social feed, journal, owner analytics) is
+the next candidate for grooming into a sprint — per this repo's convention
+(`EPICS_AND_SPRINTS.md`), only the next epic gets fully broken into GitHub issues once
+it's actually up, and that grooming session hasn't happened yet. Deployment &
+Hardening follows after that.
 
 Local tooling note: only the .NET 10 SDK is on PATH but the projects target net8.0 — run
 backend tests with the SDK at `~/.dotnet8` (see `.claude/skills/verify/SKILL.md` for the
