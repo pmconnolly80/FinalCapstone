@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { confirmBeer } from '../lib/api';
+import { confirmBeer, setBeerAvailabilityViaPin } from '../lib/api';
 
 // After this many consecutive failures, a wrong-PIN retry loop and a lockout look
 // identical to the bartender — nudge toward asking an admin without revealing which.
@@ -14,6 +14,12 @@ const MAX_PIN_LENGTH = 8;
 // The one-device confirmation moment: this fills the CUSTOMER's screen, and the customer
 // hands the phone across the bar. The bartender verifies the beer name, keys their
 // personal PIN, and hands it back showing the updated count.
+//
+// #80: the same PIN also lets the bartender flip this beer's stock status — no separate
+// admin session, since the bartender has no device of their own at the bar. Reuses the
+// PIN already typed into the field above rather than asking for it twice. A deliberate
+// second tap (the "confirming" step below) guards against an accidental tap mid-rush,
+// since this sits right next to the routine, fast "Confirm" action.
 function ConfirmPinPad({ beer, onClose }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
@@ -21,6 +27,13 @@ function ConfirmPinPad({ beer, onClose }) {
   const [failureCount, setFailureCount] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
+
+  const [availabilityStep, setAvailabilityStep] = useState('closed'); // closed | confirming | success
+  const [availabilityError, setAvailabilityError] = useState('');
+  const [availabilitySubmitting, setAvailabilitySubmitting] = useState(false);
+
+  const targetAvailability = beer.availability === 'OutOfStock' ? 'Available' : 'OutOfStock';
+  const targetLabel = targetAvailability === 'OutOfStock' ? 'out of stock' : 'available';
 
   const handlePinChange = (event) => {
     setPin(event.target.value.replace(/\D/g, '').slice(0, MAX_PIN_LENGTH));
@@ -45,6 +58,32 @@ function ConfirmPinPad({ beer, onClose }) {
       if (!err.isNetworkError) setFailureCount((count) => count + 1);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const startAvailabilityChange = () => {
+    setAvailabilityError('');
+    setAvailabilityStep('confirming');
+  };
+
+  const cancelAvailabilityChange = () => {
+    setAvailabilityError('');
+    setAvailabilityStep('closed');
+  };
+
+  const submitAvailabilityChange = async () => {
+    if (pin.length < MIN_PIN_LENGTH || pin.length > MAX_PIN_LENGTH) {
+      setAvailabilityError("Enter the bartender's PIN above first.");
+      return;
+    }
+    setAvailabilitySubmitting(true);
+    try {
+      await setBeerAvailabilityViaPin(beer.id, pin, targetAvailability);
+      setAvailabilityStep('success');
+    } catch (err) {
+      setAvailabilityError(err.isNetworkError ? 'No signal — try again once you have one.' : err.message);
+    } finally {
+      setAvailabilitySubmitting(false);
     }
   };
 
@@ -103,6 +142,39 @@ function ConfirmPinPad({ beer, onClose }) {
               ⚠️ Still not working after several tries? If this keeps happening, ask an admin.
             </p>
           )}
+
+          <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #374151', width: '100%', maxWidth: 280 }}>
+            {availabilityStep === 'closed' && (
+              <button
+                type="button"
+                onClick={startAvailabilityChange}
+                style={{ background: 'none', border: 'none', color: '#9ca3af', textDecoration: 'underline', fontSize: 14 }}
+              >
+                Mark this beer as {targetLabel}
+              </button>
+            )}
+            {availabilityStep === 'confirming' && (
+              <>
+                <p style={{ margin: '0 0 12px', fontSize: 14 }}>
+                  Mark <strong>{beer.name}</strong> as {targetLabel}? This is what customers see immediately.
+                </p>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                  <button type="button" onClick={submitAvailabilityChange} disabled={availabilitySubmitting} style={{ padding: '8px 16px' }}>
+                    {availabilitySubmitting ? 'Marking…' : `Yes, mark ${targetLabel}`}
+                  </button>
+                  <button type="button" onClick={cancelAvailabilityChange} style={{ padding: '8px 16px' }}>
+                    Cancel
+                  </button>
+                </div>
+                {availabilityError && (
+                  <p style={{ color: '#fca5a5', marginTop: 8, fontSize: 14 }}>{availabilityError}</p>
+                )}
+              </>
+            )}
+            {availabilityStep === 'success' && (
+              <p style={{ fontSize: 14 }}>✅ Marked {targetLabel}.</p>
+            )}
+          </div>
         </>
       )}
     </div>

@@ -104,6 +104,32 @@ export async function confirmBeer(beerId, pin) {
   return response.json();
 }
 
+export async function setBeerAvailabilityViaPin(beerId, pin, availability) {
+  const token = localStorage.getItem('beer-token');
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}/api/confirmations/availability`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ beerId, pin, availability }),
+    });
+  } catch {
+    // Same distinction as confirmBeer — a dead connection at the bar gets its own
+    // message rather than looking like a wrong PIN.
+    const networkError = new Error('No network connection');
+    networkError.isNetworkError = true;
+    throw networkError;
+  }
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || 'Failed to update availability');
+  }
+}
+
 export async function fetchMyProgress() {
   const token = localStorage.getItem('beer-token');
   const response = await fetch(`${API_BASE_URL}/api/me/progress`, {

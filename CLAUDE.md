@@ -600,14 +600,14 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     183/183 (+6 new across the three pages' test files). Clean `npm run build`.
     Verified live: rebuilt the `web` container, confirmed all five new microcopy
     strings are served by the dev server across the three pages.
-  - #79 (API + UI: variable-length staff PINs, branch
-    `sprint-8-variable-pin-length`, not yet a PR): PINs were hardcoded to exactly 6
-    digits in 5 places across 2 backend controllers and 3 frontend files; relaxed to
-    a configurable 6-8 digit range so an admin can issue a bartender a longer,
-    memorable format (e.g. an 8-digit birthday, `MMDDYYYY`) instead of a random
-    6-digit one. New `StaffPinsController.MinPinLength`/`MaxPinLength` constants
-    (same cross-controller reuse pattern as `MeController` referencing
-    `ConfirmationsController.MugGoal`) replace the hardcoded checks in
+  - #79 (API + UI: variable-length staff PINs, merged
+    [PR #90](https://github.com/pmconnolly80/FinalCapstone/pull/90)): PINs were
+    hardcoded to exactly 6 digits in 5 places across 2 backend controllers and 3
+    frontend files; relaxed to a configurable 6-8 digit range so an admin can issue a
+    bartender a longer, memorable format (e.g. an 8-digit birthday, `MMDDYYYY`)
+    instead of a random 6-digit one. New `StaffPinsController.MinPinLength`/
+    `MaxPinLength` constants (same cross-controller reuse pattern as `MeController`
+    referencing `ConfirmationsController.MugGoal`) replace the hardcoded checks in
     `StaffPinsController.SetPinAsync` and `ConfirmationsController.PostConfirmation`.
     Frontend: `ConfirmPinPad.jsx` (cap raised from 6 to 8, error message now
     length-agnostic), `MyPin.jsx` and `AdminUsers.jsx`'s Set PIN step (regex/
@@ -623,6 +623,39 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     bartender's 6-digit PIN still works unchanged (201), confirmed an unissued
     7-digit PIN (in-range but wrong) is rejected as "Invalid PIN" (401, not a
     validation error), and a too-short 5-digit PIN is rejected at validation (400).
+  - #80 (API + UI: mark a beer out-of-stock from the confirmation PIN pad, branch
+    `sprint-8-pin-availability-flip`, not yet a PR): a bartender has no device or
+    login session of their own at the bar, so this piggybacks on the same PIN-typed-
+    into-the-customer's-phone trust moment `POST /api/confirmations` already uses,
+    per `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1's decision. New
+    `POST /api/confirmations/availability` (`PinAvailabilityRequest{BeerId,Pin,
+    Availability}`) on `ConfirmationsController` — deliberately narrower than
+    `BeersController.UpdateAvailability` (Admin-only, all 4 states): only
+    `OutOfStock`/`Available` are accepted here, the two a bartender plausibly needs
+    mid-shift, and every change is audited attributed to the *resolved bartender's*
+    id, not "Admin". Extracted the PIN-resolution/lockout/customer-brute-force-window
+    logic that `PostConfirmation` already had into a shared
+    `AuthorizeBartenderPinAsync` helper so both endpoints share one
+    `FailedConfirmationAttempt` counter per customer — spreading guesses across the
+    two endpoints doesn't grant a bigger guessing budget than using just one would.
+    `ConfirmPinPad.jsx` gained a "Mark this beer as out of stock"/"...as available"
+    link below the main confirm form (label flips based on the beer's current
+    `availability`) that reuses whatever PIN is already typed in the field above
+    rather than asking twice; clicking it requires a deliberate second tap ("Yes,
+    mark out of stock") before submitting, and shows a distinct "✅ Marked out of
+    stock." success message — this sits right next to the routine, fast Confirm
+    action, so an accidental single tap can never silently change anything. New
+    `setBeerAvailabilityViaPin()` in `api.js`, same network-error distinction as
+    `confirmBeer`. Suites: backend 299/299 (+12 new — unit tests for both directions,
+    the no-op case, disallowed target states, malformed/wrong PIN, unknown beer; HTTP-
+    level integration tests for the happy path both directions with audit
+    attribution, and wrong-PIN rejection matching confirmation's rejection
+    byte-for-byte), frontend 193/193 (+6 new). Clean `npm run build`. Verified live:
+    marked a real beer out of stock and back to available via the dev bartender's
+    PIN (both 204), confirmed the audit rows are attributed to `bartender@example.com`
+    not an admin account (via `psql`), confirmed `OnTap` is rejected as a disallowed
+    target (400), and confirmed a wrong PIN gets the identical `{"message":"Invalid
+    PIN."}` 401 body as a bad confirmation attempt.
 
 **Bug fix (2026-07-23, not a Sprint 8 issue — a same-day follow-up to #76's finding,
 merged [PR #89](https://github.com/pmconnolly80/FinalCapstone/pull/89)):**
@@ -645,8 +678,8 @@ confirmations still succeeds with 204.
 
 **Not built** — the Admin Experience epic is done as of Sprint 5; Sprint 6 (Mobile UI
 Polish) and Sprint 7 (Beer Discovery & Recommendations) are both done and merged.
-Sprint 8 (Admin & Engagement UX Follow-ups) is in progress — #77/#75/#76 built and
-merged, #79 built pending PR, #74/#78/#80/#81 remaining, see `EPICS_AND_SPRINTS.md`
+Sprint 8 (Admin & Engagement UX Follow-ups) is in progress — #77/#75/#76/#79 built
+and merged, #80 built pending PR, #74/#78/#81 remaining, see `EPICS_AND_SPRINTS.md`
 for the planned build order. The Engagement, Retention & Social epic is not yet
 groomed into issues.
 
@@ -718,11 +751,11 @@ issues #72–#73 + #83, groomed 2026-07-23, closed 2026-07-23 —
 [PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85); suites at close:
 backend 271/271, frontend 175/175). **Sprint 8: Admin & Engagement UX Follow-ups**
 (milestone [#8](https://github.com/pmconnolly80/FinalCapstone/milestone/8), issues
-#74–#81, groomed 2026-07-23) is in progress: #77/#75/#76 built and merged (backend
-282/282, frontend 184/184 — includes the same-day `DeleteBeer` FK-restrict bug fix
-that followed from #76's finding), #79 built pending PR (backend 287/287, frontend
-187/187), #74/#78/#80/#81 remaining. See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md`
-for the full history.
+#74–#81, groomed 2026-07-23) is in progress: #77/#75/#76/#79 built and merged
+(backend 287/287, frontend 187/187 — includes the same-day `DeleteBeer` FK-restrict
+bug fix that followed from #76's finding), #80 built pending PR (backend 299/299,
+frontend 193/193), #74/#78/#81 remaining. See `EPICS_AND_SPRINTS.md` and
+`SESSION_LOG.md` for the full history.
 
 Sprint 5 built: a generalized `AdminAudit` trail + role assignment (#53) → user
 management/account actions API (#54) and screen (#55); audited beer edit/delete +
@@ -754,14 +787,16 @@ groomed 2026-07-23, in progress — one PR per issue rather than one combined PR
 #77 (admin-initiated bartender invite,
 [PR #86](https://github.com/pmconnolly80/FinalCapstone/pull/86)), #75 (staff-only
 filter/search on User Management,
-[PR #87](https://github.com/pmconnolly80/FinalCapstone/pull/87)), and #76 (inline
-consequence microcopy, [PR #88](https://github.com/pmconnolly80/FinalCapstone/pull/88))
-are all built and merged; #79 (variable-length staff PINs) is built (branch
-`sprint-8-variable-pin-length`, PR not yet opened); #74/#78/#80/#81 remain. See
-`EPICS_AND_SPRINTS.md`'s Sprint 8 section for the planned build order (two
+[PR #87](https://github.com/pmconnolly80/FinalCapstone/pull/87)), #76 (inline
+consequence microcopy, [PR #88](https://github.com/pmconnolly80/FinalCapstone/pull/88)),
+and #79 (variable-length staff PINs,
+[PR #90](https://github.com/pmconnolly80/FinalCapstone/pull/90)) are all built and
+merged; #80 (mark a beer out-of-stock from the confirmation PIN pad) is built
+(branch `sprint-8-pin-availability-flip`, PR not yet opened); #74/#78/#81 remain.
+See `EPICS_AND_SPRINTS.md`'s Sprint 8 section for the planned build order (two
 file-overlap chains through `AdminUsers.jsx` and `ConfirmPinPad.jsx`/
-`BeerDetail.jsx`) and the bullets above for #77/#75/#76/#79's detail. #76 also led to
-a same-day, out-of-milestone bug fix
+`BeerDetail.jsx`) and the bullets above for #77/#75/#76/#79/#80's detail. #76 also
+led to a same-day, out-of-milestone bug fix
 ([PR #89](https://github.com/pmconnolly80/FinalCapstone/pull/89)): the `DeleteBeer`
 FK-restrict gotcha it flagged (an unhandled 500 deleting a confirmed beer) is now
 fixed — see the bullet above.

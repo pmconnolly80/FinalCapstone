@@ -44,10 +44,7 @@ public class ConfirmationsController : ControllerBase
             return Unauthorized();
         }
 
-        if (request.Pin == null
-            || request.Pin.Length < StaffPinsController.MinPinLength
-            || request.Pin.Length > StaffPinsController.MaxPinLength
-            || !request.Pin.All(char.IsAsciiDigit))
+        if (!IsValidPin(request.Pin))
         {
             return BadRequest(new
             {
@@ -69,36 +66,11 @@ public class ConfirmationsController : ControllerBase
         }
 
         var now = DateTime.UtcNow;
-
-        // Per-customer axis (#12): a rolling window of recent failures blocks the account
-        // itself, so spreading guesses across different staff PINs doesn't help. Checked
-        // before PIN verification so a blocked customer learns nothing — not even whether
-        // their guess was right.
-        var windowStart = now.AddMinutes(-CustomerWindowMinutes);
-        var recentFailures = await _context.FailedConfirmationAttempts
-            .CountAsync(a => a.CustomerId == customerId && a.AttemptedAt >= windowStart);
-        if (recentFailures >= MaxCustomerFailures)
+        var (rejection, bartenderId) = await AuthorizeBartenderPinAsync(customerId, request.Pin, now);
+        if (rejection != null)
         {
-            return await RejectAsync(customerId, FailedConfirmationAttempt.ReasonCustomerBlocked, now);
+            return rejection;
         }
-
-        var (bartenderId, matchedLockedPin) = await ResolveBartenderFromPinAsync(request.Pin, now);
-        if (matchedLockedPin)
-        {
-            // The correct PIN while its lock is active is rejected like any wrong guess.
-            return await RejectAsync(customerId, FailedConfirmationAttempt.ReasonPinLocked, now);
-        }
-        if (bartenderId == null)
-        {
-            return await RejectAsync(customerId, FailedConfirmationAttempt.ReasonWrongPin, now);
-        }
-
-        // Success clears the customer's failure window (both axes are about consecutive
-        // failures, not lifetime totals).
-        var customerFailures = await _context.FailedConfirmationAttempts
-            .Where(a => a.CustomerId == customerId)
-            .ToListAsync();
-        _context.FailedConfirmationAttempts.RemoveRange(customerFailures);
 
         var tavern = await _context.Taverns.OrderBy(t => t.Id).FirstOrDefaultAsync();
         if (tavern == null)
@@ -111,7 +83,7 @@ public class ConfirmationsController : ControllerBase
             CustomerId = customerId,
             BeerId = beer.Id,
             TavernId = tavern.Id,
-            ConfirmedByUserId = bartenderId,
+            ConfirmedByUserId = bartenderId!,
         };
         _context.BeerConfirmations.Add(confirmation);
         await _context.SaveChangesAsync();
@@ -136,6 +108,115 @@ public class ConfirmationsController : ControllerBase
             confirmedCount,
             MugGoal,
             award != null));
+    }
+
+    // #80: a bartender has no device or login session of their own at the bar (the
+    // one-device rule), but they're already typing their PIN into the customer's phone
+    // to confirm a beer — this piggybacks the same trust moment onto flipping a beer's
+    // availability, instead of requiring a separate Admin-gated session. Deliberately
+    // narrower than BeersController.UpdateAvailability (Admin-only, any of the 4 states):
+    // this path only allows OutOfStock/Available, the two a bartender would plausibly
+    // need mid-shift, and is audited with the resolved bartender's id, not "Admin".
+    [Authorize]
+    [HttpPost("availability")]
+    public async Task<IActionResult> SetBeerAvailabilityViaPin(PinAvailabilityRequest request)
+    {
+        var customerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (customerId == null)
+        {
+            return Unauthorized();
+        }
+
+        if (!IsValidPin(request.Pin))
+        {
+            return BadRequest(new
+            {
+                message = $"A PIN of {StaffPinsController.MinPinLength}-{StaffPinsController.MaxPinLength} digits is required."
+            });
+        }
+
+        if (request.Availability != BeerAvailability.OutOfStock && request.Availability != BeerAvailability.Available)
+        {
+            return BadRequest(new { message = "Availability must be OutOfStock or Available." });
+        }
+
+        var beer = await _context.Beers.FindAsync(request.BeerId);
+        if (beer == null)
+        {
+            return NotFound(new { message = "Beer not found." });
+        }
+
+        if (beer.Availability == request.Availability)
+        {
+            return NoContent();
+        }
+
+        var now = DateTime.UtcNow;
+        var (rejection, bartenderId) = await AuthorizeBartenderPinAsync(customerId, request.Pin, now);
+        if (rejection != null)
+        {
+            return rejection;
+        }
+
+        var previous = beer.Availability;
+        beer.Availability = request.Availability;
+
+        _context.AdminAudits.Add(new AdminAudit
+        {
+            AdminUserId = bartenderId!,
+            EntityType = "Beer",
+            EntityId = beer.Id.ToString(),
+            Action = "AvailabilityChange",
+            BeforeSnapshot = previous.ToString(),
+            AfterSnapshot = request.Availability.ToString(),
+            Reason = string.Empty,
+        });
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    private static bool IsValidPin(string? pin) =>
+        pin != null
+        && pin.Length >= StaffPinsController.MinPinLength
+        && pin.Length <= StaffPinsController.MaxPinLength
+        && pin.All(char.IsAsciiDigit);
+
+    // Shared by both PIN-gated actions (confirming a beer, flipping its availability):
+    // the per-customer brute-force budget (#12) is one shared counter regardless of
+    // which action a guess was attempted against, so spreading guesses across the two
+    // endpoints doesn't grant a bigger guessing budget than using just one would.
+    private async Task<(IActionResult? Rejection, string? BartenderId)> AuthorizeBartenderPinAsync(string customerId, string pin, DateTime now)
+    {
+        // Checked before PIN verification so a blocked customer learns nothing — not
+        // even whether their guess was right.
+        var windowStart = now.AddMinutes(-CustomerWindowMinutes);
+        var recentFailures = await _context.FailedConfirmationAttempts
+            .CountAsync(a => a.CustomerId == customerId && a.AttemptedAt >= windowStart);
+        if (recentFailures >= MaxCustomerFailures)
+        {
+            return (await RejectAsync(customerId, FailedConfirmationAttempt.ReasonCustomerBlocked, now), null);
+        }
+
+        var (bartenderId, matchedLockedPin) = await ResolveBartenderFromPinAsync(pin, now);
+        if (matchedLockedPin)
+        {
+            // The correct PIN while its lock is active is rejected like any wrong guess.
+            return (await RejectAsync(customerId, FailedConfirmationAttempt.ReasonPinLocked, now), null);
+        }
+        if (bartenderId == null)
+        {
+            return (await RejectAsync(customerId, FailedConfirmationAttempt.ReasonWrongPin, now), null);
+        }
+
+        // Success clears the customer's failure window (both axes are about consecutive
+        // failures, not lifetime totals).
+        var customerFailures = await _context.FailedConfirmationAttempts
+            .Where(a => a.CustomerId == customerId)
+            .ToListAsync();
+        _context.FailedConfirmationAttempts.RemoveRange(customerFailures);
+
+        return (null, bartenderId);
     }
 
     // Persists any staged StaffPin counter changes alongside the failure record, then
@@ -210,3 +291,4 @@ public class ConfirmationsController : ControllerBase
 
 public record ConfirmationRequest(int BeerId, string Pin);
 public record ConfirmationResponse(int BeerId, string BeerName, DateTime ConfirmedAt, int ConfirmedCount, int Goal, bool MugEarned);
+public record PinAvailabilityRequest(int BeerId, string Pin, BeerAvailability Availability);
