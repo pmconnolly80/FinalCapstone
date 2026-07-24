@@ -2,11 +2,11 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ConfirmPinPad from './ConfirmPinPad';
-import { confirmBeer } from '../lib/api';
+import { confirmBeer, setBeerAvailabilityViaPin } from '../lib/api';
 
 vi.mock('../lib/api');
 
-const beer = { id: 7, name: 'Duvel', brewery: 'Duvel Moortgat' };
+const beer = { id: 7, name: 'Duvel', brewery: 'Duvel Moortgat', availability: 'OnTap' };
 
 describe('ConfirmPinPad', () => {
   afterEach(() => {
@@ -158,5 +158,90 @@ describe('ConfirmPinPad', () => {
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
     expect(onClose).toHaveBeenCalled();
+  });
+
+  describe('#80: mark availability via the same PIN', () => {
+    it('offers "mark out of stock" for an in-stock beer, and requires a deliberate second tap', async () => {
+      const user = userEvent.setup();
+      setBeerAvailabilityViaPin.mockResolvedValue(undefined);
+      render(<ConfirmPinPad beer={beer} onClose={() => {}} />);
+
+      await user.type(screen.getByLabelText('Bartender PIN'), '123456');
+      await user.click(screen.getByRole('button', { name: 'Mark this beer as out of stock' }));
+
+      expect(setBeerAvailabilityViaPin).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: 'Yes, mark out of stock' })).toBeInTheDocument();
+      expect(screen.getByText(/what customers see immediately/i)).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Yes, mark out of stock' }));
+
+      expect(setBeerAvailabilityViaPin).toHaveBeenCalledWith(7, '123456', 'OutOfStock');
+      expect(await screen.findByText(/marked out of stock/i)).toBeInTheDocument();
+    });
+
+    it('offers "mark available" for an out-of-stock beer', async () => {
+      const user = userEvent.setup();
+      setBeerAvailabilityViaPin.mockResolvedValue(undefined);
+      const outOfStockBeer = { ...beer, availability: 'OutOfStock' };
+      render(<ConfirmPinPad beer={outOfStockBeer} onClose={() => {}} />);
+
+      await user.type(screen.getByLabelText('Bartender PIN'), '123456');
+      await user.click(screen.getByRole('button', { name: 'Mark this beer as available' }));
+      await user.click(screen.getByRole('button', { name: 'Yes, mark available' }));
+
+      expect(setBeerAvailabilityViaPin).toHaveBeenCalledWith(7, '123456', 'Available');
+      expect(await screen.findByText(/marked available/i)).toBeInTheDocument();
+    });
+
+    it('cancels back to the closed state without submitting', async () => {
+      const user = userEvent.setup();
+      render(<ConfirmPinPad beer={beer} onClose={() => {}} />);
+
+      await user.click(screen.getByRole('button', { name: 'Mark this beer as out of stock' }));
+      // Two Cancel buttons exist while the availability panel is open: the main form's
+      // and this panel's — the panel's is the one rendered after opening it.
+      await user.click(screen.getAllByRole('button', { name: 'Cancel' })[1]);
+
+      expect(setBeerAvailabilityViaPin).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: 'Mark this beer as out of stock' })).toBeInTheDocument();
+    });
+
+    it('requires a PIN to already be typed before submitting the availability change', async () => {
+      const user = userEvent.setup();
+      render(<ConfirmPinPad beer={beer} onClose={() => {}} />);
+
+      await user.click(screen.getByRole('button', { name: 'Mark this beer as out of stock' }));
+      await user.click(screen.getByRole('button', { name: 'Yes, mark out of stock' }));
+
+      expect(setBeerAvailabilityViaPin).not.toHaveBeenCalled();
+      expect(await screen.findByText(/enter the bartender's pin above first/i)).toBeInTheDocument();
+    });
+
+    it('shows the API error and stays on the confirm step when the PIN is wrong', async () => {
+      const user = userEvent.setup();
+      setBeerAvailabilityViaPin.mockRejectedValue(new Error('Invalid PIN.'));
+      render(<ConfirmPinPad beer={beer} onClose={() => {}} />);
+
+      await user.type(screen.getByLabelText('Bartender PIN'), '000000');
+      await user.click(screen.getByRole('button', { name: 'Mark this beer as out of stock' }));
+      await user.click(screen.getByRole('button', { name: 'Yes, mark out of stock' }));
+
+      expect(await screen.findByText('Invalid PIN.')).toBeInTheDocument();
+      expect(screen.queryByText(/marked out of stock/i)).not.toBeInTheDocument();
+    });
+
+    it('shows a distinct offline message on a network failure', async () => {
+      const user = userEvent.setup();
+      const networkError = new Error('No network connection');
+      networkError.isNetworkError = true;
+      setBeerAvailabilityViaPin.mockRejectedValue(networkError);
+      render(<ConfirmPinPad beer={beer} onClose={() => {}} />);
+
+      await user.type(screen.getByLabelText('Bartender PIN'), '123456');
+      await user.click(screen.getByRole('button', { name: 'Mark this beer as out of stock' }));
+      await user.click(screen.getByRole('button', { name: 'Yes, mark out of stock' }));
+
+      expect(await screen.findByText(/no signal — try again/i)).toBeInTheDocument();
+    });
   });
 });

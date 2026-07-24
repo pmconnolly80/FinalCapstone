@@ -1655,8 +1655,67 @@ required."). Also confirmed all the new frontend copy ("PINs must be 6-8 digits"
 "PIN (6-8 digits)", "Enter the bartender's PIN") is served live by the Vite dev
 server across the three page/component source files.
 
-- Branch: `sprint-8-variable-pin-length`, not yet opened as a PR.
+- Branch: `sprint-8-variable-pin-length` —
+  [PR #90](https://github.com/pmconnolly80/FinalCapstone/pull/90), CI green, merged to
+  `master`.
 
-**Resume here:** open the PR for #79, then continue the Sprint 8 build order with
-#80 (mark a beer out-of-stock from the confirmation PIN pad), which depends on #79's
-relaxed PIN validation and reuses `ConfirmPinPad.jsx`.
+## 2026-07-24 — Sprint 8 #80: mark a beer out-of-stock from the confirmation PIN pad
+
+**Epic:** `epic:admin`
+
+Built #80 next in the build order (depends on #79's relaxed PIN validation, reuses
+`ConfirmPinPad.jsx`), diving straight into implementation this time rather than a
+separate planning pass first. Per `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1's decision:
+a bartender has no device or login session of their own at the bar (the one-device
+rule), so this piggybacks on the exact same PIN-typed-into-the-customer's-phone
+trust moment `POST /api/confirmations` already uses, instead of requiring a separate
+Admin-gated session.
+
+- New `POST /api/confirmations/availability` on `ConfirmationsController`
+  (`PinAvailabilityRequest{BeerId,Pin,Availability}`) — deliberately narrower than
+  `BeersController.UpdateAvailability` (Admin-only, all 4 states): only
+  `OutOfStock`/`Available` are accepted here, the two a bartender plausibly needs
+  mid-shift; `OnTap`/`Retired` attempts 400. Every change is audited attributed to
+  the *resolved bartender's* id, not "Admin" — same `AdminAudit` table/shape #56
+  already established, just a different attribution source.
+- Refactored `PostConfirmation`'s inline PIN-resolution/lockout/customer-brute-force-
+  window logic into a shared `AuthorizeBartenderPinAsync` helper so the new endpoint
+  reuses it verbatim, rather than duplicating it. Both endpoints now share one
+  `FailedConfirmationAttempt` counter per customer — spreading guesses across
+  confirming a beer and flipping availability doesn't grant a bigger PIN-guessing
+  budget than using either endpoint alone would. Also extracted the PIN
+  format-validation check (`request.Pin.Length` etc.) into a small `IsValidPin`
+  static helper for the same reason, since both endpoints needed the identical check.
+- `ConfirmPinPad.jsx` gained a "Mark this beer as out of stock" / "...as available"
+  link below the main confirm form — the label flips based on the beer's current
+  `availability` prop, so it always proposes the sensible direction. It reuses
+  whatever PIN is already typed into the field above (a "closely-related follow-up
+  call using the same PIN," per the issue's acceptance criteria) rather than asking
+  for it a second time. Clicking it requires a deliberate second tap ("Yes, mark out
+  of stock") before anything submits, and shows a distinct "✅ Marked out of stock."
+  success message — this sits right next to the routine, fast Confirm action, so a
+  single accidental tap mid-rush can never silently change anything. New
+  `setBeerAvailabilityViaPin()` in `api.js`, same network-error distinction
+  `confirmBeer` already has.
+
+Suites: backend 299/299 (+12 new — unit tests for both directions, the no-op case,
+both disallowed target states, malformed/wrong PIN, and unknown beer; two HTTP-level
+integration tests: the happy path both directions with audit-attribution assertions,
+and wrong-PIN rejection byte-for-byte matching a bad confirmation's rejection body).
+Frontend 193/193 (+6 new). Clean `npm run build`.
+
+Verified live against the Docker stack: marked a real beer out of stock via the dev
+bartender's PIN (204), flipped it back to available (204), confirmed both audit rows
+via `psql` are attributed to `bartender@example.com`'s user id rather than an admin
+account, confirmed requesting the disallowed `OnTap` target 400s
+("Availability must be OutOfStock or Available."), and confirmed a wrong PIN gets
+the byte-identical `{"message":"Invalid PIN."}` 401 body a bad confirmation attempt
+gets. Also confirmed the new "Mark this beer as..."/"Yes, mark..." UI text is served
+live by the Vite dev server.
+
+- Branch: `sprint-8-pin-availability-flip`, not yet opened as a PR.
+
+**Resume here:** open the PR for #80, then continue the Sprint 8 build order with
+#74 (rating prompt + minimal milestone moment), which shares `ConfirmPinPad.jsx` and
+`BeerDetail.jsx` with #80/#81 — or #78 (Admin Dashboard reframe), which is fully
+independent and could go in either order.

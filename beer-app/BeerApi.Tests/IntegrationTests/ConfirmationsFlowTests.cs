@@ -146,6 +146,65 @@ public class ConfirmationsFlowTests : IDisposable
         Assert.Equal(wrongBody, await locked.Content.ReadAsStringAsync());
     }
 
+    // #80: a bartender flips a beer's availability using the same PIN they'd type to
+    // confirm one — no separate Admin session or role gate. HTTP-level happy path in
+    // both directions, plus the wrong/locked PIN rejecting it the same generic way a
+    // bad confirmation PIN is rejected.
+    [Fact]
+    public async Task AvailabilityFlip_WithValidPin_TogglesBothDirections_AttributedToBartender()
+    {
+        var token = await RegisterCustomerAsync("availability-flip-customer@example.com");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var beers = (await _client.GetFromJsonAsync<BeerSearchResponse>("/api/beers"))!.Items;
+        var beer = beers![0];
+
+        var markOutOfStock = await _client.PostAsJsonAsync("/api/confirmations/availability",
+            new PinAvailabilityRequest(beer.Id, SeedData.DevBartenderPin, BeerAvailability.OutOfStock));
+        Assert.Equal(HttpStatusCode.NoContent, markOutOfStock.StatusCode);
+
+        var afterOutOfStock = await _client.GetFromJsonAsync<BeerDetailResponse>($"/api/beers/{beer.Id}");
+        Assert.Equal(BeerAvailability.OutOfStock, afterOutOfStock!.Availability);
+
+        var markAvailable = await _client.PostAsJsonAsync("/api/confirmations/availability",
+            new PinAvailabilityRequest(beer.Id, SeedData.DevBartenderPin, BeerAvailability.Available));
+        Assert.Equal(HttpStatusCode.NoContent, markAvailable.StatusCode);
+
+        var afterAvailable = await _client.GetFromJsonAsync<BeerDetailResponse>($"/api/beers/{beer.Id}");
+        Assert.Equal(BeerAvailability.Available, afterAvailable!.Availability);
+
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var bartender = await scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>()
+            .FindByEmailAsync(SeedData.DevBartenderEmail);
+        var audits = context.AdminAudits.Where(a => a.EntityId == beer.Id.ToString() && a.Action == "AvailabilityChange").ToList();
+        Assert.Equal(2, audits.Count);
+        Assert.All(audits, a => Assert.Equal(bartender!.Id, a.AdminUserId));
+    }
+
+    [Fact]
+    public async Task AvailabilityFlip_WithWrongPin_RejectedTheSameGenericWayAsConfirmation()
+    {
+        var token = await RegisterCustomerAsync("availability-flip-wrongpin@example.com");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var beers = (await _client.GetFromJsonAsync<BeerSearchResponse>("/api/beers"))!.Items;
+        var beer = beers![0];
+
+        var wrongAvailabilityAttempt = await _client.PostAsJsonAsync("/api/confirmations/availability",
+            new PinAvailabilityRequest(beer.Id, "000000", BeerAvailability.OutOfStock));
+        Assert.Equal(HttpStatusCode.Unauthorized, wrongAvailabilityAttempt.StatusCode);
+
+        var wrongConfirmationAttempt = await _client.PostAsJsonAsync("/api/confirmations",
+            new ConfirmationRequest(beer.Id, "000000"));
+        Assert.Equal(HttpStatusCode.Unauthorized, wrongConfirmationAttempt.StatusCode);
+
+        Assert.Equal(
+            await wrongConfirmationAttempt.Content.ReadAsStringAsync(),
+            await wrongAvailabilityAttempt.Content.ReadAsStringAsync());
+
+        var stillOriginal = await _client.GetFromJsonAsync<BeerDetailResponse>($"/api/beers/{beer.Id}");
+        Assert.NotEqual(BeerAvailability.OutOfStock, stillOriginal!.Availability);
+    }
+
     private async Task<string> RegisterCustomerAsync(string email)
     {
         var response = await _client.PostAsJsonAsync("/api/auth/register", new RegisterRequest(email, "Passw0rd!"));

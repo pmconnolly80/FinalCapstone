@@ -364,4 +364,132 @@ public class ConfirmationsControllerTests
         var created = Assert.IsType<ObjectResult>(ok);
         Assert.Equal(StatusCodes.Status201Created, created.StatusCode);
     }
+
+    [Fact]
+    public async Task SetBeerAvailabilityViaPin_ValidPin_MarksOutOfStock_AttributedToBartender()
+    {
+        using var context = CreateContext();
+        var beer = await SeedWorldAsync(context);
+        beer.Availability = BeerAvailability.OnTap;
+        await context.SaveChangesAsync();
+        var controller = CreateController(context);
+
+        var result = await controller.SetBeerAvailabilityViaPin(
+            new PinAvailabilityRequest(beer.Id, BartenderPin, BeerAvailability.OutOfStock));
+
+        Assert.IsType<NoContentResult>(result);
+        Assert.Equal(BeerAvailability.OutOfStock, (await context.Beers.FindAsync(beer.Id))!.Availability);
+
+        var audit = Assert.Single(context.AdminAudits);
+        Assert.Equal(BartenderId, audit.AdminUserId);
+        Assert.Equal("Beer", audit.EntityType);
+        Assert.Equal("AvailabilityChange", audit.Action);
+        Assert.Equal("OnTap", audit.BeforeSnapshot);
+        Assert.Equal("OutOfStock", audit.AfterSnapshot);
+    }
+
+    [Fact]
+    public async Task SetBeerAvailabilityViaPin_ValidPin_MarksAvailableAgain()
+    {
+        // #80's "both directions" requirement: flipping back to available works the
+        // same way as flipping to out-of-stock.
+        using var context = CreateContext();
+        var beer = await SeedWorldAsync(context);
+        beer.Availability = BeerAvailability.OutOfStock;
+        await context.SaveChangesAsync();
+        var controller = CreateController(context);
+
+        var result = await controller.SetBeerAvailabilityViaPin(
+            new PinAvailabilityRequest(beer.Id, BartenderPin, BeerAvailability.Available));
+
+        Assert.IsType<NoContentResult>(result);
+        Assert.Equal(BeerAvailability.Available, (await context.Beers.FindAsync(beer.Id))!.Availability);
+    }
+
+    [Theory]
+    [InlineData(BeerAvailability.OnTap)]
+    [InlineData(BeerAvailability.Retired)]
+    public async Task SetBeerAvailabilityViaPin_DisallowedTargetState_ReturnsBadRequest_AndChangesNothing(BeerAvailability target)
+    {
+        // Narrower than BeersController.UpdateAvailability (Admin-only, all 4 states) —
+        // this PIN-gated path only allows the two states a bartender plausibly needs.
+        using var context = CreateContext();
+        var beer = await SeedWorldAsync(context);
+        beer.Availability = BeerAvailability.Available;
+        await context.SaveChangesAsync();
+        var controller = CreateController(context);
+
+        var result = await controller.SetBeerAvailabilityViaPin(new PinAvailabilityRequest(beer.Id, BartenderPin, target));
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal(BeerAvailability.Available, (await context.Beers.FindAsync(beer.Id))!.Availability);
+        Assert.Empty(context.AdminAudits);
+    }
+
+    [Fact]
+    public async Task SetBeerAvailabilityViaPin_AlreadyAtTargetState_IsNoOp_WritesNoAudit()
+    {
+        using var context = CreateContext();
+        var beer = await SeedWorldAsync(context);
+        beer.Availability = BeerAvailability.OutOfStock;
+        await context.SaveChangesAsync();
+        var controller = CreateController(context);
+
+        var result = await controller.SetBeerAvailabilityViaPin(
+            new PinAvailabilityRequest(beer.Id, BartenderPin, BeerAvailability.OutOfStock));
+
+        Assert.IsType<NoContentResult>(result);
+        Assert.Empty(context.AdminAudits);
+    }
+
+    [Theory]
+    [InlineData("123")]
+    [InlineData("12ab56")]
+    [InlineData("123456789")]
+    public async Task SetBeerAvailabilityViaPin_MalformedPin_ReturnsBadRequest(string pin)
+    {
+        using var context = CreateContext();
+        var beer = await SeedWorldAsync(context);
+        var controller = CreateController(context);
+
+        var result = await controller.SetBeerAvailabilityViaPin(
+            new PinAvailabilityRequest(beer.Id, pin, BeerAvailability.OutOfStock));
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task SetBeerAvailabilityViaPin_WrongPin_ReturnsUnauthorized_SameGenericMessageAsConfirmation()
+    {
+        using var context = CreateContext();
+        var beer = await SeedWorldAsync(context);
+        var controller = CreateController(context);
+
+        var result = await controller.SetBeerAvailabilityViaPin(
+            new PinAvailabilityRequest(beer.Id, "000000", BeerAvailability.OutOfStock));
+
+        var unauthorized = Assert.IsType<UnauthorizedObjectResult>(result);
+        Assert.Equal(BeerAvailability.Available, (await context.Beers.FindAsync(beer.Id))!.Availability);
+        Assert.Empty(context.AdminAudits);
+
+        // Same rejection body a wrong confirmation PIN gets — indistinguishable to the client.
+        var confirmResult = await controller.PostConfirmation(new ConfirmationRequest(beer.Id, "000000"));
+        var confirmUnauthorized = Assert.IsType<UnauthorizedObjectResult>(confirmResult);
+        Assert.Equal(
+            System.Text.Json.JsonSerializer.Serialize(unauthorized.Value),
+            System.Text.Json.JsonSerializer.Serialize(confirmUnauthorized.Value));
+    }
+
+    [Fact]
+    public async Task SetBeerAvailabilityViaPin_UnknownBeer_ReturnsNotFound()
+    {
+        using var context = CreateContext();
+        await SeedWorldAsync(context);
+        var controller = CreateController(context);
+
+        var result = await controller.SetBeerAvailabilityViaPin(
+            new PinAvailabilityRequest(999, BartenderPin, BeerAvailability.OutOfStock));
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
 }
