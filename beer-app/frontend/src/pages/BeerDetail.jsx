@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { fetchBeer } from '../lib/api';
+import { fetchBeer, setMyRating } from '../lib/api';
 import ConfirmPinPad from '../components/ConfirmPinPad';
+
+const RATING_VALUES = [1, 2, 3, 4, 5];
 
 function BeerDetail() {
   const { id } = useParams();
   const [beer, setBeer] = useState(null);
   const [error, setError] = useState('');
   const [confirming, setConfirming] = useState(false);
+  const [ratingMessage, setRatingMessage] = useState('');
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const hasToken = Boolean(localStorage.getItem('beer-token'));
 
   useEffect(() => {
@@ -15,6 +19,21 @@ function BeerDetail() {
       .then((data) => setBeer(data))
       .catch(() => setError('Could not load this beer. Try again.'));
   }, [id]);
+
+  // #74: since My Beers doesn't exist yet, this is the only place a customer can see
+  // or change a rating they already gave from the PIN pad's success screen.
+  const handleRate = async (value) => {
+    setRatingSubmitting(true);
+    setRatingMessage('');
+    try {
+      await setMyRating(id, value);
+      setBeer((current) => ({ ...current, myRating: value }));
+    } catch (err) {
+      setRatingMessage(err.message);
+    } finally {
+      setRatingSubmitting(false);
+    }
+  };
 
   if (error) {
     return (
@@ -89,6 +108,30 @@ function BeerDetail() {
               Visit website
             </a>
           )}
+        </div>
+      )}
+
+      {beer.confirmed && (
+        <div className="mt-4 rounded-xl bg-gray-50 p-4">
+          <p className="m-0 text-sm font-semibold text-gray-500">Your rating</p>
+          <div className="mt-2 flex gap-2">
+            {RATING_VALUES.map((value) => (
+              <button
+                key={value}
+                type="button"
+                aria-label={`Rate ${value} star${value === 1 ? '' : 's'}`}
+                aria-pressed={beer.myRating === value}
+                disabled={ratingSubmitting}
+                onClick={() => handleRate(value)}
+                className={`rounded-lg border px-3 py-2 text-lg ${
+                  beer.myRating === value ? 'border-amber-600 bg-amber-100' : 'border-gray-300 bg-white'
+                }`}
+              >
+                ★{value}
+              </button>
+            ))}
+          </div>
+          {ratingMessage && <p className="mt-2 text-sm text-red-700">{ratingMessage}</p>}
         </div>
       )}
 

@@ -77,6 +77,7 @@ public class ConfirmationsControllerTests
         Assert.Equal(1, response.ConfirmedCount);
         Assert.Equal(ConfirmationsController.MugGoal, response.Goal);
         Assert.False(response.MugEarned);
+        Assert.False(response.MilestoneReached);
         Assert.Equal(beer.Name, response.BeerName);
 
         var confirmation = Assert.Single(context.BeerConfirmations);
@@ -203,6 +204,61 @@ public class ConfirmationsControllerTests
         var response = Assert.IsType<ConfirmationResponse>(created.Value);
         Assert.Equal(ConfirmationsController.MugGoal, response.ConfirmedCount);
         Assert.True(response.MugEarned);
+    }
+
+    // --- #74 lightweight milestone moment (distinct from the durable mug award) ---
+
+    [Fact]
+    public async Task PostConfirmation_ReachingMilestoneCount_SetsMilestoneReached()
+    {
+        using var context = CreateContext();
+        var beer = await SeedWorldAsync(context);
+        for (var i = 0; i < ConfirmationsController.MilestoneCount - 1; i++)
+        {
+            context.BeerConfirmations.Add(new BeerConfirmation
+            {
+                CustomerId = CustomerId,
+                BeerId = 1000 + i,
+                TavernId = 1,
+                ConfirmedByUserId = BartenderId,
+            });
+        }
+        await context.SaveChangesAsync();
+        var controller = CreateController(context);
+
+        var result = await controller.PostConfirmation(new ConfirmationRequest(beer.Id, BartenderPin));
+
+        var created = Assert.IsType<ObjectResult>(result);
+        var response = Assert.IsType<ConfirmationResponse>(created.Value);
+        Assert.Equal(ConfirmationsController.MilestoneCount, response.ConfirmedCount);
+        Assert.True(response.MilestoneReached);
+        Assert.False(response.MugEarned);
+    }
+
+    [Fact]
+    public async Task PostConfirmation_OneBelowMilestoneCount_DoesNotSetMilestoneReached()
+    {
+        using var context = CreateContext();
+        var beer = await SeedWorldAsync(context);
+        for (var i = 0; i < ConfirmationsController.MilestoneCount - 2; i++)
+        {
+            context.BeerConfirmations.Add(new BeerConfirmation
+            {
+                CustomerId = CustomerId,
+                BeerId = 1000 + i,
+                TavernId = 1,
+                ConfirmedByUserId = BartenderId,
+            });
+        }
+        await context.SaveChangesAsync();
+        var controller = CreateController(context);
+
+        var result = await controller.PostConfirmation(new ConfirmationRequest(beer.Id, BartenderPin));
+
+        var created = Assert.IsType<ObjectResult>(result);
+        var response = Assert.IsType<ConfirmationResponse>(created.Value);
+        Assert.Equal(ConfirmationsController.MilestoneCount - 1, response.ConfirmedCount);
+        Assert.False(response.MilestoneReached);
     }
 
     // --- #14 durable mug award ---

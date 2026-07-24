@@ -1713,9 +1713,68 @@ the byte-identical `{"message":"Invalid PIN."}` 401 body a bad confirmation atte
 gets. Also confirmed the new "Mark this beer as..."/"Yes, mark..." UI text is served
 live by the Vite dev server.
 
-- Branch: `sprint-8-pin-availability-flip`, not yet opened as a PR.
+- Branch: `sprint-8-pin-availability-flip` —
+  [PR #91](https://github.com/pmconnolly80/FinalCapstone/pull/91), CI green, merged
+  to `master`.
 
-**Resume here:** open the PR for #80, then continue the Sprint 8 build order with
-#74 (rating prompt + minimal milestone moment), which shares `ConfirmPinPad.jsx` and
-`BeerDetail.jsx` with #80/#81 — or #78 (Admin Dashboard reframe), which is fully
+## 2026-07-24 — Sprint 8 #74: "How was it?" rating prompt + minimal milestone moment
+
+**Epic:** `epic:retention`
+
+Built #74 next in the build order, per the "continue as planned" instruction — no
+separate up-front planning pass this time, straight to implementation (per the
+user's own steer earlier this session that dive-straight-in is fine once the
+pattern's established). Pulls two cheap, high-signal pieces of the full Engagement
+epic (`IMPLEMENTATION_BACKLOG.md` Phase 6 — My Beers ratings, milestone badges)
+forward, since the confirmation loop otherwise just ends at a bare X-of-200 number.
+
+- New `BeerRating` entity (`CustomerId`/`BeerId` unique, restrict-on-delete FK to
+  `Beer` — same pattern as `BeerConfirmation`) + migration.
+  `PUT /api/me/ratings/{beerId}` on `MeController` upserts in place (create-or-update
+  in one call, `StaffPinsController.SetPinAsync`-style rather than separate
+  create/update endpoints), validates 1-5, and requires an existing confirmation for
+  the same beer (400 otherwise — "You can only rate a beer you've confirmed.").
+- `BeersController.GetBeer` now also returns `Confirmed`/`MyRating`, computed the
+  same per-customer-claim way `GetBeers`' search endpoint already computes its
+  per-item `Confirmed` flag. Since My Beers doesn't exist yet, beer detail ends up
+  being the only place a rating can be viewed or corrected after the PIN pad moment
+  passes — exactly the gap the issue's acceptance criteria was amended to cover.
+- Milestone: a new `ConfirmationsController.MilestoneCount = 100` constant and a
+  `MilestoneReached` flag on `ConfirmationResponse`, computed transiently
+  (`confirmedCount == MilestoneCount`) — deliberately not a durable award table like
+  `MugAward`, since the issue explicitly scoped this as "not full badge
+  infrastructure." 100 lines up with `IMPLEMENTATION_BACKLOG.md`'s own
+  "milestone badges at 25/50/100/150" list.
+- `ConfirmPinPad.jsx`'s success screen gained a 1-5 star "How was it?" prompt
+  (skippable; re-tapping a different star re-submits, since "editable later" also
+  means editable right there) and a milestone banner (🎉) shown only when the mug
+  wasn't also earned on that same confirmation, so the two celebratory moments never
+  compete for the same screen. `BeerDetail.jsx` gained a "Your rating" section,
+  visible only for beers the customer has actually confirmed, with the existing
+  rating highlighted and any star re-clickable to change it. New `setMyRating()` in
+  `api.js`.
+
+Suites: backend 312/312 (+13 new — rating create/update-in-place/out-of-range/
+no-confirmation-yet on `MeControllerTests`, `GetBeer`'s new fields including that
+ratings stay private per customer on `BeersControllerTests`, the milestone flag at
+exactly 100 and one below it on `ConfirmationsControllerTests`, plus two HTTP-level
+integration tests — the full rating lifecycle end to end, and driving a real
+customer through 100 confirmations to check the milestone fires exactly once).
+Frontend 201/201 (+8 new across `ConfirmPinPad.test.jsx`/`BeerDetail.test.jsx`).
+Clean `npm run build`.
+
+Verified live against the Docker stack: rated a real confirmed beer, edited that
+rating and confirmed the change persisted, confirmed a second customer sees no
+rating for the same beer and `confirmed: false` for themselves (ratings and
+confirmed-status are both per-customer, never leak across accounts), rejected an
+out-of-range rating (400) and rejected rating an unconfirmed beer (400), and drove a
+real customer through exactly 100 confirmations via a loop of admin-created
+beers — the 100th response came back with `milestoneReached: true` and
+`mugEarned: false`, confirming the two moments are independent.
+
+- Branch: `sprint-8-rating-milestone`, not yet opened as a PR.
+
+**Resume here:** open the PR for #74, then continue the Sprint 8 build order with
+#81 (customer-facing "flag beer as unavailable" report), which shares
+`BeerDetail.jsx` with #74/#80 — or #78 (Admin Dashboard reframe), which is fully
 independent and could go in either order.

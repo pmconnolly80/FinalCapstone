@@ -623,8 +623,8 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     bartender's 6-digit PIN still works unchanged (201), confirmed an unissued
     7-digit PIN (in-range but wrong) is rejected as "Invalid PIN" (401, not a
     validation error), and a too-short 5-digit PIN is rejected at validation (400).
-  - #80 (API + UI: mark a beer out-of-stock from the confirmation PIN pad, branch
-    `sprint-8-pin-availability-flip`, not yet a PR): a bartender has no device or
+  - #80 (API + UI: mark a beer out-of-stock from the confirmation PIN pad, merged
+    [PR #91](https://github.com/pmconnolly80/FinalCapstone/pull/91)): a bartender has no device or
     login session of their own at the bar, so this piggybacks on the same PIN-typed-
     into-the-customer's-phone trust moment `POST /api/confirmations` already uses,
     per `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1's decision. New
@@ -656,6 +656,38 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     not an admin account (via `psql`), confirmed `OnTap` is rejected as a disallowed
     target (400), and confirmed a wrong PIN gets the identical `{"message":"Invalid
     PIN."}` 401 body as a bad confirmation attempt.
+  - #74 (UI + API: pull forward "How was it?" rating prompt + minimal milestone
+    moment, branch `sprint-8-rating-milestone`, not yet a PR): the confirmation loop
+    used to end at a bare X-of-200 number — this pulls two cheap pieces of the full
+    Engagement epic (`IMPLEMENTATION_BACKLOG.md` Phase 6) forward rather than waiting
+    for the whole thing. New `BeerRating` entity (`CustomerId`/`BeerId` unique,
+    restrict-on-delete FK to `Beer` like `BeerConfirmation`) and
+    `PUT /api/me/ratings/{beerId}` on `MeController` — upserts in place, requires an
+    existing confirmation for the same beer (400 otherwise), 1-5 range validated.
+    `BeersController.GetBeer` now also returns `Confirmed`/`MyRating` (same
+    per-customer-claim convention `GetBeers`' search already uses for its `Confirmed`
+    flag) — since My Beers doesn't exist yet, beer detail is the only place a rating
+    can be viewed or edited after the fact, per the acceptance criteria's amendment.
+    Milestone: a new `ConfirmationsController.MilestoneCount = 100` constant and a
+    `MilestoneReached` flag on `ConfirmationResponse`, computed transiently
+    (`confirmedCount == MilestoneCount`) rather than a durable award table like the
+    mug's — deliberately "not full badge infrastructure" per the issue's scope.
+    `ConfirmPinPad.jsx`'s success screen gained a "How was it?" 1-5 star prompt
+    (skippable, re-tappable to change the submitted value) and a milestone banner
+    shown only when the mug wasn't also earned that same confirmation;
+    `BeerDetail.jsx` gained a "Your rating" section (only for beers the customer has
+    confirmed) that shows the existing rating highlighted and lets them resubmit a
+    different one. New `setMyRating()` in `api.js`. Suites: backend 312/312 (+13 new
+    — rating create/update/out-of-range/no-confirmation-yet, `GetBeer`'s new fields
+    including that ratings stay private per customer, the milestone flag at exactly
+    100 and one below it, plus HTTP-level integration tests for the full rating
+    lifecycle and driving a real customer to the 100th confirmation), frontend
+    201/201 (+8 new). Clean `npm run build`. Verified live: rated a real confirmed
+    beer, edited the rating, confirmed a second customer sees no rating for the same
+    beer (private per customer) and confirmed status reads `false` for them, rejected
+    an out-of-range rating (400), rejected rating an unconfirmed beer (400), and drove
+    a real customer through 100 confirmations to confirm `milestoneReached` fires
+    exactly at 100 with `mugEarned` still `false`.
 
 **Bug fix (2026-07-23, not a Sprint 8 issue — a same-day follow-up to #76's finding,
 merged [PR #89](https://github.com/pmconnolly80/FinalCapstone/pull/89)):**
@@ -678,8 +710,8 @@ confirmations still succeeds with 204.
 
 **Not built** — the Admin Experience epic is done as of Sprint 5; Sprint 6 (Mobile UI
 Polish) and Sprint 7 (Beer Discovery & Recommendations) are both done and merged.
-Sprint 8 (Admin & Engagement UX Follow-ups) is in progress — #77/#75/#76/#79 built
-and merged, #80 built pending PR, #74/#78/#81 remaining, see `EPICS_AND_SPRINTS.md`
+Sprint 8 (Admin & Engagement UX Follow-ups) is in progress — #77/#75/#76/#79/#80
+built and merged, #74 built pending PR, #78/#81 remaining, see `EPICS_AND_SPRINTS.md`
 for the planned build order. The Engagement, Retention & Social epic is not yet
 groomed into issues.
 
@@ -751,10 +783,10 @@ issues #72–#73 + #83, groomed 2026-07-23, closed 2026-07-23 —
 [PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85); suites at close:
 backend 271/271, frontend 175/175). **Sprint 8: Admin & Engagement UX Follow-ups**
 (milestone [#8](https://github.com/pmconnolly80/FinalCapstone/milestone/8), issues
-#74–#81, groomed 2026-07-23) is in progress: #77/#75/#76/#79 built and merged
-(backend 287/287, frontend 187/187 — includes the same-day `DeleteBeer` FK-restrict
-bug fix that followed from #76's finding), #80 built pending PR (backend 299/299,
-frontend 193/193), #74/#78/#81 remaining. See `EPICS_AND_SPRINTS.md` and
+#74–#81, groomed 2026-07-23) is in progress: #77/#75/#76/#79/#80 built and merged
+(backend 299/299, frontend 193/193 — includes the same-day `DeleteBeer` FK-restrict
+bug fix that followed from #76's finding), #74 built pending PR (backend 312/312,
+frontend 201/201), #78/#81 remaining. See `EPICS_AND_SPRINTS.md` and
 `SESSION_LOG.md` for the full history.
 
 Sprint 5 built: a generalized `AdminAudit` trail + role assignment (#53) → user
@@ -789,14 +821,16 @@ groomed 2026-07-23, in progress — one PR per issue rather than one combined PR
 filter/search on User Management,
 [PR #87](https://github.com/pmconnolly80/FinalCapstone/pull/87)), #76 (inline
 consequence microcopy, [PR #88](https://github.com/pmconnolly80/FinalCapstone/pull/88)),
-and #79 (variable-length staff PINs,
-[PR #90](https://github.com/pmconnolly80/FinalCapstone/pull/90)) are all built and
-merged; #80 (mark a beer out-of-stock from the confirmation PIN pad) is built
-(branch `sprint-8-pin-availability-flip`, PR not yet opened); #74/#78/#81 remain.
-See `EPICS_AND_SPRINTS.md`'s Sprint 8 section for the planned build order (two
+#79 (variable-length staff PINs,
+[PR #90](https://github.com/pmconnolly80/FinalCapstone/pull/90)), and #80 (mark a
+beer out-of-stock from the confirmation PIN pad,
+[PR #91](https://github.com/pmconnolly80/FinalCapstone/pull/91)) are all built and
+merged; #74 (rating prompt + minimal milestone moment) is built (branch
+`sprint-8-rating-milestone`, PR not yet opened); #78/#81 remain. See
+`EPICS_AND_SPRINTS.md`'s Sprint 8 section for the planned build order (two
 file-overlap chains through `AdminUsers.jsx` and `ConfirmPinPad.jsx`/
-`BeerDetail.jsx`) and the bullets above for #77/#75/#76/#79/#80's detail. #76 also
-led to a same-day, out-of-milestone bug fix
+`BeerDetail.jsx`) and the bullets above for #77/#75/#76/#79/#80/#74's detail. #76
+also led to a same-day, out-of-milestone bug fix
 ([PR #89](https://github.com/pmconnolly80/FinalCapstone/pull/89)): the `DeleteBeer`
 FK-restrict gotcha it flagged (an unhandled 500 deleting a confirmed beer) is now
 fixed — see the bullet above.
