@@ -501,7 +501,8 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
 
 - **Sprint 7: Beer Discovery & Recommendations** (milestone
   [#7](https://github.com/pmconnolly80/FinalCapstone/milestone/7), groomed 2026-07-23,
-  built 2026-07-23, PR open pending review/merge): all three stories built in one pass,
+  built 2026-07-23 — [PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85), open
+  pending review/merge): all three stories built in one pass,
   in dependency order:
   - #72 API + UI: customer-facing external beer database search — new
     `BeerLookupController` (`GET /api/beer-lookup/search`, `[Authorize]`, any signed-in
@@ -637,7 +638,9 @@ Playwright-driven manual verification done before merging.
 
 **Sprint 7: Beer Discovery & Recommendations** (milestone
 [#7](https://github.com/pmconnolly80/FinalCapstone/milestone/7), issues #72–#73 + #83,
-groomed 2026-07-23, built 2026-07-23, PR open pending review/merge) built: the
+groomed 2026-07-23, built 2026-07-23 —
+[PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85), open pending review/merge)
+built: the
 customer-facing "look up any beer" external search (rate-limited, signed-in only,
 logged), customer beer recommendations + admin triage, and the admin search-demand
 report. See the bullet above for full detail, including live-stack verification.

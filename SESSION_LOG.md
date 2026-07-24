@@ -1435,7 +1435,8 @@ own catalog search (`GET /api/beers?search=`) unaffected, anonymous requests to
 `/api/beer-lookup/search` rejected with 401, and the rate limit correctly tripping to
 429 on the 20th+ request from one user within a minute.
 
-- Branch: `sprint-7-beer-discovery-recommendations` — PR opened against `master`,
+- Branch: `sprint-7-beer-discovery-recommendations` —
+  [PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85) opened against `master`,
   not yet merged.
 
 **Resume here:** once this PR merges, Sprint 8 (Admin & Engagement UX Follow-ups,
