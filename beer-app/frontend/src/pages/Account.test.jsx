@@ -39,6 +39,7 @@ describe('Account', () => {
     renderAccount();
 
     expect(screen.getByRole('link', { name: 'Linked accounts' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Recommend a beer' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Privacy policy' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'My PIN' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument();
@@ -62,6 +63,8 @@ describe('Account', () => {
     expect(screen.getByRole('link', { name: 'Confirmations' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Users' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Manage Beers' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Recommendations' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Search Demand' })).toBeInTheDocument();
   });
 
   it('signs out and navigates home', async () => {

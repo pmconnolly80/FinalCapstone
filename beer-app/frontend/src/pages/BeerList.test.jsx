@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import BeerList from './BeerList';
-import { fetchMyProgress, searchBeers } from '../lib/api';
+import { fetchMyProgress, searchBeerLookup, searchBeers } from '../lib/api';
 
 vi.mock('../lib/api');
 
@@ -187,5 +187,66 @@ describe('BeerList', () => {
 
     expect(screen.queryByText(/Try filtering by style, or ask the bartender/)).not.toBeInTheDocument();
     expect(fetchMyProgress).not.toHaveBeenCalled();
+  });
+
+  describe('#72 external lookup mode', () => {
+    beforeEach(() => {
+      localStorage.setItem('beer-token', 'abc123');
+      searchBeers.mockResolvedValue({ items: [paleAle], page: 1, pageSize: 200, totalCount: 1 });
+    });
+
+    it('hides the mode toggle when signed out', async () => {
+      localStorage.clear();
+      searchBeers.mockResolvedValue({ items: [paleAle], page: 1, pageSize: 200, totalCount: 1 });
+
+      renderBeerList();
+      await screen.findByText('Pale Ale');
+
+      expect(screen.queryByRole('button', { name: 'Look up any beer' })).not.toBeInTheDocument();
+    });
+
+    it('switches to external lookup mode and calls searchBeerLookup, not searchBeers', async () => {
+      const user = userEvent.setup();
+      searchBeerLookup.mockResolvedValue({ beers: [], breweries: [] });
+
+      renderBeerList();
+      await screen.findByText('Pale Ale');
+
+      await user.click(screen.getByRole('button', { name: 'Look up any beer' }));
+      await user.type(screen.getByPlaceholderText('Search any beer or brewery'), 'duvel');
+
+      await waitFor(() => {
+        expect(searchBeerLookup).toHaveBeenCalledWith('duvel');
+      });
+      expect(screen.queryByPlaceholderText('Search by name, brewery, or style')).not.toBeInTheDocument();
+    });
+
+    it('renders external beer results with a recommend button, distinct from tavern results', async () => {
+      const user = userEvent.setup();
+      searchBeerLookup.mockResolvedValue({
+        beers: [{ id: 'cb-1', name: 'Duvel', brewerName: 'Duvel Moortgat', style: 'Belgian Tripel' }],
+        breweries: [],
+      });
+
+      renderBeerList();
+      await screen.findByText('Pale Ale');
+      await user.click(screen.getByRole('button', { name: 'Look up any beer' }));
+      await user.type(screen.getByPlaceholderText('Search any beer or brewery'), 'duvel');
+
+      expect(await screen.findByText('Duvel')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Recommend this beer' })).toBeInTheDocument();
+    });
+
+    it('shows the rate-limit error message when the lookup fails', async () => {
+      const user = userEvent.setup();
+      searchBeerLookup.mockRejectedValue(new Error("You're searching a bit fast — try again in a minute."));
+
+      renderBeerList();
+      await screen.findByText('Pale Ale');
+      await user.click(screen.getByRole('button', { name: 'Look up any beer' }));
+      await user.type(screen.getByPlaceholderText('Search any beer or brewery'), 'duvel');
+
+      expect(await screen.findByText(/searching a bit fast/)).toBeInTheDocument();
+    });
   });
 });

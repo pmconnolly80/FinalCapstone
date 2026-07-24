@@ -149,6 +149,17 @@ export async function searchCatalogBeer(query) {
   return response.json();
 }
 
+export async function searchBeerLookup(query) {
+  const response = await fetch(`${API_BASE_URL}/api/beer-lookup/search?query=${encodeURIComponent(query)}`, {
+    headers: authHeaders(),
+  });
+  if (!response.ok) {
+    if (response.status === 429) throw new Error("You're searching a bit fast — try again in a minute.");
+    throw new Error('Failed to look up beer');
+  }
+  return response.json();
+}
+
 export async function fetchDashboardSummary() {
   const response = await fetch(`${API_BASE_URL}/api/admin/dashboard/summary`, {
     headers: authHeaders(),
@@ -343,6 +354,55 @@ export async function getLinkedProviders() {
 export async function startLinkingProvider(provider) {
   const { ticket } = await createExternalLoginTicket();
   window.location.href = `${externalLoginUrl(provider)}?ticket=${encodeURIComponent(ticket)}`;
+}
+
+export async function submitRecommendation({ beerName, breweryName, externalCatalogBeerId, note }) {
+  const response = await fetch(`${API_BASE_URL}/api/recommendations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({
+      beerName,
+      breweryName: breweryName || null,
+      externalCatalogBeerId: externalCatalogBeerId || null,
+      note: note || null,
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || 'Failed to submit recommendation');
+  }
+  return response.json();
+}
+
+export async function fetchAdminRecommendations(status) {
+  const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+  const response = await fetch(`${API_BASE_URL}/api/admin/recommendations${qs}`, {
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw new Error('Failed to load recommendations');
+  return response.json();
+}
+
+export async function updateRecommendationStatus(id, status) {
+  const response = await fetch(`${API_BASE_URL}/api/admin/recommendations/${id}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ status }),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || 'Failed to update recommendation');
+  }
+}
+
+export async function fetchExternalSearchDemand() {
+  const response = await fetch(`${API_BASE_URL}/api/admin/external-search-demand`, {
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw new Error('Failed to load search demand');
+  return response.json();
 }
 
 export async function forgotPassword(email) {

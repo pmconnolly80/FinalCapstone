@@ -31,6 +31,9 @@ function Account() {
         <Link to="/account/linked-providers" className={linkClass}>
           Linked accounts
         </Link>
+        <Link to="/recommend" className={linkClass}>
+          Recommend a beer
+        </Link>
         <Link to="/privacy" className={linkClass}>
           Privacy policy
         </Link>
@@ -53,6 +56,12 @@ function Account() {
             </Link>
             <Link to="/admin/beers" className={linkClass}>
               Manage Beers
+            </Link>
+            <Link to="/admin/recommendations" className={linkClass}>
+              Recommendations
+            </Link>
+            <Link to="/admin/search-demand" className={linkClass}>
+              Search Demand
             </Link>
           </div>
         </>

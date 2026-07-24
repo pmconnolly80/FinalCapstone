@@ -4,9 +4,12 @@ using BeerApi.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -115,6 +118,24 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
+// #72: caps how often a signed-in customer can hit the external "look up any beer"
+// search — Catalog.beer is a real API-keyed, cost-sensitive dependency (free-tier
+// budget noted in CatalogBeerService.cs), so this must never be reachable anonymously
+// or unlimited. Partitioned by the caller's user id (not IP), matching the
+// ClaimTypes.NameIdentifier convention used everywhere else in this codebase.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("PerUserExternalSearch", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Connection.Id,
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 20,
+                Window = TimeSpan.FromMinutes(1),
+            }));
+});
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -137,6 +158,7 @@ app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 using (var scope = app.Services.CreateScope())
 {

@@ -499,11 +499,61 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     environment, so this was set up ad hoc via `npx playwright`. #71 didn't
     auto-close from the merge commit's closing keywords; closed manually.
 
+- **Sprint 7: Beer Discovery & Recommendations** (milestone
+  [#7](https://github.com/pmconnolly80/FinalCapstone/milestone/7), groomed 2026-07-23,
+  built 2026-07-23 — [PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85), open
+  pending review/merge): all three stories built in one pass,
+  in dependency order:
+  - #72 API + UI: customer-facing external beer database search — new
+    `BeerLookupController` (`GET /api/beer-lookup/search`, `[Authorize]`, any signed-in
+    role) reuses the already-registered `ICatalogBeerService`/`IBreweryLookupService`
+    (previously Admin-only via `CatalogBeerController`/`BreweriesController`) and
+    returns `{ beers, breweries }`. Rate-limited to 20 requests/minute per user via
+    ASP.NET Core's built-in `RateLimiter` (`Program.cs`'s new
+    `"PerUserExternalSearch"` fixed-window policy, partitioned by
+    `ClaimTypes.NameIdentifier` — net-new to this codebase, `options.RejectionStatusCode`
+    set to 429 since the default is 503). Every call is logged to a new
+    `ExternalSearchLog` table (`Id, CustomerId, Query, MatchedTavernCatalog, CreatedAt`)
+    — `MatchedTavernCatalog` reuses `BeersController`'s own substring-match logic
+    against the local `Beers` table. `BeerList.jsx` gained a "What's on our list" /
+    "Look up any beer" mode toggle (chip row, signed-in only) — lookup-mode results
+    render in visually distinct amber-bordered cards with a "Recommend this beer"
+    button.
+  - #73 API + UI: customer beer recommendations/requests + admin triage — new
+    `BeerRecommendation` entity (`Status` enum New/Reviewed/Added/Declined, stored as
+    text like `BeerAvailability`) plus `RecommendationsController`
+    (`POST /api/recommendations`, `[Authorize]`, only `BeerName` required —
+    `BreweryName`/`Note`/`ExternalCatalogBeerId` all optional so a plain-text
+    recommendation needs no prior search) and `AdminRecommendationsController`
+    (`GET`/`PATCH .../status`, `[Authorize(Roles = "Admin")]`, filterable by status).
+    No reason required on status changes — closer to `PATCH .../availability`'s
+    no-reason inline toggle than confirmation-void's reason guard. New
+    `RecommendBeer.jsx` (`/recommend`, prefillable via `location.state` from a
+    lookup-mode search hit) and `AdminRecommendations.jsx`
+    (`/admin/recommendations`, status filter chips + direct per-row action buttons).
+  - #83 Admin: external-search demand report — new `AdminExternalSearchController`
+    (`GET /api/admin/external-search-demand`, `[Authorize(Roles = "Admin")]`)
+    delegates to a `public static ComputeDemandAsync(context, now, sinceDays, topN)`
+    (same explicit-`now`-parameter testability pattern as `AdminAnomaliesController`/
+    `AdminDashboardController`) that aggregates unmatched `ExternalSearchLog` rows by
+    normalized query text, ordered by frequency. New `AdminSearchDemand.jsx`
+    (`/admin/search-demand`) renders the table with its own independent fetch/error
+    state, same pattern as `AdminDashboard.jsx`'s anomalies panel.
+  - `Account.jsx` gained "Recommend a beer" (all signed-in users) and
+    "Recommendations"/"Search Demand" (Admin-only) links.
+  - Suites: backend 271/271 (+32 new), frontend 175/175 (+17 new), clean
+    `npm run build`. Verified live against the Docker stack: real Catalog.beer/Open
+    Brewery DB results returned for a real query, a plain-text and a search-hit
+    recommendation both submitted and triaged to `Added` by the seeded admin, the
+    demand report showing an unmatched query, the tavern's-own-catalog search
+    unaffected, and the rate limit correctly tripping to 429 on the 20th+ request in a
+    one-minute window.
+
 **Not built** — the Admin Experience epic is done as of Sprint 5; Sprint 6 (Mobile UI
-Polish) is done. Next up per `EPICS_AND_SPRINTS.md`: Sprint 7 (Beer Discovery &
-Recommendations) or Sprint 8 (Admin & Engagement UX Follow-ups), both groomed and
-ready to build; the Engagement, Retention & Social epic is not yet groomed into
-issues.
+Polish) and Sprint 7 (Beer Discovery & Recommendations) are both built (Sprint 7's PR
+still open, pending merge). Next up per `EPICS_AND_SPRINTS.md`: Sprint 8 (Admin &
+Engagement UX Follow-ups), already groomed and ready to build; the Engagement,
+Retention & Social epic is not yet groomed into issues.
 
 ## Testing policy (TDD)
 
@@ -586,12 +636,22 @@ tab bar + Account hub, Tailwind AuthPage, PIN-pad offline/repeated-failure messa
 and a BeerList first-visit hint. See the bullet above for detail, including the
 Playwright-driven manual verification done before merging.
 
-Next up: the **Engagement, Retention & Social** epic (milestone badges, push
-notifications + owner composer, My Beers, social feed, journal, owner analytics) is the
-next candidate for grooming into a sprint — per this repo's convention
-(`EPICS_AND_SPRINTS.md`), only the next epic gets fully broken into GitHub issues once
-it's actually up, and that grooming session hasn't happened yet. Deployment & Hardening
-follows after that.
+**Sprint 7: Beer Discovery & Recommendations** (milestone
+[#7](https://github.com/pmconnolly80/FinalCapstone/milestone/7), issues #72–#73 + #83,
+groomed 2026-07-23, built 2026-07-23 —
+[PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85), open pending review/merge)
+built: the
+customer-facing "look up any beer" external search (rate-limited, signed-in only,
+logged), customer beer recommendations + admin triage, and the admin search-demand
+report. See the bullet above for full detail, including live-stack verification.
+
+Next up: **Sprint 8** (Admin & Engagement UX Follow-ups, issues #74–#81) is already
+groomed and ready to build. After that, the **Engagement, Retention & Social** epic
+(milestone badges, push notifications + owner composer, My Beers, social feed,
+journal, owner analytics) is the next candidate for grooming into a sprint — per this
+repo's convention (`EPICS_AND_SPRINTS.md`), only the next epic gets fully broken into
+GitHub issues once it's actually up, and that grooming session hasn't happened yet.
+Deployment & Hardening follows after that.
 
 Local tooling note: only the .NET 10 SDK is on PATH but the projects target net8.0 — run
 backend tests with the SDK at `~/.dotnet8` (see `.claude/skills/verify/SKILL.md` for the
