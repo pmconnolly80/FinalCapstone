@@ -59,7 +59,7 @@ testing found the registration flow broken, see #17.)
 | **Mug Club Progress & Bartender Confirmation** | `epic:mug-club` | ✅ **Done** — Sprint 1 ([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), 2026-07-14) + Sprint 2 (PRs [#21](https://github.com/pmconnolly80/FinalCapstone/pull/21)–[#25](https://github.com/pmconnolly80/FinalCapstone/pull/25), closed 2026-07-15). Built to the one-device rule: confirmation on the customer's phone, sealed by the bartender's personal 6-digit PIN, hardened with two-axis lockout, real PIN lifecycle, durable mug awards, and the admin correction path |
 | **Customer Phone Experience** (search-first UX, availability states for the rotating inventory, Open Brewery DB brewery enrichment, Catalog.beer pre-fill, mobile repair) | `epic:phone-experience` | ✅ **Done** — Sprint 3 ([#26](https://github.com/pmconnolly80/FinalCapstone/issues/26)–[#32](https://github.com/pmconnolly80/FinalCapstone/issues/32), groomed 2026-07-20, closed 2026-07-21, PRs #33–#39). First slice pulled forward 2026-07-14 as a Sprint 2 interrupt ([#18](https://github.com/pmconnolly80/FinalCapstone/issues/18), landing-page facelift). 🔵 A follow-up polish pass (mobile nav, login screen, tab navigation) was flagged from 2026-07-23 live testing — see **Mobile UI Polish** below |
 | Admin Experience (dashboard + anomaly panel, user/role/PIN mgmt UI, full data correction with audit, catalog bulk-add guardrail) | `epic:admin` | ✅ **Done** — Sprint 2's first slice (confirmation audit/correction API + screen #15/#16, admin PIN issue/reset/deactivate API #13, mug-earner list #14), Sprint 5 ([#53](https://github.com/pmconnolly80/FinalCapstone/issues/53)–[#59](https://github.com/pmconnolly80/FinalCapstone/issues/59), groomed/closed 2026-07-23 — PRs [#60](https://github.com/pmconnolly80/FinalCapstone/pull/60)–[#66](https://github.com/pmconnolly80/FinalCapstone/pull/66)), and the admin-facing UX-gap issues from **Sprint 8** ([#75](https://github.com/pmconnolly80/FinalCapstone/issues/75)–[#78](https://github.com/pmconnolly80/FinalCapstone/issues/78), [#80](https://github.com/pmconnolly80/FinalCapstone/issues/80)–[#81](https://github.com/pmconnolly80/FinalCapstone/issues/81), closed 2026-07-24) |
-| Engagement, Retention & Social (badges, push notifications + owner composer, My Beers — ratings/want list/personal stats viz, social feed/cheers/leaderboard, journal, owner analytics) | `epic:retention` | ⬜ Not started — the business-owner payoff, see `FEATURE_MAP.md` and `PERSONAS_AND_USAGE.md`. 🟡 One pull-forward story shipped in **Sprint 8** ([#74](https://github.com/pmconnolly80/FinalCapstone/issues/74): rating prompt + minimal milestone, closed 2026-07-24) — the rest of this epic still needs its own grooming session |
+| Engagement, Retention & Social (badges, push notifications + owner composer, My Beers — ratings/want list/personal stats viz, social feed/cheers/leaderboard, journal, owner analytics) | `epic:retention` | 🔵 Partial grooming 2026-07-24 — the business-owner payoff, see `FEATURE_MAP.md` and `PERSONAS_AND_USAGE.md`. One pull-forward story already shipped in **Sprint 8** ([#74](https://github.com/pmconnolly80/FinalCapstone/issues/74): rating prompt + minimal milestone, closed 2026-07-24). **Sprint 9** (My Beers completion, [#95](https://github.com/pmconnolly80/FinalCapstone/issues/95)–[#100](https://github.com/pmconnolly80/FinalCapstone/issues/100)) and **Sprint 10** (push notification infrastructure, [#101](https://github.com/pmconnolly80/FinalCapstone/issues/101)–[#104](https://github.com/pmconnolly80/FinalCapstone/issues/104)) groomed below; badges, automated notifications, owner composer, social layer, journal, and owner analytics remain ungroomed — deliberately deferred rather than ticketed blind, per explicit direction to groom incrementally rather than the whole epic in one pass |
 | **Mobile UI Polish** (nav bar redesign for phone-first use + hidden pre-login, minimal branded login screen, several small UX-gap fixes) | `epic:ui-polish` | 🔵 Groomed 2026-07-23 as **Sprint 6** ([milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/6), issues [#67](https://github.com/pmconnolly80/FinalCapstone/issues/67)–[#71](https://github.com/pmconnolly80/FinalCapstone/issues/71)), not yet started |
 | **Beer Discovery & Recommendations** (customer-facing external beer-database search, beer recommendations/requests + admin triage) | `epic:beer-discovery` | ✅ **Done** — Sprint 7 ([#72](https://github.com/pmconnolly80/FinalCapstone/issues/72)–[#73](https://github.com/pmconnolly80/FinalCapstone/issues/73), [#83](https://github.com/pmconnolly80/FinalCapstone/issues/83)), [PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85) merged 2026-07-23 |
 | Deployment & Hardening (AWS, CI/CD) | `epic:deployment` | ⬜ Not started — also covers wiring real SMTP credentials so forgot-password emails actually send (currently silently no-ops, flagged 2026-07-23) |
@@ -339,6 +339,50 @@ direction at planning time — see the build-order note below.
 > only `AdminDashboard.jsx` and can build any time. #77 was built first regardless,
 > out of that order per explicit direction, since it branched off a clean `master`
 > before anything else in the chain had landed.
+
+**Tracking-drift fix (2026-07-24):** milestones [#7](https://github.com/pmconnolly80/FinalCapstone/milestone/7)
+and [#8](https://github.com/pmconnolly80/FinalCapstone/milestone/8) were still showing as
+open on GitHub despite every issue in each being closed — same class of drift as the
+Milestone 4 fix in Sprint 4's notes, just the opposite direction. Both closed manually.
+
+### Sprint 9: My Beers — Ratings, Want List & Stats — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/9) (groomed 2026-07-24, not started)
+
+First slice of `epic:retention` groomed beyond #74's pull-forward — completes the My
+Beers feature `IMPLEMENTATION_BACKLOG.md` describes (ratings' real home, the want
+list, and a personal stats screen), building directly on #74's `BeerRating` with no
+new infrastructure required. Push notifications, automated sends, badges, and the
+social layer all stay out of scope here — see Sprint 10 below and the epic table's
+remaining-scope note.
+
+1. [#95 API: extend GET /api/me/progress with each confirmed beer's rating](https://github.com/pmconnolly80/FinalCapstone/issues/95) (`epic:retention`)
+2. [#96 UI: My Beers screen — completed list with dates, ratings, search, and sort](https://github.com/pmconnolly80/FinalCapstone/issues/96) (`epic:retention`)
+3. [#97 API: WantListItem entity + endpoints — add, remove, list, auto-resolve on confirmation](https://github.com/pmconnolly80/FinalCapstone/issues/97) (`epic:retention`)
+4. [#98 UI: Want List screen — add from search/detail, in-stock-tonight filter on by default, auto-check-off](https://github.com/pmconnolly80/FinalCapstone/issues/98) (`epic:retention`)
+5. [#99 API: GET /api/me/stats aggregate endpoint](https://github.com/pmconnolly80/FinalCapstone/issues/99) (`epic:retention`)
+6. [#100 UI: My Stats screen with lightweight client-side charts](https://github.com/pmconnolly80/FinalCapstone/issues/100) (`epic:retention`)
+
+> **Build order:** #95 → #96 (the screen needs the extended response shape first);
+> #97 → #98 (same reason); #99 → #100. The three pairs don't touch the same files as
+> each other, so they can build in any relative order once each pair's own two issues
+> are sequenced.
+
+### Sprint 10: Push Notification Infrastructure — [milestone](https://github.com/pmconnolly80/FinalCapstone/milestone/10) (groomed 2026-07-24, not started)
+
+Pure infrastructure — a PWA-installable frontend, subscription storage, and a
+frequency-capped background delivery pipeline, proved end-to-end via an admin-only
+test send. Per `TECHNICAL_ARCHITECTURE_PLAN.md` §4.2, this is a genuine prerequisite
+for later `epic:retention` work (automated notifications, the owner composer,
+want-list on-tap alerts) and, per §4.5, could eventually also carry anomaly-alert
+delivery — none of that content is built in this sprint, only the pipeline itself.
+
+1. [#101 Frontend: PWA manifest + service worker (installable app)](https://github.com/pmconnolly80/FinalCapstone/issues/101) (`epic:retention`)
+2. [#102 API: PushSubscription entity + subscribe/unsubscribe endpoints](https://github.com/pmconnolly80/FinalCapstone/issues/102) (`epic:retention`)
+3. [#103 UI: 'Enable notifications' opt-in flow](https://github.com/pmconnolly80/FinalCapstone/issues/103) (`epic:retention`)
+4. [#104 API: VAPID config + background push-delivery job with frequency caps](https://github.com/pmconnolly80/FinalCapstone/issues/104) (`epic:retention`)
+
+> **Build order:** #101 → #102 → #103 (each depends on the previous), then #104 last
+> (needs #102's subscription storage to have something to send to, and #103's opt-in
+> flow to have a real subscribed device to test against).
 
 ## Live Testing Findings — 2026-07-23
 

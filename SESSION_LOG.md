@@ -1876,11 +1876,64 @@ beers with zero confirmations correctly appearing in "least confirmed" rather th
 being omitted. Confirmed the new "Operational health" and "Most / least confirmed
 beers" UI text is served live by the Vite dev server.
 
-- Branch: `sprint-8-dashboard-reframe`, not yet opened as a PR.
+- Branch: `sprint-8-dashboard-reframe` —
+  [PR #94](https://github.com/pmconnolly80/FinalCapstone/pull/94), CI green, merged
+  to `master`. **Sprint 8 (Admin & Engagement UX Follow-ups) is fully closed** —
+  all of #74–#81 built and merged.
 
-**Resume here:** open the PR for #78. Once merged, **Sprint 8 (Admin & Engagement
-UX Follow-ups) is fully closed** — all of #74–#81 built and merged. Next: the
-**Engagement, Retention & Social** epic (milestone badges, push notifications +
-owner composer, My Beers, social feed, journal, owner analytics) is the next
-candidate for grooming into its own sprint — that grooming session hasn't happened
-yet. Deployment & Hardening follows after that.
+## 2026-07-24 — Grooming: Engagement, Retention & Social epic, Sprints 9 & 10
+
+**Epic:** `epic:retention`
+
+With Sprint 8 closed, groomed the next epic per the user's go-ahead. Researched the
+epic's full documented scope first (`IMPLEMENTATION_BACKLOG.md` Phase 6,
+`FEATURE_MAP.md`, `PERSONAS_AND_USAGE.md`'s "Weekly ritual", and the architecture
+notes in `TECHNICAL_ARCHITECTURE_PLAN.md` §4.2/§4.3/§4.5) before proposing a
+breakdown — this epic (badges, push notifications + owner composer, My Beers,
+social layer, journal, owner analytics) is far bigger than any prior epic and
+doesn't fit one sprint the way Admin Experience or Customer Phone Experience did.
+
+Presented the user a 5-phase roadmap (My Beers completion → push infrastructure →
+automated notifications/owner composer → badges/social → journal/owner analytics)
+and asked how much to actually ticket now rather than grooming the whole thing
+blind. **Decided: groom Sprint 9 + Sprint 10 now**, leave the rest ungroomed until
+their turn — matching this repo's own stated convention, applied here at
+finer-than-usual grain given the epic's size.
+
+Also found and fixed a tracking-drift bug while in `EPICS_AND_SPRINTS.md`:
+milestones [#7](https://github.com/pmconnolly80/FinalCapstone/milestone/7) and
+[#8](https://github.com/pmconnolly80/FinalCapstone/milestone/8) were still open on
+GitHub despite every issue in each being closed (the mirror-image of the Milestone
+4 drift fixed back in Sprint 4) — closed both manually via `gh api`.
+
+**Sprint 9: My Beers — Ratings, Want List & Stats** (new milestone
+[#9](https://github.com/pmconnolly80/FinalCapstone/milestone/9)) — completes what
+#74 started, no new infrastructure:
+- #95 API: extend `GET /api/me/progress` with each confirmed beer's rating
+- #96 UI: My Beers screen (completed list, dates, ratings, search, sort)
+- #97 API: `WantListItem` entity + endpoints, auto-resolved on confirmation
+- #98 UI: Want List screen (add from search/detail, in-stock-tonight default filter, auto-check-off)
+- #99 API: `GET /api/me/stats` aggregate endpoint
+- #100 UI: My Stats screen with lightweight client-side charts
+
+**Sprint 10: Push Notification Infrastructure** (new milestone
+[#10](https://github.com/pmconnolly80/FinalCapstone/milestone/10)) — pure
+infrastructure, no notification content yet; a documented prerequisite (per §4.2)
+for later `epic:retention` sprints:
+- #101 Frontend: PWA manifest + service worker
+- #102 API: `PushSubscription` entity + subscribe/unsubscribe endpoints
+- #103 UI: "Enable notifications" opt-in flow
+- #104 API: VAPID config + background push-delivery job with frequency caps, proved via an admin-only test-send endpoint
+
+Both milestones and all 10 issues created via `gh api`/`gh issue create`, each with
+full acceptance criteria mirroring this repo's existing issue-writing conventions
+(explicit scope boundaries, "not scoped" callouts, references to the specific doc
+sections driving each requirement). `EPICS_AND_SPRINTS.md` updated with both new
+Sprint sections (including build-order notes) and the epic table row; `CLAUDE.md`'s
+"Likely next steps" updated to point at Sprint 9 first.
+
+**Resume here:** start building Sprint 9 (#95 → #96, #97 → #98, #99 → #100 — the
+three pairs are independent of each other and can go in any order once each pair's
+own two issues are sequenced), then Sprint 10 (#101 → #102 → #103 → #104, strictly
+sequential). Badges, automated notifications, the owner composer, the social layer,
+the personal journal, and owner analytics remain ungroomed until it's their turn.

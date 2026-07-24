@@ -774,8 +774,15 @@ confirmations still succeeds with 204.
 **Not built** — the Admin Experience epic is done as of Sprint 5; Sprint 6 (Mobile UI
 Polish), Sprint 7 (Beer Discovery & Recommendations), and Sprint 8 (Admin &
 Engagement UX Follow-ups) are all done and merged (#78's merge closes Sprint 8 —
-issues #74–#81 all built). The Engagement, Retention & Social epic is not yet
-groomed into issues; that's next up for grooming.
+issues #74–#81 all built). The Engagement, Retention & Social epic is partially
+groomed as of 2026-07-24: **Sprint 9** (My Beers completion — want list, My Beers
+screen, personal stats, milestone [#9](https://github.com/pmconnolly80/FinalCapstone/milestone/9),
+issues #95–#100) and **Sprint 10** (push notification infrastructure, milestone
+[#10](https://github.com/pmconnolly80/FinalCapstone/milestone/10), issues #101–#104)
+are groomed and ready to build, in that order — #104's delivery job needs #101–#103
+in place first, and Sprint 10 as a whole is a prerequisite for the epic's remaining
+scope (badges, automated notifications, owner composer, social layer, journal,
+owner analytics), which stays deliberately ungroomed rather than ticketed blind.
 
 ## Testing policy (TDD)
 
@@ -900,12 +907,21 @@ detail. #76 also led to a same-day, out-of-milestone bug fix
 FK-restrict gotcha it flagged (an unhandled 500 deleting a confirmed beer) is now
 fixed — see the bullet above.
 
-After Sprint 8, the **Engagement, Retention & Social** epic (milestone badges, push
-notifications + owner composer, My Beers, social feed, journal, owner analytics) is
-the next candidate for grooming into a sprint — per this repo's convention
-(`EPICS_AND_SPRINTS.md`), only the next epic gets fully broken into GitHub issues once
-it's actually up, and that grooming session hasn't happened yet. Deployment &
-Hardening follows after that.
+After Sprint 8, the **Engagement, Retention & Social** epic got a partial grooming
+session (2026-07-24) rather than being ticketed all at once — it's too large for
+one sprint. **Sprint 9: My Beers — Ratings, Want List & Stats** (milestone
+[#9](https://github.com/pmconnolly80/FinalCapstone/milestone/9), issues #95–#100)
+completes the My Beers slice #74 started, with no new infrastructure. **Sprint 10:
+Push Notification Infrastructure** (milestone
+[#10](https://github.com/pmconnolly80/FinalCapstone/milestone/10), issues #101–#104)
+builds the PWA/service-worker/`PushSubscription`/delivery-job pipeline that later
+sprints (automated notifications, the owner composer, want-list on-tap alerts) will
+depend on, per `TECHNICAL_ARCHITECTURE_PLAN.md` §4.2. Both are ready to build,
+Sprint 9 first (no dependency between the two, but Sprint 9 is smaller and touches
+no shared infrastructure). Badges, automated notifications, the owner composer, the
+social layer, the personal journal, and owner analytics all remain ungroomed —
+deliberately, until it's their turn. Deployment & Hardening follows after this whole
+epic.
 
 Local tooling note: only the .NET 10 SDK is on PATH but the projects target net8.0 — run
 backend tests with the SDK at `~/.dotnet8` (see `.claude/skills/verify/SKILL.md` for the
