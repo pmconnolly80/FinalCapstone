@@ -1828,10 +1828,59 @@ shows up in `GET /api/admin/anomalies` with the correct beer name, count, and a
 `/beers/{id}` deep link, confirmed an unauthenticated report attempt 401s, and
 confirmed reporting an unknown beer id 404s.
 
-- Branch: `sprint-8-unavailability-reports`, not yet opened as a PR.
+- Branch: `sprint-8-unavailability-reports` —
+  [PR #93](https://github.com/pmconnolly80/FinalCapstone/pull/93), CI green, merged
+  to `master`.
 
-**Resume here:** open the PR for #81. That closes out every Sprint 8 issue except
-#78 (reframe Admin Dashboard as operational health + pull forward most/least-
-confirmed beers), which is fully independent (`AdminDashboard.jsx` only, no
-file-overlap chain with anything else) and can be built any time — the last item
-before Sprint 8 as a whole can close.
+## 2026-07-24 — Sprint 8 #78: reframe Admin Dashboard as operational health — closes Sprint 8
+
+**Epic:** `epic:admin`
+
+Built the last remaining Sprint 8 issue, fully independent of the two file-overlap
+chains (`AdminDashboard.jsx` only). The shipped Admin Dashboard (#59) surfaced
+operational counts and the anomaly panel, but was implicitly expected to also
+answer the owner's real question — "what should I order more of / who's about to
+lapse" (`PERSONAS_AND_USAGE.md`'s "Weekly ritual") — which it never actually did.
+
+- `AdminDashboard.jsx`'s summary-cards section is now explicitly labeled
+  "Operational health," with copy stating up front that beer-purchasing
+  intelligence (demand, ratings, lapsed members) lives in a separate, later Owner
+  Analytics screen rather than being implied as already covered here.
+- New `AdminDashboardController.ComputeBeerConfirmationCountsAsync` (`TopN = 5`,
+  same public-static-with-no-time-dependency pattern as `ComputeSummaryAsync`) — a
+  plain `GROUP BY` over existing `BeerConfirmation` rows, no new schema, exposed as
+  `GET /api/admin/dashboard/beer-confirmations`. Deliberately counts every beer, not
+  just ones with at least one confirmation row — a plain `GroupBy` over
+  `BeerConfirmations` alone would silently omit a beer with zero confirmations
+  entirely, which is exactly "the stout nobody's ordered in two months" this feature
+  exists to surface, so it left-joins against the full `Beers` table instead.
+- New "Most / least confirmed beers" panel on the dashboard (top 5 each, linking to
+  each beer's detail page), fetched independently of the summary/anomalies calls (a
+  broken endpoint only blanks its own section, matching the existing pattern). New
+  `fetchBeerConfirmationCounts()` in `api.js`.
+- Full "beer intelligence" (want-list demand counts, anonymized ratings,
+  lapsed-member list) stays explicitly out of scope — deferred to Owner Analytics
+  once the Engagement/Retention epic gets its own grooming session.
+
+Suites: backend 328/328 (+5 new — ranking most/least by count, a genuinely
+zero-confirmation beer still appearing in "least confirmed" rather than being
+silently dropped, the top-N limit, plus an HTTP-level integration test). Frontend
+209/209 (+3 new — the "Operational health" reframe copy, the new panel rendering
+with working deep links, and its own independent error state). Clean
+`npm run build`.
+
+Verified live against the Docker stack: `GET /api/admin/dashboard/beer-confirmations`
+returned real ranked data cross-checked against beers created earlier in this
+session — the genuinely busiest beer at the top of "most confirmed," and several
+beers with zero confirmations correctly appearing in "least confirmed" rather than
+being omitted. Confirmed the new "Operational health" and "Most / least confirmed
+beers" UI text is served live by the Vite dev server.
+
+- Branch: `sprint-8-dashboard-reframe`, not yet opened as a PR.
+
+**Resume here:** open the PR for #78. Once merged, **Sprint 8 (Admin & Engagement
+UX Follow-ups) is fully closed** — all of #74–#81 built and merged. Next: the
+**Engagement, Retention & Social** epic (milestone badges, push notifications +
+owner composer, My Beers, social feed, journal, owner analytics) is the next
+candidate for grooming into its own sprint — that grooming session hasn't happened
+yet. Deployment & Hardening follows after that.

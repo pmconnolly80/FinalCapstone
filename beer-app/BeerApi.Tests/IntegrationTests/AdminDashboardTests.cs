@@ -55,6 +55,29 @@ public class AdminDashboardTests : IDisposable
         Assert.NotNull(body);
     }
 
+    [Fact]
+    public async Task GetBeerConfirmationCounts_WithoutToken_ReturnsUnauthorized()
+    {
+        var response = await _client.GetAsync("/api/admin/dashboard/beer-confirmations");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetBeerConfirmationCounts_WithAdminToken_ReturnsOk()
+    {
+        var adminToken = await CreateAdminAndLoginAsync("dashboard.admin2@example.com", "AdminPassw0rd!");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+
+        var response = await _client.GetAsync("/api/admin/dashboard/beer-confirmations");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<BeerConfirmationCountsResponse>();
+        Assert.NotNull(body);
+        Assert.NotNull(body!.MostConfirmed);
+        Assert.NotNull(body.LeastConfirmed);
+    }
+
     private async Task<string> RegisterCustomerAsync(string email)
     {
         var response = await _client.PostAsJsonAsync("/api/auth/register", new RegisterRequest(email, "Passw0rd!"));

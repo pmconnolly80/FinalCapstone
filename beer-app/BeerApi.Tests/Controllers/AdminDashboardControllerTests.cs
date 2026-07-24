@@ -93,4 +93,63 @@ public class AdminDashboardControllerTests
 
         Assert.Equal(2, summary.MugsAwarded);
     }
+
+    // ---- #78 most/least-confirmed beers ----
+
+    [Fact]
+    public async Task ComputeBeerConfirmationCountsAsync_RanksByCount_MostAndLeastConfirmed()
+    {
+        using var context = CreateContext();
+        var popular = new Beer { Name = "Duvel", Brewery = "Duvel Moortgat", Style = "Belgian Strong Golden Ale" };
+        var unpopular = new Beer { Name = "Mystery Stout", Brewery = "Test Brewery", Style = "Stout" };
+        context.Beers.AddRange(popular, unpopular);
+        await context.SaveChangesAsync();
+
+        for (var i = 0; i < 5; i++)
+        {
+            context.BeerConfirmations.Add(new BeerConfirmation
+            {
+                CustomerId = $"cust-{i}", BeerId = popular.Id, TavernId = 1, ConfirmedByUserId = "b1",
+            });
+        }
+        await context.SaveChangesAsync();
+
+        var result = await AdminDashboardController.ComputeBeerConfirmationCountsAsync(context);
+
+        Assert.Equal("Duvel", result.MostConfirmed[0].Name);
+        Assert.Equal(5, result.MostConfirmed[0].ConfirmedCount);
+        Assert.Equal("Mystery Stout", result.LeastConfirmed[0].Name);
+        Assert.Equal(0, result.LeastConfirmed[0].ConfirmedCount);
+    }
+
+    [Fact]
+    public async Task ComputeBeerConfirmationCountsAsync_BeerWithZeroConfirmations_StillAppearsInLeastConfirmed()
+    {
+        // A plain GroupBy over BeerConfirmations alone would silently omit a beer with
+        // no confirmations at all — exactly the "stout nobody's ordered" case this
+        // feature exists for (PERSONAS_AND_USAGE.md).
+        using var context = CreateContext();
+        context.Beers.Add(new Beer { Name = "Never Confirmed", Brewery = "Test Brewery", Style = "Lager" });
+        await context.SaveChangesAsync();
+
+        var result = await AdminDashboardController.ComputeBeerConfirmationCountsAsync(context);
+
+        Assert.Contains(result.LeastConfirmed, b => b.Name == "Never Confirmed" && b.ConfirmedCount == 0);
+    }
+
+    [Fact]
+    public async Task ComputeBeerConfirmationCountsAsync_LimitsToTopN()
+    {
+        using var context = CreateContext();
+        for (var i = 0; i < AdminDashboardController.TopN + 3; i++)
+        {
+            context.Beers.Add(new Beer { Name = $"Beer {i}", Brewery = "Test Brewery", Style = "Lager" });
+        }
+        await context.SaveChangesAsync();
+
+        var result = await AdminDashboardController.ComputeBeerConfirmationCountsAsync(context);
+
+        Assert.Equal(AdminDashboardController.TopN, result.MostConfirmed.Count);
+        Assert.Equal(AdminDashboardController.TopN, result.LeastConfirmed.Count);
+    }
 }

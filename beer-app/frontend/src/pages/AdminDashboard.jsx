@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchAdminAnomalies, fetchDashboardSummary, getRolesFromToken } from '../lib/api';
+import { fetchAdminAnomalies, fetchBeerConfirmationCounts, fetchDashboardSummary, getRolesFromToken } from '../lib/api';
 
 const ANOMALY_BADGES = {
   BulkBeerAdd: { label: 'Bulk Beer Add', className: 'bg-yellow-100 text-yellow-800' },
@@ -15,17 +15,27 @@ const ANOMALY_BADGES = {
 // Admin Dashboard (#59): closes Sprint 5, ties #53-#58 together. Summary cards and the
 // anomaly panel are fetched independently (not a single Promise.all) so a broken
 // endpoint only blanks its own section, not the whole page.
+//
+// #78: reframed as "operational health" — this dashboard was implicitly expected to
+// also answer "what should I order more of," which it never did. The most/least-
+// confirmed beers panel below is a cheap first slice of that real "beer intelligence"
+// question (PERSONAS_AND_USAGE.md's "Weekly ritual"); the fuller version (want-list
+// demand, anonymized ratings, lapsed-member list) stays deferred to a separate Owner
+// Analytics screen once the Engagement/Retention epic is groomed.
 function AdminDashboard() {
   const isAdmin = getRolesFromToken().includes('Admin');
   const [summary, setSummary] = useState(null);
   const [summaryError, setSummaryError] = useState('');
   const [anomalies, setAnomalies] = useState(null);
   const [anomaliesError, setAnomaliesError] = useState('');
+  const [beerCounts, setBeerCounts] = useState(null);
+  const [beerCountsError, setBeerCountsError] = useState('');
 
   useEffect(() => {
     if (!isAdmin) return;
     fetchDashboardSummary().then(setSummary).catch((error) => setSummaryError(error.message));
     fetchAdminAnomalies().then(setAnomalies).catch((error) => setAnomaliesError(error.message));
+    fetchBeerConfirmationCounts().then(setBeerCounts).catch((error) => setBeerCountsError(error.message));
   }, [isAdmin]);
 
   if (!isAdmin) {
@@ -48,6 +58,14 @@ function AdminDashboard() {
     <div className="grid gap-4">
       <section className="rounded-2xl bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
         <h2 className="m-0 text-xl font-bold">Admin dashboard</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Operational health — day-to-day counts and anomalies. Beer-purchasing
+          intelligence (demand, ratings, lapsed members) lives in a separate Owner
+          Analytics screen once that's built; the most/least-confirmed panel below is
+          a first, cheap slice of that pulled forward.
+        </p>
+
+        <h3 className="m-0 mt-4 text-lg font-semibold">Operational health</h3>
 
         {summaryError && <p className="mt-3 text-red-700">{summaryError}</p>}
 
@@ -92,6 +110,47 @@ function AdminDashboard() {
               );
             })}
           </ul>
+        )}
+      </section>
+
+      <section className="rounded-2xl bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
+        <h3 className="m-0 text-lg font-semibold">Most / least confirmed beers</h3>
+        <p className="mt-1 text-sm text-gray-500">
+          A cheap first slice of beer-purchasing intelligence — what's carrying the
+          month, and what nobody's ordered in a while.
+        </p>
+
+        {beerCountsError && <p className="mt-3 text-red-700">{beerCountsError}</p>}
+
+        {beerCounts && (
+          <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="m-0 text-sm font-semibold text-gray-500">Most confirmed</p>
+              <ol className="mt-2 grid gap-1 pl-4 text-sm">
+                {beerCounts.mostConfirmed.map((beer) => (
+                  <li key={beer.beerId}>
+                    <Link to={`/beers/${beer.beerId}`} className="underline">
+                      {beer.name}
+                    </Link>{' '}
+                    ({beer.confirmedCount})
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <div>
+              <p className="m-0 text-sm font-semibold text-gray-500">Least confirmed</p>
+              <ol className="mt-2 grid gap-1 pl-4 text-sm">
+                {beerCounts.leastConfirmed.map((beer) => (
+                  <li key={beer.beerId}>
+                    <Link to={`/beers/${beer.beerId}`} className="underline">
+                      {beer.name}
+                    </Link>{' '}
+                    ({beer.confirmedCount})
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
         )}
       </section>
 
