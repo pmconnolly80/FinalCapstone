@@ -4,6 +4,11 @@
 below are answered and a direction is agreed.** This is a discovery/planning document,
 not a backlog — nothing here becomes a sprint issue until it's resolved into a decision.
 
+An expanded, offline-friendly copy of the question set below — each question with
+brainstorming helpers/prompts and space to write out full answers — lives in
+`UX_DISCOVERY_QUESTIONS_WORKSHEET.md`. Work through that one; its answers feed the
+"Answers / decisions log" section at the bottom of this doc.
+
 ## Why this started (2026-07-24)
 
 Live use of the current build surfaced two different classes of problem:
