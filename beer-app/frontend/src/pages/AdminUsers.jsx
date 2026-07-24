@@ -23,6 +23,19 @@ const PIN_BADGES = {
   none: { label: 'No PIN', className: 'bg-gray-100 text-gray-600' },
 };
 
+// #76: real consequences of these audited actions aren't obvious from the UI alone —
+// TECHNICAL_ARCHITECTURE_PLAN.md documents them, but an admin acting in the moment
+// shouldn't have to go read that first. Deactivate/reactivate's PIN behavior comes
+// straight from AdminUsersController.DeactivateAccount/ReactivateAccount; the role-change
+// note comes from ConfirmationsController.ResolveBartenderFromPinAsync, which only
+// resolves PINs belonging to a current Bartender/Admin — moving someone off those roles
+// silently stops their PIN from working even though StaffPin.IsActive stays true.
+const CONSEQUENCE_MICROCOPY = {
+  role: "Role changes take effect immediately. If this person has a staff PIN, moving them off Bartender/Admin stops it from working for confirmations right away — the PIN itself stays marked active, it just won't resolve anymore.",
+  deactivate: "Deactivating also disables their staff PIN immediately, if they have one — they'll need a new PIN issued after being reactivated.",
+  reactivate: "Reactivating restores login access only — it does not restore their PIN. Issue a new one below if they still need to confirm beers.",
+};
+
 // User Management screen (#55): the missing UI in front of #53's role assignment,
 // #54's account deactivate/reactivate, and Sprint 2's staff-PIN lifecycle API
 // (StaffPinsController) — no admin UI has ever existed for that last one. Same
@@ -39,6 +52,9 @@ const PIN_BADGES = {
 // all" toggle covers the rare customer lookup. The filter box searches email only (the
 // user model has no separate display name), same client-side-filter pattern as
 // AdminConfirmations.jsx.
+//
+// #76: role/deactivate/reactivate each show CONSEQUENCE_MICROCOPY inline, before the
+// admin confirms — see that constant's comment for where each consequence comes from.
 function AdminUsers() {
   const isAdmin = getRolesFromToken().includes('Admin');
   const [users, setUsers] = useState([]);
@@ -230,20 +246,23 @@ function AdminUsers() {
                   </td>
                   <td className="py-2">
                     {isPending && (pendingAction.type === 'role' || pendingAction.type === 'deactivate' || pendingAction.type === 'reactivate') && (
-                      <span className="flex flex-wrap items-center gap-2">
-                        <input
-                          value={reason}
-                          onChange={(e) => setReason(e.target.value)}
-                          placeholder="Reason"
-                          className="w-40"
-                        />
-                        <button type="button" onClick={confirmPendingAction} className="border-0 bg-red-700 text-white">
-                          Confirm
-                        </button>
-                        <button type="button" onClick={cancelAction}>
-                          Cancel
-                        </button>
-                      </span>
+                      <div className="flex max-w-xs flex-col gap-2">
+                        <p className="m-0 text-xs text-gray-500">{CONSEQUENCE_MICROCOPY[pendingAction.type]}</p>
+                        <span className="flex flex-wrap items-center gap-2">
+                          <input
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value)}
+                            placeholder="Reason"
+                            className="w-40"
+                          />
+                          <button type="button" onClick={confirmPendingAction} className="border-0 bg-red-700 text-white">
+                            Confirm
+                          </button>
+                          <button type="button" onClick={cancelAction}>
+                            Cancel
+                          </button>
+                        </span>
+                      </div>
                     )}
                     {isPending && pendingAction.type === 'pin' && (
                       <span className="flex flex-wrap items-center gap-2">

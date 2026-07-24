@@ -9,6 +9,10 @@ import {
 // Admin correction screen (#16): review confirmation history, void with a required
 // reason behind an explicit confirm step, and read the audit trail in place. The role
 // check here is a convenience — the API enforces Admin server-side regardless.
+//
+// #76: inline microcopy at the void step itself (not just the page-level paragraph
+// above) states what voiding actually does, including that an already-awarded mug is
+// not revoked — mirrored from TECHNICAL_ARCHITECTURE_PLAN.md §4.1.
 function AdminConfirmations() {
   const isAdmin = getRolesFromToken().includes('Admin');
   const [rows, setRows] = useState([]);
@@ -106,20 +110,26 @@ function AdminConfirmations() {
                 <td className="py-2 pr-4 whitespace-nowrap">{new Date(row.confirmedAt).toLocaleString()}</td>
                 <td className="py-2">
                   {voidingId === row.id ? (
-                    <span className="flex flex-wrap items-center gap-2">
-                      <input
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                        placeholder="Reason for voiding"
-                        className="w-48"
-                      />
-                      <button type="button" onClick={confirmVoid} className="border-0 bg-red-700 text-white">
-                        Confirm void
-                      </button>
-                      <button type="button" onClick={() => setVoidingId(null)}>
-                        Cancel
-                      </button>
-                    </span>
+                    <div className="flex max-w-xs flex-col gap-2">
+                      <p className="m-0 text-xs text-gray-500">
+                        Voiding removes this from the customer&apos;s progress and frees the beer
+                        for re-confirmation. If a mug was already awarded, it is not revoked.
+                      </p>
+                      <span className="flex flex-wrap items-center gap-2">
+                        <input
+                          value={reason}
+                          onChange={(e) => setReason(e.target.value)}
+                          placeholder="Reason for voiding"
+                          className="w-48"
+                        />
+                        <button type="button" onClick={confirmVoid} className="border-0 bg-red-700 text-white">
+                          Confirm void
+                        </button>
+                        <button type="button" onClick={() => setVoidingId(null)}>
+                          Cancel
+                        </button>
+                      </span>
+                    </div>
                   ) : (
                     <button type="button" onClick={() => startVoid(row.id)}>
                       Void

@@ -69,6 +69,19 @@ describe('AdminBeers', () => {
     expect(updateBeerAvailability).toHaveBeenCalledWith(1, 'OutOfStock');
   });
 
+  it('shows a general note on availability/delete behavior, and delete-step microcopy at the delete step, not before', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Duvel');
+
+    expect(screen.getByText(/availability changes apply immediately/i)).toBeInTheDocument();
+    expect(screen.queryByText(/delete will fail/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getAllByRole('button', { name: 'Delete' })[0]);
+
+    expect(screen.getByText(/delete will fail/i)).toBeInTheDocument();
+  });
+
   it('requires a reason and an explicit confirm before deleting', async () => {
     const user = userEvent.setup();
     renderPage();

@@ -14,6 +14,11 @@ const AVAILABILITY_OPTIONS = ['OnTap', 'Available', 'OutOfStock', 'Retired'];
 // Same admin-gate-then-load shape as AdminUsers.jsx/AdminConfirmations.jsx. Availability
 // changes fire immediately (#56's PATCH endpoint needs no reason); only Delete goes
 // through the two-step reason guard, since #56's DELETE requires one.
+//
+// #76: the delete-step microcopy calls out that a beer with existing customer
+// confirmations can't actually be deleted — BeerConfirmation.BeerId is a restrict-on-
+// delete FK (ApplicationDbContext), so the API call fails rather than cascading. Void
+// the confirmations via AdminConfirmations.jsx first, or use Retired instead.
 function AdminBeers() {
   const isAdmin = getRolesFromToken().includes('Admin');
   const [searchInput, setSearchInput] = useState('');
@@ -102,6 +107,10 @@ function AdminBeers() {
         placeholder="Search by name, brewery, or style"
         className="mt-4 w-full"
       />
+      <p className="mt-1 text-sm text-gray-600">
+        Availability changes apply immediately, with no confirm step. Deleting requires a
+        reason and can&apos;t be undone.
+      </p>
 
       {message && <p className="mt-3 text-red-700">{message}</p>}
 
@@ -136,20 +145,27 @@ function AdminBeers() {
                 </td>
                 <td className="py-2">
                   {pendingDeleteId === beer.id ? (
-                    <span className="flex flex-wrap items-center gap-2">
-                      <input
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                        placeholder="Reason for deleting"
-                        className="w-40"
-                      />
-                      <button type="button" onClick={confirmDelete} className="border-0 bg-red-700 text-white">
-                        Confirm delete
-                      </button>
-                      <button type="button" onClick={cancelDelete}>
-                        Cancel
-                      </button>
-                    </span>
+                    <div className="flex max-w-xs flex-col gap-2">
+                      <p className="m-0 text-xs text-gray-500">
+                        This can&apos;t be undone. If any customer has already confirmed this
+                        beer, the delete will fail — void those confirmations first, or mark it
+                        Retired instead.
+                      </p>
+                      <span className="flex flex-wrap items-center gap-2">
+                        <input
+                          value={reason}
+                          onChange={(e) => setReason(e.target.value)}
+                          placeholder="Reason for deleting"
+                          className="w-40"
+                        />
+                        <button type="button" onClick={confirmDelete} className="border-0 bg-red-700 text-white">
+                          Confirm delete
+                        </button>
+                        <button type="button" onClick={cancelDelete}>
+                          Cancel
+                        </button>
+                      </span>
+                    </div>
                   ) : (
                     <span className="flex flex-wrap items-center gap-2">
                       <Link to={`/beers/${beer.id}/edit`}>Edit</Link>

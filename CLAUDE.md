@@ -573,23 +573,52 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     401s, duplicate invite 409s. SMTP isn't configured in this environment, so (same
     as `forgot-password`) the invite email itself silently no-ops rather than
     sending.
-  - #75 (UI: staff-only filter + search on User Management, branch
-    `sprint-8-user-mgmt-filter`, not yet a PR): `AdminUsers.jsx` now defaults to
-    Bartender/Admin rows only (a "Show all users (including customers)" checkbox
-    reveals the rest), plus a client-side email filter box — same filter pattern as
-    `AdminConfirmations.jsx`. Frontend-only, no backend change (the API already
-    returns every user; this is purely a client-side view filter). The acceptance
-    criteria said "email/name search," but the user model has no separate display
-    name field, so the filter searches email only. Suites: frontend 180/180 (+3 new).
-    Clean `npm run build`. Verified live: rebuilt the `web` container, confirmed the
-    Vite dev server serves the new "Show all users"/"Filter by email" UI text, and
-    that `GET /api/admin/users` (unchanged) still returns the same shape.
+  - #75 (UI: staff-only filter + search on User Management, merged
+    [PR #87](https://github.com/pmconnolly80/FinalCapstone/pull/87)): `AdminUsers.jsx`
+    now defaults to Bartender/Admin rows only (a "Show all users (including
+    customers)" checkbox reveals the rest), plus a client-side email filter box —
+    same filter pattern as `AdminConfirmations.jsx`. Frontend-only, no backend change
+    (the API already returns every user; this is purely a client-side view filter).
+    The acceptance criteria said "email/name search," but the user model has no
+    separate display name field, so the filter searches email only. Suites: frontend
+    180/180 (+3 new). Clean `npm run build`. Verified live: rebuilt the `web`
+    container, confirmed the Vite dev server serves the new "Show all users"/"Filter
+    by email" UI text, and that `GET /api/admin/users` (unchanged) still returns the
+    same shape.
+  - #76 (UI: inline consequence microcopy on audited admin actions, branch
+    `sprint-8-admin-microcopy`, not yet a PR): copy-only, no backend change. Adds a
+    short line of microcopy right at the point of each audited action, shown only
+    once it's pending (not on page load): `AdminUsers.jsx`'s role-change/deactivate/
+    reactivate guard steps (a new `CONSEQUENCE_MICROCOPY` map — the role-change note
+    is a previously-undocumented-in-the-UI finding from reading
+    `ConfirmationsController.ResolveBartenderFromPinAsync`: moving someone off
+    Bartender/Admin silently stops their PIN from resolving for confirmations even
+    though `StaffPin.IsActive` stays true); `AdminConfirmations.jsx`'s void step
+    (mug-not-revoked, mirroring `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1); and
+    `AdminBeers.jsx`'s delete step, which surfaces a real, previously-undocumented
+    gotcha found while researching this story: `BeerConfirmation.BeerId` is a
+    restrict-on-delete FK (`ApplicationDbContext.OnModelCreating`), so deleting a
+    beer that any customer has already confirmed doesn't cascade — it fails with an
+    unhandled `DbUpdateException` server-side, which the frontend only ever shows as
+    a generic "Failed to delete beer." The microcopy warns admins away from hitting
+    it rather than fixing the underlying exception handling, which is out of this
+    copy-only issue's scope — flagged as a follow-up, not fixed here. Suites:
+    frontend 183/183 (+6 new across the three pages' test files). Clean
+    `npm run build`. Verified live: rebuilt the `web` container, confirmed all five
+    new microcopy strings are served by the dev server across the three pages.
 
 **Not built** — the Admin Experience epic is done as of Sprint 5; Sprint 6 (Mobile UI
 Polish) and Sprint 7 (Beer Discovery & Recommendations) are both done and merged.
-Sprint 8 (Admin & Engagement UX Follow-ups) is in progress — #77 built and merged, #75
-built pending PR, #74/#76/#78–#81 remaining, see `EPICS_AND_SPRINTS.md` for the planned
+Sprint 8 (Admin & Engagement UX Follow-ups) is in progress — #77/#75 built and merged,
+#76 built pending PR, #74/#78–#81 remaining, see `EPICS_AND_SPRINTS.md` for the planned
 build order. The Engagement, Retention & Social epic is not yet groomed into issues.
+
+**Flagged, not fixed:** `BeersController.DeleteBeer` throws an unhandled
+`DbUpdateException` (500, no useful message) when deleting a beer that any customer
+has already confirmed, since `BeerConfirmation.BeerId` is a restrict-on-delete FK.
+#76 added UI microcopy warning admins away from this; the underlying exception
+handling (a friendly 409/400 instead of an unhandled 500) is unfixed and was out of
+that copy-only issue's scope. Worth a small follow-up story.
 
 ## Testing policy (TDD)
 
@@ -659,8 +688,8 @@ issues #72–#73 + #83, groomed 2026-07-23, closed 2026-07-23 —
 [PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85); suites at close:
 backend 271/271, frontend 175/175). **Sprint 8: Admin & Engagement UX Follow-ups**
 (milestone [#8](https://github.com/pmconnolly80/FinalCapstone/milestone/8), issues
-#74–#81, groomed 2026-07-23) is in progress: #77 built and merged (backend 280/280,
-frontend 177/177), #75 built pending PR (frontend 180/180), #74/#76/#78–#81
+#74–#81, groomed 2026-07-23) is in progress: #77/#75 built and merged (backend
+280/280, frontend 180/180), #76 built pending PR (frontend 183/183), #74/#78–#81
 remaining. See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md` for the full history.
 
 Sprint 5 built: a generalized `AdminAudit` trail + role assignment (#53) → user
@@ -690,13 +719,16 @@ report. See the bullet above for full detail, including live-stack verification.
 **Sprint 8: Admin & Engagement UX Follow-ups** (milestone
 [#8](https://github.com/pmconnolly80/FinalCapstone/milestone/8), issues #74–#81,
 groomed 2026-07-23, in progress — one PR per issue rather than one combined PR):
-#77 (admin-initiated bartender invite) is built and merged
-([PR #86](https://github.com/pmconnolly80/FinalCapstone/pull/86)); #75 (staff-only
-filter/search on User Management) is built (branch `sprint-8-user-mgmt-filter`, PR
-not yet opened); #74/#76/#78–#81 remain. See `EPICS_AND_SPRINTS.md`'s Sprint 8
-section for the planned build order (two file-overlap chains through
-`AdminUsers.jsx` and `ConfirmPinPad.jsx`/`BeerDetail.jsx`) and the bullets above for
-#77/#75's detail.
+#77 (admin-initiated bartender invite,
+[PR #86](https://github.com/pmconnolly80/FinalCapstone/pull/86)) and #75 (staff-only
+filter/search on User Management,
+[PR #87](https://github.com/pmconnolly80/FinalCapstone/pull/87)) are built and
+merged; #76 (inline consequence microcopy) is built (branch
+`sprint-8-admin-microcopy`, PR not yet opened); #74/#78–#81 remain. See
+`EPICS_AND_SPRINTS.md`'s Sprint 8 section for the planned build order (two
+file-overlap chains through `AdminUsers.jsx` and `ConfirmPinPad.jsx`/
+`BeerDetail.jsx`) and the bullets above for #77/#75/#76's detail, including the
+DeleteBeer FK-restrict gotcha #76 flagged but didn't fix.
 
 After Sprint 8, the **Engagement, Retention & Social** epic (milestone badges, push
 notifications + owner composer, My Beers, social feed, journal, owner analytics) is

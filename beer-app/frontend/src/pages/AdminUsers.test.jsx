@@ -98,6 +98,22 @@ describe('AdminUsers', () => {
     expect(await screen.findByText(/no users match this filter/i)).toBeInTheDocument();
   });
 
+  it('shows consequence microcopy for role change, deactivate, and reactivate, only once pending', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('bartender@example.com');
+
+    expect(screen.queryByText(/stops it from working for confirmations/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/disables their staff pin immediately/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getAllByRole('button', { name: 'Deactivate' })[0]);
+    expect(screen.getByText(/disables their staff pin immediately/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    await user.click(screen.getByRole('button', { name: 'Reactivate' }));
+    expect(screen.getByText(/does not restore their pin/i)).toBeInTheDocument();
+  });
+
   it('requires a reason and an explicit confirm before changing role', async () => {
     const user = userEvent.setup();
     renderPage();
@@ -105,9 +121,12 @@ describe('AdminUsers', () => {
     await user.click(screen.getByRole('checkbox', { name: /show all users/i }));
     await screen.findByText('customer@example.com');
 
+    expect(screen.queryByText(/stops it from working for confirmations/i)).not.toBeInTheDocument();
+
     const roleSelect = screen.getByDisplayValue('Customer');
     await user.selectOptions(roleSelect, 'Bartender');
     expect(assignRole).not.toHaveBeenCalled();
+    expect(screen.getByText(/stops it from working for confirmations/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Confirm' }));
     expect(assignRole).not.toHaveBeenCalled();
