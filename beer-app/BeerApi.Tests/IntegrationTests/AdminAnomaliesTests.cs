@@ -56,6 +56,48 @@ public class AdminAnomaliesTests : IDisposable
         Assert.NotNull(body);
     }
 
+    // #81: a customer's report is invisible via the customer-facing API surface (it
+    // never changes availability) but shows up to an admin through this same anomalies
+    // endpoint, reusing #58's existing panel rather than a new one.
+    [Fact]
+    public async Task ReportUnavailable_ThenShowsUpToAdminAsAnAnomaly()
+    {
+        var customerToken = await RegisterCustomerAsync("report.customer@example.com");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", customerToken);
+        var beers = (await _client.GetFromJsonAsync<BeerApi.Controllers.BeerSearchResponse>("/api/beers"))!.Items;
+        var beer = beers![0];
+
+        var reportResponse = await _client.PostAsync($"/api/beers/{beer.Id}/unavailability-reports", null);
+        Assert.Equal(HttpStatusCode.NoContent, reportResponse.StatusCode);
+
+        var adminToken = await CreateAdminAndLoginAsync("report.admin@example.com", "AdminPassw0rd!");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+
+        var anomalies = await _client.GetFromJsonAsync<List<AnomalyResponse>>("/api/admin/anomalies");
+        var anomaly = Assert.Single(anomalies!, a => a.Type == "UnavailabilityReport");
+        Assert.Contains(beer.Name, anomaly.Summary);
+        Assert.Equal($"/beers/{beer.Id}", anomaly.DeepLink);
+    }
+
+    [Fact]
+    public async Task ReportUnavailable_WithoutToken_ReturnsUnauthorized()
+    {
+        var response = await _client.PostAsync("/api/beers/1/unavailability-reports", null);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ReportUnavailable_UnknownBeer_ReturnsNotFound()
+    {
+        var customerToken = await RegisterCustomerAsync("report.unknown.customer@example.com");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", customerToken);
+
+        var response = await _client.PostAsync("/api/beers/999999/unavailability-reports", null);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
     private async Task<string> RegisterCustomerAsync(string email)
     {
         var response = await _client.PostAsJsonAsync("/api/auth/register", new RegisterRequest(email, "Passw0rd!"));

@@ -6,6 +6,10 @@ const ANOMALY_BADGES = {
   BulkBeerAdd: { label: 'Bulk Beer Add', className: 'bg-yellow-100 text-yellow-800' },
   ConfirmationVelocitySpike: { label: 'Velocity Spike', className: 'bg-orange-100 text-orange-800' },
   OffHoursActivity: { label: 'Off Hours', className: 'bg-red-100 text-red-800' },
+  // #81: not really an "anomaly" (it's a crowd-sourced report, not a statistical
+  // outlier), but it reuses this same panel rather than a new screen, per the issue's
+  // "similar in spirit to the existing anomaly panel" framing.
+  UnavailabilityReport: { label: 'Unavailable Report', className: 'bg-purple-100 text-purple-800' },
 };
 
 // Admin Dashboard (#59): closes Sprint 5, ties #53-#58 together. Summary cards and the

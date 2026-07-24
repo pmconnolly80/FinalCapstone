@@ -34,6 +34,7 @@ public class AdminAnomaliesController : ControllerBase
         anomalies.AddRange(await DetectBulkBeerAddAsync(_context, _configuration, now));
         anomalies.AddRange(await DetectConfirmationVelocityAsync(_context, _configuration, now));
         anomalies.AddRange(await DetectOffHoursActivityAsync(_context, _configuration, now));
+        anomalies.AddRange(await DetectUnavailabilityReportsAsync(_context, _configuration, now));
         return anomalies.OrderByDescending(a => a.OccurredAt).ToList();
     }
 
@@ -200,6 +201,46 @@ public class AdminAnomaliesController : ControllerBase
             {
                 break;
             }
+        }
+        return results;
+    }
+
+    // #81: one entry per beer with at least one recent unavailability report — "more
+    // prominent than a single one" is expressed in the summary text's count (and, since
+    // OccurredAt is the most-recently-reported time, a beer getting repeatedly flagged
+    // naturally sorts near the top of the combined list) rather than a separate severity
+    // tier, per the issue's own "no need for anything fancier."
+    public static async Task<List<AnomalyResponse>> DetectUnavailabilityReportsAsync(
+        ApplicationDbContext context, IConfiguration configuration, DateTime now)
+    {
+        var lookbackHours = configuration.GetValue("Anomalies:UnavailabilityReports:LookbackHours", 24);
+        var windowStart = now.AddHours(-lookbackHours);
+
+        var reports = await context.UnavailabilityReports
+            .Where(r => r.CreatedAt >= windowStart)
+            .Select(r => new { r.BeerId, r.CreatedAt })
+            .ToListAsync();
+
+        var results = new List<AnomalyResponse>();
+        foreach (var group in reports.GroupBy(r => r.BeerId))
+        {
+            var beerName = await context.Beers
+                .Where(b => b.Id == group.Key)
+                .Select(b => b.Name)
+                .FirstOrDefaultAsync();
+            if (beerName == null)
+            {
+                continue;
+            }
+
+            var count = group.Count();
+            results.Add(new AnomalyResponse(
+                "UnavailabilityReport",
+                group.Max(r => r.CreatedAt),
+                $"'{beerName}' flagged unavailable by {count} customer{(count == 1 ? "" : "s")} in the last {lookbackHours}h",
+                null,
+                null,
+                $"/beers/{group.Key}"));
         }
         return results;
     }

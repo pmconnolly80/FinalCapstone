@@ -230,4 +230,79 @@ public class AdminAnomaliesControllerTests
 
         Assert.Empty(results);
     }
+
+    // ---- #81 unavailability reports ----
+
+    [Fact]
+    public async Task DetectUnavailabilityReportsAsync_MultipleCustomers_OneEntryWithCountInSummary()
+    {
+        using var context = CreateContext();
+        var beer = new Beer { Name = "Duvel", Brewery = "Duvel Moortgat", Style = "Belgian Strong Golden Ale" };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        context.UnavailabilityReports.AddRange(
+            new UnavailabilityReport { CustomerId = "cust-1", BeerId = beer.Id, CreatedAt = Now.AddHours(-2) },
+            new UnavailabilityReport { CustomerId = "cust-2", BeerId = beer.Id, CreatedAt = Now.AddHours(-1) },
+            new UnavailabilityReport { CustomerId = "cust-3", BeerId = beer.Id, CreatedAt = Now.AddMinutes(-10) });
+        await context.SaveChangesAsync();
+
+        var results = await AdminAnomaliesController.DetectUnavailabilityReportsAsync(context, CreateConfiguration(), Now);
+
+        var anomaly = Assert.Single(results);
+        Assert.Equal("UnavailabilityReport", anomaly.Type);
+        Assert.Contains("Duvel", anomaly.Summary);
+        Assert.Contains("3 customers", anomaly.Summary);
+        Assert.Equal(Now.AddMinutes(-10), anomaly.OccurredAt);
+        Assert.Equal($"/beers/{beer.Id}", anomaly.DeepLink);
+        Assert.Null(anomaly.ActorId);
+    }
+
+    [Fact]
+    public async Task DetectUnavailabilityReportsAsync_SingleReport_SingularWording()
+    {
+        using var context = CreateContext();
+        var beer = new Beer { Name = "Duvel", Brewery = "Duvel Moortgat", Style = "Belgian Strong Golden Ale" };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        context.UnavailabilityReports.Add(new UnavailabilityReport { CustomerId = "cust-1", BeerId = beer.Id, CreatedAt = Now.AddHours(-1) });
+        await context.SaveChangesAsync();
+
+        var results = await AdminAnomaliesController.DetectUnavailabilityReportsAsync(context, CreateConfiguration(), Now);
+
+        var anomaly = Assert.Single(results);
+        Assert.Contains("1 customer ", anomaly.Summary);
+    }
+
+    [Fact]
+    public async Task DetectUnavailabilityReportsAsync_OutsideLookbackWindow_ReturnsNothing()
+    {
+        using var context = CreateContext();
+        var beer = new Beer { Name = "Duvel", Brewery = "Duvel Moortgat", Style = "Belgian Strong Golden Ale" };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        context.UnavailabilityReports.Add(new UnavailabilityReport { CustomerId = "cust-1", BeerId = beer.Id, CreatedAt = Now.AddHours(-25) });
+        await context.SaveChangesAsync();
+
+        var results = await AdminAnomaliesController.DetectUnavailabilityReportsAsync(context, CreateConfiguration(), Now);
+
+        Assert.Empty(results);
+    }
+
+    [Fact]
+    public async Task DetectUnavailabilityReportsAsync_DifferentBeers_SeparateEntries()
+    {
+        using var context = CreateContext();
+        var duvel = new Beer { Name = "Duvel", Brewery = "Duvel Moortgat", Style = "Belgian Strong Golden Ale" };
+        var orval = new Beer { Name = "Orval", Brewery = "Brasserie d'Orval", Style = "Belgian Pale Ale" };
+        context.Beers.AddRange(duvel, orval);
+        await context.SaveChangesAsync();
+        context.UnavailabilityReports.AddRange(
+            new UnavailabilityReport { CustomerId = "cust-1", BeerId = duvel.Id, CreatedAt = Now.AddHours(-1) },
+            new UnavailabilityReport { CustomerId = "cust-1", BeerId = orval.Id, CreatedAt = Now.AddHours(-1) });
+        await context.SaveChangesAsync();
+
+        var results = await AdminAnomaliesController.DetectUnavailabilityReportsAsync(context, CreateConfiguration(), Now);
+
+        Assert.Equal(2, results.Count);
+    }
 }

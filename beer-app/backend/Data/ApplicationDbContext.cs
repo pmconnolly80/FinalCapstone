@@ -22,6 +22,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ExternalSearchLog> ExternalSearchLogs => Set<ExternalSearchLog>();
     public DbSet<BeerRecommendation> BeerRecommendations => Set<BeerRecommendation>();
     public DbSet<BeerRating> BeerRatings => Set<BeerRating>();
+    public DbSet<UnavailabilityReport> UnavailabilityReports => Set<UnavailabilityReport>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -79,6 +80,16 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .IsUnique();
 
         builder.Entity<BeerRating>()
+            .HasOne(r => r.Beer)
+            .WithMany()
+            .HasForeignKey(r => r.BeerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // The admin-facing signal reads recent reports grouped by beer (#81).
+        builder.Entity<UnavailabilityReport>()
+            .HasIndex(r => new { r.BeerId, r.CreatedAt });
+
+        builder.Entity<UnavailabilityReport>()
             .HasOne(r => r.Beer)
             .WithMany()
             .HasForeignKey(r => r.BeerId)
