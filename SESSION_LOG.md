@@ -1590,9 +1590,73 @@ Verified live against the Docker stack, both directions: `DELETE /api/beers/2`
 creating a fresh beer with no confirmations and deleting it still returns 204 as
 before — confirming the fix doesn't over-block legitimate deletes.
 
-- Branch: `fix-delete-beer-with-confirmations`, not yet opened as a PR.
+- Branch: `fix-delete-beer-with-confirmations` —
+  [PR #89](https://github.com/pmconnolly80/FinalCapstone/pull/89), CI green, merged to
+  `master`.
 
-**Resume here:** open the PR for this fix, then continue the Sprint 8 build order
-with #79 (variable-length staff PINs), which the plan calls for building next since
-it touches `AdminUsers.jsx`/`ConfirmPinPad.jsx` and #80 depends on its relaxed PIN
-validation.
+## 2026-07-24 — Sprint 8 #79: variable-length staff PINs (planned out before building)
+
+**Epic:** `epic:admin`
+
+Planned the approach with the user before building, per explicit request. PINs were
+hardcoded to exactly 6 digits in 5 places: `StaffPinsController.SetPinAsync`,
+`ConfirmationsController.PostConfirmation` (both backend length checks), plus 3
+frontend files' validation/`maxLength`/copy — `ConfirmPinPad.jsx`, `MyPin.jsx`, and
+`AdminUsers.jsx`'s Set PIN step (exactly the 3 files the issue's acceptance criteria
+called out by name). Relaxed to a configurable 6-8 digit range so an admin can issue
+a bartender a longer, memorable format (an 8-digit birthday, `MMDDYYYY`) instead of a
+random 6-digit one:
+
+- New `StaffPinsController.MinPinLength`/`MaxPinLength` constants replace both
+  backend hardcoded checks — same cross-controller reuse pattern already established
+  by `MeController` referencing `ConfirmationsController.MugGoal`, so the two entry
+  points (setting a PIN, confirming with one) can't drift apart.
+- Frontend: `ConfirmPinPad.jsx`'s input cap raised from 6 to 8 and its error message
+  made length-agnostic ("Enter the bartender's PIN." rather than claiming "6-digit");
+  `MyPin.jsx` and `AdminUsers.jsx`'s Set PIN step both got their regex/`maxLength`/
+  placeholder/error copy updated to state the real 6-8 range rather than a fixed
+  "6-digit" claim — the user's stated preference during planning was for copy that
+  states the actual range rather than fully vague wording, since it's more useful to
+  someone picking a PIN.
+- Existing 6-digit PINs (the dev bartender's `123456`) keep working unchanged — the
+  range check is inclusive of 6, not a replacement floor.
+
+Two existing backend unit tests needed fixing, not just extending: both
+`StaffPinsControllerTests.SetMyPin_MalformedPin_ReturnsBadRequest` and
+`ConfirmationsControllerTests.PostConfirmation_MalformedPin_ReturnsBadRequest` had a
+7-digit PIN (`"1234567"`) in their "malformed" `[InlineData]` sets — correct under the
+old hardcoded-6 rule, but now genuinely valid input, so those cases were swapped for
+actually-out-of-range ones (9-digit / 5-digit).
+
+Per the issue's explicit acceptance criteria ("regression tests cover both a 6-digit
+and an 8-digit PIN through the full confirm + lockout flow"), extended
+`ConfirmationsFlowTests.cs` with an HTTP-level test seeding a fresh bartender with an
+8-digit PIN directly via the DbContext, then running the same confirm-success +
+5-failed-attempts-then-locked sequence every other test in that file already runs
+against the seeded dev bartender's 6-digit PIN. Hit one test bug along the way: the
+first draft reused the same beer for both the success-path confirm and the lockout
+loop, and `PostConfirmation`'s already-confirmed check runs *before* PIN validation —
+so every lockout-loop attempt 409'd immediately regardless of PIN, never actually
+exercising the lockout path. Fixed by using two separate beers.
+
+Suites: backend 287/287 (+5 new — 2 unit tests plus the HTTP-level 8-digit
+confirm+lockout regression test), frontend 187/187 (+3 new: an 8-digit success case
+each for `ConfirmPinPad.jsx`, `MyPin.jsx`, and `AdminUsers.jsx`'s Set PIN step).
+Clean `npm run build`.
+
+Verified live against the Docker stack: invited a fresh bartender via #77's endpoint,
+issued them an 8-digit birthday-format PIN (`07041999`) via the admin API, confirmed
+a beer with it as a customer (201), confirmed the existing dev bartender's 6-digit
+PIN still works unchanged (201), confirmed an unissued-but-in-range 7-digit PIN is
+rejected as "Invalid PIN" (401, the wrong-PIN path, not a validation error — proving
+the range check isn't accidentally accepting any 6-8 digit string as a match), and a
+too-short 5-digit PIN is rejected at validation (400, "A PIN of 6-8 digits is
+required."). Also confirmed all the new frontend copy ("PINs must be 6-8 digits",
+"PIN (6-8 digits)", "Enter the bartender's PIN") is served live by the Vite dev
+server across the three page/component source files.
+
+- Branch: `sprint-8-variable-pin-length`, not yet opened as a PR.
+
+**Resume here:** open the PR for #79, then continue the Sprint 8 build order with
+#80 (mark a beer out-of-stock from the confirmation PIN pad), which depends on #79's
+relaxed PIN validation and reuses `ConfirmPinPad.jsx`.

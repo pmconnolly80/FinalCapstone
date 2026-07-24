@@ -15,6 +15,14 @@ namespace BeerApi.Controllers;
 [Route("api/staff-pins")]
 public class StaffPinsController : ControllerBase
 {
+    // #79: was hardcoded to exactly 6 digits; relaxed to a range so an admin can choose a
+    // longer, easier-to-remember format (e.g. an 8-digit birthday, MMDDYYYY) per bartender.
+    // ConfirmationsController.PostConfirmation references these same constants — same
+    // cross-controller reuse pattern as MeController referencing
+    // ConfirmationsController.MugGoal — so the two entry points can't drift apart.
+    public const int MinPinLength = 6;
+    public const int MaxPinLength = 8;
+
     private static readonly PasswordHasher<ApplicationUser> PinHasher = new();
 
     private readonly ApplicationDbContext _context;
@@ -80,9 +88,9 @@ public class StaffPinsController : ControllerBase
 
     private async Task<IActionResult> SetPinAsync(string userId, string? pin)
     {
-        if (pin == null || pin.Length != 6 || !pin.All(char.IsAsciiDigit))
+        if (pin == null || pin.Length < MinPinLength || pin.Length > MaxPinLength || !pin.All(char.IsAsciiDigit))
         {
-            return BadRequest(new { message = "A 6-digit PIN is required." });
+            return BadRequest(new { message = $"A PIN of {MinPinLength}-{MaxPinLength} digits is required." });
         }
 
         // Hashes can't be compared directly, so the candidate is verified against each

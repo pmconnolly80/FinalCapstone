@@ -321,7 +321,8 @@ direction at planning time — see the build-order note below.
 5. [#78 UI + API: reframe Admin Dashboard as operational health; pull forward most/least-confirmed beers](https://github.com/pmconnolly80/FinalCapstone/issues/78) (`epic:admin`)
 6. [#79 API + UI: support variable-length staff PINs (e.g. birthday format)](https://github.com/pmconnolly80/FinalCapstone/issues/79) (`epic:admin`) —
    acceptance criteria amended 2026-07-23 to explicitly call out 3 files with hardcoded
-   "6-digit" copy beyond the validation logic
+   "6-digit" copy beyond the validation logic. ✅ built 2026-07-23, branch
+   `sprint-8-variable-pin-length`, PR not yet opened
 7. [#80 API + UI: mark a beer out-of-stock from the confirmation PIN pad](https://github.com/pmconnolly80/FinalCapstone/issues/80) (`epic:admin`) —
    acceptance criteria amended 2026-07-23 to support toggling back to available (not
    just out-of-stock) and to require a deliberate confirm step

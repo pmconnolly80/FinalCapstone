@@ -44,9 +44,15 @@ public class ConfirmationsController : ControllerBase
             return Unauthorized();
         }
 
-        if (request.Pin == null || request.Pin.Length != 6 || !request.Pin.All(char.IsAsciiDigit))
+        if (request.Pin == null
+            || request.Pin.Length < StaffPinsController.MinPinLength
+            || request.Pin.Length > StaffPinsController.MaxPinLength
+            || !request.Pin.All(char.IsAsciiDigit))
         {
-            return BadRequest(new { message = "A 6-digit PIN is required." });
+            return BadRequest(new
+            {
+                message = $"A PIN of {StaffPinsController.MinPinLength}-{StaffPinsController.MaxPinLength} digits is required."
+            });
         }
 
         var beer = await _context.Beers.FindAsync(request.BeerId);

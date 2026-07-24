@@ -118,7 +118,7 @@ public class StaffPinsControllerTests
     [Theory]
     [InlineData("123")]
     [InlineData("12ab56")]
-    [InlineData("1234567")]
+    [InlineData("123456789")]
     [InlineData("")]
     public async Task SetMyPin_MalformedPin_ReturnsBadRequest(string pin)
     {
@@ -130,6 +130,25 @@ public class StaffPinsControllerTests
 
         Assert.IsType<BadRequestObjectResult>(result);
         Assert.Empty(context.StaffPins);
+    }
+
+    [Theory]
+    [InlineData("654321")]
+    [InlineData("6543210")]
+    [InlineData("07041999")]
+    public async Task SetMyPin_AcceptsAnyLengthWithinRange_6To8Digits(string pin)
+    {
+        // #79: previously hardcoded to exactly 6 digits — now a configurable range so an
+        // admin can pick a longer, memorable format (e.g. an 8-digit birthday) per bartender.
+        using var context = CreateContext();
+        await SeedStaffAsync(context);
+        var controller = CreateController(context);
+
+        var result = await controller.SetMyPin(new SetPinRequest(pin));
+
+        Assert.IsType<NoContentResult>(result);
+        var staffPin = Assert.Single(context.StaffPins);
+        Assert.True(PinVerifies(staffPin, pin));
     }
 
     [Fact]

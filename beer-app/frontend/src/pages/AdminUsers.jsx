@@ -55,6 +55,10 @@ const CONSEQUENCE_MICROCOPY = {
 //
 // #76: role/deactivate/reactivate each show CONSEQUENCE_MICROCOPY inline, before the
 // admin confirms — see that constant's comment for where each consequence comes from.
+//
+// #79: Set PIN accepts 6-8 digits (StaffPinsController.MinPinLength/MaxPinLength), not a
+// hardcoded 6 — an admin can issue a bartender a longer, memorable format like an
+// 8-digit birthday.
 function AdminUsers() {
   const isAdmin = getRolesFromToken().includes('Admin');
   const [users, setUsers] = useState([]);
@@ -107,8 +111,8 @@ function AdminUsers() {
 
     try {
       if (type === 'pin') {
-        if (!/^\d{6}$/.test(pin)) {
-          setMessage('PINs are exactly 6 digits.');
+        if (!/^\d{6,8}$/.test(pin)) {
+          setMessage('PINs must be 6-8 digits.');
           return;
         }
         await issueOrResetStaffPin(userId, pin);
@@ -269,11 +273,11 @@ function AdminUsers() {
                         <input
                           type="password"
                           inputMode="numeric"
-                          maxLength={6}
+                          maxLength={8}
                           value={pin}
                           onChange={(e) => setPin(e.target.value)}
-                          placeholder="6-digit PIN"
-                          className="w-28 text-center tracking-[4px]"
+                          placeholder="PIN (6-8 digits)"
+                          className="w-32 text-center tracking-[4px]"
                         />
                         <button type="button" onClick={confirmPendingAction} className="border-0 bg-red-700 text-white">
                           Confirm

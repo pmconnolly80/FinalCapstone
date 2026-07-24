@@ -24,7 +24,7 @@ public class ConfirmationsControllerTests
         return new ApplicationDbContext(options);
     }
 
-    private static async Task<Beer> SeedWorldAsync(ApplicationDbContext context, bool bartenderPinActive = true, string bartenderRole = "Bartender")
+    private static async Task<Beer> SeedWorldAsync(ApplicationDbContext context, bool bartenderPinActive = true, string bartenderRole = "Bartender", string bartenderPin = BartenderPin)
     {
         var beer = new Beer { Name = "Duvel", Brewery = "Duvel Moortgat", Style = "Belgian Strong Golden Ale" };
         context.Beers.Add(beer);
@@ -39,7 +39,7 @@ public class ConfirmationsControllerTests
         context.StaffPins.Add(new StaffPin
         {
             UserId = BartenderId,
-            PinHash = hasher.HashPassword(new ApplicationUser(), BartenderPin),
+            PinHash = hasher.HashPassword(new ApplicationUser(), bartenderPin),
             IsActive = bartenderPinActive,
         });
 
@@ -113,7 +113,7 @@ public class ConfirmationsControllerTests
     [Theory]
     [InlineData("123")]
     [InlineData("12ab56")]
-    [InlineData("1234567")]
+    [InlineData("123456789")]
     public async Task PostConfirmation_MalformedPin_ReturnsBadRequest(string pin)
     {
         using var context = CreateContext();
@@ -124,6 +124,22 @@ public class ConfirmationsControllerTests
 
         Assert.IsType<BadRequestObjectResult>(result);
         Assert.Empty(context.BeerConfirmations);
+    }
+
+    [Fact]
+    public async Task PostConfirmation_WithEightDigitBartenderPin_Succeeds()
+    {
+        // #79: an admin can issue a longer, memorable PIN (e.g. an 8-digit birthday)
+        // instead of a random 6-digit one — the confirm path must accept it identically.
+        const string eightDigitPin = "07041999";
+        using var context = CreateContext();
+        var beer = await SeedWorldAsync(context, bartenderPin: eightDigitPin);
+        var controller = CreateController(context);
+
+        var result = await controller.PostConfirmation(new ConfirmationRequest(beer.Id, eightDigitPin));
+
+        var created = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status201Created, created.StatusCode);
     }
 
     [Fact]
