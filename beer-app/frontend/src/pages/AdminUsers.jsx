@@ -33,6 +33,12 @@ const PIN_BADGES = {
 // #77: the invite form is a direct, un-guarded submit (no reason step) — inviting a new
 // bartender isn't a correction to an existing account the way role/deactivate/reactivate
 // are, so it doesn't fit that pattern.
+//
+// #75: default view filters to staff (Bartender/Admin) only, since this screen is meant
+// for managing a handful of bartenders, not browsing the full customer base — a "show
+// all" toggle covers the rare customer lookup. The filter box searches email only (the
+// user model has no separate display name), same client-side-filter pattern as
+// AdminConfirmations.jsx.
 function AdminUsers() {
   const isAdmin = getRolesFromToken().includes('Admin');
   const [users, setUsers] = useState([]);
@@ -42,6 +48,8 @@ function AdminUsers() {
   const [message, setMessage] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteMessage, setInviteMessage] = useState('');
+  const [showAll, setShowAll] = useState(false);
+  const [filter, setFilter] = useState('');
 
   const load = () => {
     getAdminUsers()
@@ -131,6 +139,11 @@ function AdminUsers() {
     }
   };
 
+  const needle = filter.trim().toLowerCase();
+  const visible = users
+    .filter((u) => showAll || STAFF_ROLES.includes(u.role))
+    .filter((u) => !needle || u.email.toLowerCase().includes(needle));
+
   return (
     <section className="rounded-2xl bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
       <h2 className="m-0 text-xl font-bold">User management</h2>
@@ -159,6 +172,19 @@ function AdminUsers() {
 
       {message && <p className="mt-3 text-red-700">{message}</p>}
 
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <input
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="Filter by email"
+          className="w-64"
+        />
+        <label className="flex items-center gap-2 text-sm text-gray-600">
+          <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />
+          Show all users (including customers)
+        </label>
+      </div>
+
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>
@@ -171,7 +197,7 @@ function AdminUsers() {
             </tr>
           </thead>
           <tbody>
-            {users.map((user) => {
+            {visible.map((user) => {
               const statusBadge = STATUS_BADGES[user.isActive ? 'active' : 'deactivated'];
               const pinBadge = PIN_BADGES[user.hasActivePin ? 'active' : 'none'];
               const isStaff = STAFF_ROLES.includes(user.role);
@@ -265,10 +291,10 @@ function AdminUsers() {
                 </tr>
               );
             })}
-            {users.length === 0 && (
+            {visible.length === 0 && (
               <tr>
                 <td colSpan="5" className="py-4 text-gray-500">
-                  No users found.
+                  {users.length === 0 ? 'No users found.' : 'No users match this filter.'}
                 </td>
               </tr>
             )}
