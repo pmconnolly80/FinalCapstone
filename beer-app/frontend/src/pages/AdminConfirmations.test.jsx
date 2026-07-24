@@ -116,6 +116,18 @@ describe('AdminConfirmations', () => {
     expect(voidConfirmation).toHaveBeenCalledWith(1, 'wrong customer confirmed');
   });
 
+  it('shows consequence microcopy at the void step, not before', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('drinker@example.com');
+
+    expect(screen.queryByText(/not revoked/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getAllByRole('button', { name: 'Void' })[0]);
+
+    expect(screen.getByText(/mug was already awarded, it is not revoked/i)).toBeInTheDocument();
+  });
+
   it('shows the audit trail for voided confirmations', async () => {
     renderPage();
 

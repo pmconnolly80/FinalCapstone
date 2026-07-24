@@ -1507,7 +1507,48 @@ text via `curl http://localhost:3001/src/pages/AdminUsers.jsx`, and confirmed
 `GET /api/admin/users` (unchanged) still returns the same response shape via curl as
 the seeded admin.
 
-- Branch: `sprint-8-user-mgmt-filter`, not yet opened as a PR.
+- Branch: `sprint-8-user-mgmt-filter` —
+  [PR #87](https://github.com/pmconnolly80/FinalCapstone/pull/87), CI green, merged to
+  `master` before starting #76 (keeps the `AdminUsers.jsx` chain conflict-free).
 
-**Resume here:** open the PR for #75, then continue the build order with #76 (inline
-consequence microcopy on audited admin actions).
+Then built #76 (inline consequence microcopy on audited admin actions), next in the
+build order. Copy-only, no backend change, per the issue's own acceptance criteria:
+short lines of microcopy shown right at the point of each audited action, only once
+it's pending (not on page load) —
+
+- `AdminUsers.jsx`: a new `CONSEQUENCE_MICROCOPY` map for the role-change/deactivate/
+  reactivate guard steps. The deactivate/reactivate copy comes straight from
+  `AdminUsersController`'s existing behavior (documented in
+  `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1, just never surfaced in the UI before now).
+  The role-change copy is a genuinely new finding from reading
+  `ConfirmationsController.ResolveBartenderFromPinAsync` while writing this story: it
+  only resolves PINs belonging to a *current* Bartender/Admin, so moving someone off
+  those roles silently stops their PIN from working for confirmations, even though
+  `StaffPin.IsActive` stays `true` — nothing had ever said this in the UI.
+- `AdminConfirmations.jsx`: microcopy at the void step itself (not just the existing
+  page-level paragraph) states the mug-not-revoked behavior from §4.1.
+- `AdminBeers.jsx`: microcopy at the delete step, plus a general note above the table.
+  Researching this surfaced a second real, previously-undocumented gap:
+  `BeerConfirmation.BeerId` is a restrict-on-delete FK
+  (`ApplicationDbContext.OnModelCreating`), so `DeleteBeer` on a beer with existing
+  confirmations doesn't cascade — it throws an unhandled `DbUpdateException`
+  server-side, which the frontend's generic error handling only ever shows as "Failed
+  to delete beer," no real explanation. The microcopy warns admins away from hitting
+  this rather than fixing the exception handling itself, since that's backend
+  behavior change out of this copy-only issue's scope — flagged in
+  `EPICS_AND_SPRINTS.md`/`CLAUDE.md` as a worthwhile small follow-up story, not
+  silently fixed here.
+
+Suites: frontend 183/183 (+6 new: one microcopy-visibility test per action across
+`AdminUsers.test.jsx`, `AdminConfirmations.test.jsx`, `AdminBeers.test.jsx`, checking
+each string is absent until the action is pending). Clean `npm run build`.
+
+Verified live: rebuilt the `web` container, confirmed all five new microcopy strings
+are served by the Vite dev server across the three page source files via curl.
+
+- Branch: `sprint-8-admin-microcopy`, not yet opened as a PR.
+
+**Resume here:** open the PR for #76, then continue the build order with #79
+(variable-length staff PINs), which the plan calls for building next since it
+touches `AdminUsers.jsx`/`ConfirmPinPad.jsx` and #80 depends on its relaxed PIN
+validation.

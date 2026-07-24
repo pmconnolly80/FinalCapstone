@@ -308,8 +308,13 @@ direction at planning time — see the build-order note below.
    detail, since My Beers doesn't exist yet
 2. [#75 UI: staff-only filter + search on the User Management table](https://github.com/pmconnolly80/FinalCapstone/issues/75) (`epic:admin`) —
    this repo's list had #75/#76 titles swapped relative to GitHub; fixed 2026-07-23.
-   ✅ built 2026-07-23, branch `sprint-8-user-mgmt-filter`, PR not yet opened
-3. [#76 UI: inline consequence microcopy on audited admin actions](https://github.com/pmconnolly80/FinalCapstone/issues/76) (`epic:admin`)
+   ✅ built 2026-07-23, merged [PR #87](https://github.com/pmconnolly80/FinalCapstone/pull/87)
+3. [#76 UI: inline consequence microcopy on audited admin actions](https://github.com/pmconnolly80/FinalCapstone/issues/76) (`epic:admin`) —
+   ✅ built 2026-07-23, branch `sprint-8-admin-microcopy`, PR not yet opened. Flagged
+   (not fixed, out of this copy-only issue's scope) a real gap found while researching
+   it: `BeersController.DeleteBeer` throws an unhandled `DbUpdateException` (bare 500)
+   deleting a beer with existing confirmations, since `BeerConfirmation.BeerId` is a
+   restrict-on-delete FK
 4. [#77 API + UI: admin-initiated bartender account invite](https://github.com/pmconnolly80/FinalCapstone/issues/77) (`epic:admin`) —
    ✅ built 2026-07-23, merged [PR #86](https://github.com/pmconnolly80/FinalCapstone/pull/86)
 5. [#78 UI + API: reframe Admin Dashboard as operational health; pull forward most/least-confirmed beers](https://github.com/pmconnolly80/FinalCapstone/issues/78) (`epic:admin`)
