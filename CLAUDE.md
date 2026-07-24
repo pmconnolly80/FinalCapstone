@@ -47,6 +47,13 @@ flow, not the other way around. See `PROJECT_PLAN.md` section 1 for the full fra
   `PROGRESS_TRACKER.md` and `PHASE1_IMPLEMENTATION_CHECKLIST.md` are retired stubs pointing here
   — they went stale (described a plain CRUD app, or stayed fully unchecked after the work was
   actually done) and were replaced rather than fixed in place.
+- **`UX_REDESIGN_BRAINSTORM.md` (added 2026-07-24) — READ THIS FIRST before writing any
+  code.** Live use surfaced a real bug (login never redirects off `/auth`) and a bigger
+  open question about the core flow (customer confirmation should be near-frictionless,
+  and "what screen appears right after login" isn't settled). **Per explicit user
+  direction, no implementation work happens against this app until the open questions
+  in that doc are answered and a direction is agreed** — this supersedes Sprint 9/10
+  being "ready to build" below until it's resolved.
 
 Suggested reading order for onboarding: `PROJECT_PLAN.md` → `EPICS_AND_SPRINTS.md` for current
 status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlog detail →

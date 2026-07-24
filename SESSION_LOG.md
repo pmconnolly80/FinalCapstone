@@ -1937,3 +1937,49 @@ three pairs are independent of each other and can go in any order once each pair
 own two issues are sequenced), then Sprint 10 (#101 → #102 → #103 → #104, strictly
 sequential). Badges, automated notifications, the owner composer, the social layer,
 the personal journal, and owner analytics remain ungroomed until it's their turn.
+
+## 2026-07-24 — Development paused: UX direction brainstorm opened
+
+**Epic:** none — this pauses the Sprint 9/10 build queue above, not part of it.
+
+Live use of the current build (still on the customer's own phone, not through any
+automated test) surfaced two things in the same conversation: a real, confirmed bug,
+and a bigger open question about whether the core flow is actually the frictionless
+thing the product needs to be.
+
+- **Bug found:** `AuthPage.jsx` never navigates away after a successful login or
+  register. It dispatches `AUTH_CHANGED_EVENT` (which flips the bottom tab bar's
+  visibility), but nothing redirects off `/auth` — so the login form stays rendered
+  underneath while the tab bar appears around it. Root cause confirmed by reading the
+  component; fix is a one-line `navigate('/')` on success. **Deliberately not applied**
+  — the correct redirect target depends on the direction question below, so patching
+  it now risked doing it twice.
+- **Direction question, stated directly by the user:** confirming a beer should need
+  "very little...other than entering their number" from the bartender, and after
+  login the customer should land on a screen to confirm a beer, with everything else
+  (progress, account, admin) on other tabs — not necessarily today's `Home.jsx` +
+  bottom-tab-bar structure from Sprint 6. Explicit direction: **no more implementation
+  work until this is resolved** — "if it is cumbersome it will not be used."
+- Also raised, parked (not blocking): mirroring Open Brewery DB into a
+  self-hosted AWS database once the app itself is deployed to AWS — a data/infra
+  decision independent of the UX question, to revisit at deployment time. User noted
+  they have other items in mind not yet raised.
+
+Created `UX_REDESIGN_BRAINSTORM.md` at the repo root (flat, alongside the other
+planning/vision docs) as the persistent home for this — the bug writeup, the
+direction question, a "parked for later" section for the AWS/OBDB idea, and a
+structured set of discovery questions grouped into five themes (when a customer
+actually opens the app, how they find the beer to confirm, the PIN moment itself
+and whether today's 6-8 digit length / lockout policy actually holds up under real
+bar chaos, what "everything else" contains and where it should live, and what
+happens when it goes wrong in a real bar) — aimed at getting the *literal, physical,
+step-by-step* real-world flow described, not just screen-layout preferences, per the
+user's own framing that an abstractly-reasonable flow can still be cumbersome in
+practice. `CLAUDE.md` updated with a "read this first" pointer so a future session
+doesn't start building against Sprint 9/10 before this resolves.
+
+**Resume here:** work through `UX_REDESIGN_BRAINSTORM.md`'s question set with the
+user. Once a direction is agreed, fold decisions into `PROJECT_PLAN.md`/
+`MOBILE_FIRST_PRODUCT_OUTLINE.md`/`TECHNICAL_ARCHITECTURE_PLAN.md` as appropriate,
+fix the confirmed login-redirect bug as part of whatever the new landing flow turns
+out to be (not before), and only then return to Sprint 9/10.
