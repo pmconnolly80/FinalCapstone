@@ -219,6 +219,14 @@ export async function fetchDashboardSummary() {
   return response.json();
 }
 
+export async function fetchBeerConfirmationCounts() {
+  const response = await fetch(`${API_BASE_URL}/api/admin/dashboard/beer-confirmations`, {
+    headers: authHeaders(),
+  });
+  if (!response.ok) throw new Error('Failed to load most/least-confirmed beers');
+  return response.json();
+}
+
 export async function fetchAdminAnomalies() {
   const response = await fetch(`${API_BASE_URL}/api/admin/anomalies`, {
     headers: authHeaders(),

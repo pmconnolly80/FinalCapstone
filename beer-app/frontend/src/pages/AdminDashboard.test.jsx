@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AdminDashboard from './AdminDashboard';
-import { fetchAdminAnomalies, fetchDashboardSummary, getRolesFromToken } from '../lib/api';
+import { fetchAdminAnomalies, fetchBeerConfirmationCounts, fetchDashboardSummary, getRolesFromToken } from '../lib/api';
 
 vi.mock('../lib/api');
 
@@ -19,6 +19,11 @@ const anomalies = [
   },
 ];
 
+const beerCounts = {
+  mostConfirmed: [{ beerId: 1, name: 'Duvel', confirmedCount: 42 }],
+  leastConfirmed: [{ beerId: 2, name: 'Mystery Stout', confirmedCount: 0 }],
+};
+
 function renderPage() {
   return render(
     <MemoryRouter>
@@ -33,6 +38,7 @@ describe('AdminDashboard', () => {
     getRolesFromToken.mockReturnValue(['Admin']);
     fetchDashboardSummary.mockResolvedValue(summary);
     fetchAdminAnomalies.mockResolvedValue(anomalies);
+    fetchBeerConfirmationCounts.mockResolvedValue(beerCounts);
   });
 
   afterEach(() => {
@@ -48,6 +54,7 @@ describe('AdminDashboard', () => {
     expect(screen.getByText(/admin account/i)).toBeInTheDocument();
     expect(fetchDashboardSummary).not.toHaveBeenCalled();
     expect(fetchAdminAnomalies).not.toHaveBeenCalled();
+    expect(fetchBeerConfirmationCounts).not.toHaveBeenCalled();
   });
 
   it('renders all four summary numbers', async () => {
@@ -108,6 +115,32 @@ describe('AdminDashboard', () => {
     expect(await screen.findByText('Failed to load anomalies')).toBeInTheDocument();
     expect(await screen.findByText('Total Beers')).toBeInTheDocument();
     expect(screen.getByText('8')).toBeInTheDocument();
+  });
+
+  it('#78: reframes the dashboard as operational health, distinct from beer-purchasing intelligence', async () => {
+    renderPage();
+
+    expect(await screen.findByText('Operational health')).toBeInTheDocument();
+    expect(screen.getAllByText(/beer-purchasing intelligence/i).length).toBeGreaterThan(0);
+  });
+
+  it('#78: renders most/least confirmed beers with links to each beer', async () => {
+    renderPage();
+
+    expect(await screen.findByText('Most / least confirmed beers')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Duvel' })).toHaveAttribute('href', '/beers/1');
+    expect(screen.getByText('(42)')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Mystery Stout' })).toHaveAttribute('href', '/beers/2');
+    expect(screen.getByText('(0)')).toBeInTheDocument();
+  });
+
+  it('#78: shows a beer-counts error while the rest of the dashboard still renders', async () => {
+    fetchBeerConfirmationCounts.mockRejectedValue(new Error('Failed to load most/least-confirmed beers'));
+
+    renderPage();
+
+    expect(await screen.findByText('Failed to load most/least-confirmed beers')).toBeInTheDocument();
+    expect(await screen.findByText('Total Beers')).toBeInTheDocument();
   });
 
   it('links to Manage Beers, Manage Users, and Confirmations', async () => {

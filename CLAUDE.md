@@ -688,8 +688,8 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     an out-of-range rating (400), rejected rating an unconfirmed beer (400), and drove
     a real customer through 100 confirmations to confirm `milestoneReached` fires
     exactly at 100 with `mugEarned` still `false`.
-  - #81 (API + UI: customer-facing "flag beer as unavailable" report, branch
-    `sprint-8-unavailability-reports`, not yet a PR): the second, independent layer
+  - #81 (API + UI: customer-facing "flag beer as unavailable" report, merged
+    [PR #93](https://github.com/pmconnolly80/FinalCapstone/pull/93)): the second, independent layer
     of the mid-shift-availability decision alongside #80's bartender PIN-pad toggle —
     a crowd-sourced signal that never changes availability directly (avoiding a
     griefing vector), it only surfaces to an admin so they can confirm and flip it
@@ -725,6 +725,32 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     second database row, confirmed it appears in `GET /api/admin/anomalies` with the
     correct beer name/count/deep link, confirmed an unauthenticated report 401s, and
     confirmed an unknown beer id 404s.
+  - #78 (UI + API: reframe Admin Dashboard as operational health; pull forward
+    most/least-confirmed beers, merged
+    [PR #94](https://github.com/pmconnolly80/FinalCapstone/pull/94)) — **closes
+    Sprint 8**: the shipped Admin Dashboard (#59) surfaced operational counts and
+    anomalies, but was implicitly expected to also answer the owner's real question
+    ("what should I order more of / who's about to lapse" — `PERSONAS_AND_USAGE.md`'s
+    "Weekly ritual"), which it never did. `AdminDashboard.jsx` now explicitly labels
+    that section "Operational health" with copy stating that beer-purchasing
+    intelligence lives in a separate, later Owner Analytics screen. New
+    `AdminDashboardController.ComputeBeerConfirmationCountsAsync` (`TopN = 5`) — a
+    plain `GROUP BY` over existing `BeerConfirmation` rows, no new schema, exposed as
+    `GET /api/admin/dashboard/beer-confirmations`. Counts every beer, not just ones
+    with at least one confirmation — a plain `GroupBy` over `BeerConfirmations` alone
+    would silently omit "the stout nobody's ordered in two months," which is exactly
+    the beer this feature exists to surface. New "Most / least confirmed beers" panel
+    on the dashboard, each entry linking to that beer's detail page; new
+    `fetchBeerConfirmationCounts()` in `api.js`. Full "beer intelligence" (want-list
+    demand, anonymized ratings, lapsed-member list) stays out of scope, deferred to
+    Owner Analytics once the Engagement/Retention epic is groomed. Suites: backend
+    328/328 (+5 new — ranking/zero-confirmation-beers-still-appear/top-N-limit on
+    `AdminDashboardControllerTests`, plus an HTTP-level integration test), frontend
+    209/209 (+3 new). Clean `npm run build`. Verified live: the endpoint returned
+    real ranked data cross-checked against beers created earlier in this session
+    (busiest at the top, several genuinely-zero-confirmation beers at the bottom),
+    and the new "Operational health"/"Most / least confirmed beers" UI text is
+    served live by the Vite dev server.
 
 **Bug fix (2026-07-23, not a Sprint 8 issue — a same-day follow-up to #76's finding,
 merged [PR #89](https://github.com/pmconnolly80/FinalCapstone/pull/89)):**
@@ -746,11 +772,10 @@ the clean 409 instead of a stack trace; deleting a freshly-created beer with no
 confirmations still succeeds with 204.
 
 **Not built** — the Admin Experience epic is done as of Sprint 5; Sprint 6 (Mobile UI
-Polish) and Sprint 7 (Beer Discovery & Recommendations) are both done and merged.
-Sprint 8 (Admin & Engagement UX Follow-ups) is in progress —
-#77/#75/#76/#79/#80/#74 built and merged, #81 built pending PR, #78 remaining, see
-`EPICS_AND_SPRINTS.md` for the planned build order. The Engagement, Retention &
-Social epic is not yet groomed into issues.
+Polish), Sprint 7 (Beer Discovery & Recommendations), and Sprint 8 (Admin &
+Engagement UX Follow-ups) are all done and merged (#78's merge closes Sprint 8 —
+issues #74–#81 all built). The Engagement, Retention & Social epic is not yet
+groomed into issues; that's next up for grooming.
 
 ## Testing policy (TDD)
 
@@ -801,7 +826,7 @@ Manual (no Docker): `dotnet run` in `beer-app/backend/`, and
 
 ## Likely next steps
 
-**Sprints 1 through 7 are all done; Sprint 8 is in progress.** Sprint 1
+**Sprints 1 through 8 are all done.** Sprint 1
 ([PR #11](https://github.com/pmconnolly80/FinalCapstone/pull/11), 2026-07-14), Sprint 2
 (PRs #19–#25, milestone closed 2026-07-15), Sprint 3: Customer Phone Experience
 (PRs #33–#39, issues #26–#32, closed 2026-07-21; suites at close: backend 131/131,
@@ -820,10 +845,9 @@ issues #72–#73 + #83, groomed 2026-07-23, closed 2026-07-23 —
 [PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85); suites at close:
 backend 271/271, frontend 175/175). **Sprint 8: Admin & Engagement UX Follow-ups**
 (milestone [#8](https://github.com/pmconnolly80/FinalCapstone/milestone/8), issues
-#74–#81, groomed 2026-07-23) is in progress: #77/#75/#76/#79/#80/#74 built and
-merged (backend 312/312, frontend 201/201 — includes the same-day `DeleteBeer`
-FK-restrict bug fix that followed from #76's finding), #81 built pending PR (backend
-323/323, frontend 206/206), #78 remaining. See `EPICS_AND_SPRINTS.md` and
+#74–#81, groomed 2026-07-23, closed 2026-07-24 — PRs #86–#94; suites at close:
+backend 328/328, frontend 209/209, includes the same-day `DeleteBeer` FK-restrict
+bug fix that followed from #76's finding). See `EPICS_AND_SPRINTS.md` and
 `SESSION_LOG.md` for the full history.
 
 Sprint 5 built: a generalized `AdminAudit` trail + role assignment (#53) → user
@@ -852,8 +876,8 @@ report. See the bullet above for full detail, including live-stack verification.
 
 **Sprint 8: Admin & Engagement UX Follow-ups** (milestone
 [#8](https://github.com/pmconnolly80/FinalCapstone/milestone/8), issues #74–#81,
-groomed 2026-07-23, in progress — one PR per issue rather than one combined PR):
-#77 (admin-initiated bartender invite,
+groomed 2026-07-23, closed 2026-07-24 — one PR per issue rather than one combined
+PR): #77 (admin-initiated bartender invite,
 [PR #86](https://github.com/pmconnolly80/FinalCapstone/pull/86)), #75 (staff-only
 filter/search on User Management,
 [PR #87](https://github.com/pmconnolly80/FinalCapstone/pull/87)), #76 (inline
@@ -861,15 +885,17 @@ consequence microcopy, [PR #88](https://github.com/pmconnolly80/FinalCapstone/pu
 #79 (variable-length staff PINs,
 [PR #90](https://github.com/pmconnolly80/FinalCapstone/pull/90)), #80 (mark a
 beer out-of-stock from the confirmation PIN pad,
-[PR #91](https://github.com/pmconnolly80/FinalCapstone/pull/91)), and #74 (rating
+[PR #91](https://github.com/pmconnolly80/FinalCapstone/pull/91)), #74 (rating
 prompt + minimal milestone moment,
-[PR #92](https://github.com/pmconnolly80/FinalCapstone/pull/92)) are all built and
-merged; #81 (customer-facing "flag beer as unavailable" report) is built (branch
-`sprint-8-unavailability-reports`, PR not yet opened); #78 remains. See
-`EPICS_AND_SPRINTS.md`'s Sprint 8 section for the planned build order (two
-file-overlap chains through `AdminUsers.jsx` and `ConfirmPinPad.jsx`/
-`BeerDetail.jsx`) and the bullets above for #77/#75/#76/#79/#80/#74/#81's detail.
-#76 also led to a same-day, out-of-milestone bug fix
+[PR #92](https://github.com/pmconnolly80/FinalCapstone/pull/92)), #81
+(customer-facing "flag beer as unavailable" report,
+[PR #93](https://github.com/pmconnolly80/FinalCapstone/pull/93)), and #78 (reframe
+Admin Dashboard as operational health + most/least-confirmed beers,
+[PR #94](https://github.com/pmconnolly80/FinalCapstone/pull/94)) are all built and
+merged — closing the sprint. See `EPICS_AND_SPRINTS.md`'s Sprint 8 section for the
+build order that was followed (two file-overlap chains through `AdminUsers.jsx`
+and `ConfirmPinPad.jsx`/`BeerDetail.jsx`) and the bullets above for each issue's
+detail. #76 also led to a same-day, out-of-milestone bug fix
 ([PR #89](https://github.com/pmconnolly80/FinalCapstone/pull/89)): the `DeleteBeer`
 FK-restrict gotcha it flagged (an unhandled 500 deleting a confirmed beer) is now
 fixed — see the bullet above.
