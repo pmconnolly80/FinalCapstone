@@ -191,6 +191,43 @@ public class BeersAuthorizationTests : IDisposable
         Assert.Null(await context.Beers.FindAsync(beer.Id));
     }
 
+    [Fact]
+    public async Task DeleteBeer_WithExistingConfirmation_ReturnsConflict_AndDoesNotDelete()
+    {
+        var adminToken = await CreateAdminAndLoginAsync("beer-delete-conflict-admin@example.com", "AdminPassw0rd!");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+
+        var created = await _client.PostAsJsonAsync("/api/beers",
+            new Beer { Name = "Confirmed Beer", Brewery = "Test Brewery", Style = "IPA", Availability = BeerAvailability.OnTap });
+        var beer = await created.Content.ReadFromJsonAsync<Beer>();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            context.BeerConfirmations.Add(new BeerConfirmation
+            {
+                CustomerId = "some-customer-id",
+                BeerId = beer!.Id,
+                TavernId = 1,
+                ConfirmedByUserId = "some-bartender-id",
+            });
+            await context.SaveChangesAsync();
+        }
+
+        var response = await _client.DeleteAsync($"/api/beers/{beer!.Id}?reason=discontinued");
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+        Assert.Contains("can't be deleted", body!["message"]);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            Assert.NotNull(await context.Beers.FindAsync(beer.Id));
+            Assert.Empty(context.AdminAudits.Where(a => a.EntityId == beer.Id.ToString() && a.Action == "Delete"));
+        }
+    }
+
     private static Beer NewBeer() => new() { Name = "Test Beer", Brewery = "Test Brewery", Style = "Test Style" };
 
     private async Task<string> RegisterCustomerAsync(string email)
