@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { fetchBeer, setMyRating } from '../lib/api';
+import { fetchBeer, reportBeerUnavailable, setMyRating } from '../lib/api';
 import ConfirmPinPad from '../components/ConfirmPinPad';
 
 const RATING_VALUES = [1, 2, 3, 4, 5];
@@ -12,6 +12,8 @@ function BeerDetail() {
   const [confirming, setConfirming] = useState(false);
   const [ratingMessage, setRatingMessage] = useState('');
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [reportState, setReportState] = useState('idle'); // idle | submitting | done | error
+  const [reportError, setReportError] = useState('');
   const hasToken = Boolean(localStorage.getItem('beer-token'));
 
   useEffect(() => {
@@ -32,6 +34,20 @@ function BeerDetail() {
       setRatingMessage(err.message);
     } finally {
       setRatingSubmitting(false);
+    }
+  };
+
+  // #81: a crowd-sourced signal alongside #80's bartender PIN-pad toggle — reports
+  // never change availability directly, they only surface to an admin as an anomaly.
+  const handleReportUnavailable = async () => {
+    setReportState('submitting');
+    setReportError('');
+    try {
+      await reportBeerUnavailable(id);
+      setReportState('done');
+    } catch (err) {
+      setReportError(err.message);
+      setReportState('error');
     }
   };
 
@@ -143,6 +159,25 @@ function BeerDetail() {
           Confirm with bartender
         </button>
       )}
+
+      {hasToken && (
+        <div className="mt-3">
+          {reportState === 'done' ? (
+            <p className="m-0 text-sm text-gray-500">Thanks — an admin will take a look.</p>
+          ) : (
+            <button
+              type="button"
+              onClick={handleReportUnavailable}
+              disabled={reportState === 'submitting'}
+              className="text-sm text-gray-500 underline"
+            >
+              {reportState === 'submitting' ? 'Reporting…' : 'Report this as unavailable'}
+            </button>
+          )}
+          {reportState === 'error' && <p className="mt-1 text-sm text-red-700">{reportError}</p>}
+        </div>
+      )}
+
       <Link to="/beers" className="mt-4 inline-block text-gray-600">
         Back to list
       </Link>

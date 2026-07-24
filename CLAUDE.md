@@ -657,7 +657,7 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     target (400), and confirmed a wrong PIN gets the identical `{"message":"Invalid
     PIN."}` 401 body as a bad confirmation attempt.
   - #74 (UI + API: pull forward "How was it?" rating prompt + minimal milestone
-    moment, branch `sprint-8-rating-milestone`, not yet a PR): the confirmation loop
+    moment, merged [PR #92](https://github.com/pmconnolly80/FinalCapstone/pull/92)): the confirmation loop
     used to end at a bare X-of-200 number — this pulls two cheap pieces of the full
     Engagement epic (`IMPLEMENTATION_BACKLOG.md` Phase 6) forward rather than waiting
     for the whole thing. New `BeerRating` entity (`CustomerId`/`BeerId` unique,
@@ -688,6 +688,43 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     an out-of-range rating (400), rejected rating an unconfirmed beer (400), and drove
     a real customer through 100 confirmations to confirm `milestoneReached` fires
     exactly at 100 with `mugEarned` still `false`.
+  - #81 (API + UI: customer-facing "flag beer as unavailable" report, branch
+    `sprint-8-unavailability-reports`, not yet a PR): the second, independent layer
+    of the mid-shift-availability decision alongside #80's bartender PIN-pad toggle —
+    a crowd-sourced signal that never changes availability directly (avoiding a
+    griefing vector), it only surfaces to an admin so they can confirm and flip it
+    themselves. New `UnavailabilityReport` entity (restrict-on-delete FK to `Beer`,
+    same pattern as `BeerConfirmation`/`BeerRating`) and
+    `POST /api/beers/{id}/unavailability-reports` on `BeersController` —
+    `[Authorize]`, any signed-in role, not gated to confirmed-only (an uncertain
+    customer is exactly who'd use this). A repeat report from the same customer for
+    the same beer within a 24h window (`BeersController
+    .UnavailabilityReportWindowHours`, matching the anomaly signal's own lookback so
+    the dedup window and the counting window agree) is a silent no-op rather than a
+    duplicate row, so rapid re-taps can't inflate the count past what one customer's
+    concern is actually worth. Surfaced by extending the existing #58 anomaly panel
+    rather than building a new screen — "similar in spirit to the existing anomaly
+    panel" per the issue — with a 4th `AdminAnomaliesController
+    .DetectUnavailabilityReportsAsync`: one entry per beer with ≥1 recent report,
+    "more prominent than a single one" expressed in the summary's count text (e.g.
+    "flagged unavailable by 3 customers") and via `OccurredAt` being the most recent
+    report time (so a repeatedly-flagged beer naturally sorts near the top of the
+    combined anomalies list), rather than a separate severity tier — deliberately
+    "no need for anything fancier" per the issue's own scope. `BeerDetail.jsx` gained
+    a "Report this as unavailable" link (any signed-in customer, regardless of
+    confirmed status) with a thank-you message on success; `AdminDashboard.jsx`
+    gained an `UnavailabilityReport` badge in its existing `ANOMALY_BADGES` map. New
+    `reportBeerUnavailable()` in `api.js`. Suites: backend 323/323 (+11 new — report
+    creation/dedup-within-window/multiple-distinct-customers/unknown-beer on
+    `BeersControllerTests`, the anomaly signal's count-in-summary/singular-wording/
+    outside-window/per-beer-grouping on `AdminAnomaliesControllerTests`, plus an
+    HTTP-level integration test proving a real customer's report actually surfaces
+    through the real `/api/admin/anomalies` endpoint to an admin), frontend 206/206
+    (+5 new). Clean `npm run build`. Verified live: reported a real beer as
+    unavailable, confirmed a repeat report from the same customer didn't create a
+    second database row, confirmed it appears in `GET /api/admin/anomalies` with the
+    correct beer name/count/deep link, confirmed an unauthenticated report 401s, and
+    confirmed an unknown beer id 404s.
 
 **Bug fix (2026-07-23, not a Sprint 8 issue — a same-day follow-up to #76's finding,
 merged [PR #89](https://github.com/pmconnolly80/FinalCapstone/pull/89)):**
@@ -710,10 +747,10 @@ confirmations still succeeds with 204.
 
 **Not built** — the Admin Experience epic is done as of Sprint 5; Sprint 6 (Mobile UI
 Polish) and Sprint 7 (Beer Discovery & Recommendations) are both done and merged.
-Sprint 8 (Admin & Engagement UX Follow-ups) is in progress — #77/#75/#76/#79/#80
-built and merged, #74 built pending PR, #78/#81 remaining, see `EPICS_AND_SPRINTS.md`
-for the planned build order. The Engagement, Retention & Social epic is not yet
-groomed into issues.
+Sprint 8 (Admin & Engagement UX Follow-ups) is in progress —
+#77/#75/#76/#79/#80/#74 built and merged, #81 built pending PR, #78 remaining, see
+`EPICS_AND_SPRINTS.md` for the planned build order. The Engagement, Retention &
+Social epic is not yet groomed into issues.
 
 ## Testing policy (TDD)
 
@@ -783,10 +820,10 @@ issues #72–#73 + #83, groomed 2026-07-23, closed 2026-07-23 —
 [PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85); suites at close:
 backend 271/271, frontend 175/175). **Sprint 8: Admin & Engagement UX Follow-ups**
 (milestone [#8](https://github.com/pmconnolly80/FinalCapstone/milestone/8), issues
-#74–#81, groomed 2026-07-23) is in progress: #77/#75/#76/#79/#80 built and merged
-(backend 299/299, frontend 193/193 — includes the same-day `DeleteBeer` FK-restrict
-bug fix that followed from #76's finding), #74 built pending PR (backend 312/312,
-frontend 201/201), #78/#81 remaining. See `EPICS_AND_SPRINTS.md` and
+#74–#81, groomed 2026-07-23) is in progress: #77/#75/#76/#79/#80/#74 built and
+merged (backend 312/312, frontend 201/201 — includes the same-day `DeleteBeer`
+FK-restrict bug fix that followed from #76's finding), #81 built pending PR (backend
+323/323, frontend 206/206), #78 remaining. See `EPICS_AND_SPRINTS.md` and
 `SESSION_LOG.md` for the full history.
 
 Sprint 5 built: a generalized `AdminAudit` trail + role assignment (#53) → user
@@ -822,15 +859,17 @@ filter/search on User Management,
 [PR #87](https://github.com/pmconnolly80/FinalCapstone/pull/87)), #76 (inline
 consequence microcopy, [PR #88](https://github.com/pmconnolly80/FinalCapstone/pull/88)),
 #79 (variable-length staff PINs,
-[PR #90](https://github.com/pmconnolly80/FinalCapstone/pull/90)), and #80 (mark a
+[PR #90](https://github.com/pmconnolly80/FinalCapstone/pull/90)), #80 (mark a
 beer out-of-stock from the confirmation PIN pad,
-[PR #91](https://github.com/pmconnolly80/FinalCapstone/pull/91)) are all built and
-merged; #74 (rating prompt + minimal milestone moment) is built (branch
-`sprint-8-rating-milestone`, PR not yet opened); #78/#81 remain. See
+[PR #91](https://github.com/pmconnolly80/FinalCapstone/pull/91)), and #74 (rating
+prompt + minimal milestone moment,
+[PR #92](https://github.com/pmconnolly80/FinalCapstone/pull/92)) are all built and
+merged; #81 (customer-facing "flag beer as unavailable" report) is built (branch
+`sprint-8-unavailability-reports`, PR not yet opened); #78 remains. See
 `EPICS_AND_SPRINTS.md`'s Sprint 8 section for the planned build order (two
 file-overlap chains through `AdminUsers.jsx` and `ConfirmPinPad.jsx`/
-`BeerDetail.jsx`) and the bullets above for #77/#75/#76/#79/#80/#74's detail. #76
-also led to a same-day, out-of-milestone bug fix
+`BeerDetail.jsx`) and the bullets above for #77/#75/#76/#79/#80/#74/#81's detail.
+#76 also led to a same-day, out-of-milestone bug fix
 ([PR #89](https://github.com/pmconnolly80/FinalCapstone/pull/89)): the `DeleteBeer`
 FK-restrict gotcha it flagged (an unhandled 500 deleting a confirmed beer) is now
 fixed — see the bullet above.

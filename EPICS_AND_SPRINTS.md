@@ -305,8 +305,8 @@ direction at planning time — see the build-order note below.
 
 1. [#74 UI + API: pull forward 'How was it?' rating prompt + minimal milestone moment](https://github.com/pmconnolly80/FinalCapstone/issues/74) (`epic:retention`) —
    acceptance criteria amended 2026-07-23 to add a rating view/edit affordance on beer
-   detail, since My Beers doesn't exist yet. ✅ built 2026-07-24, branch
-   `sprint-8-rating-milestone`, PR not yet opened
+   detail, since My Beers doesn't exist yet. ✅ built 2026-07-24, merged
+   [PR #92](https://github.com/pmconnolly80/FinalCapstone/pull/92)
 2. [#75 UI: staff-only filter + search on the User Management table](https://github.com/pmconnolly80/FinalCapstone/issues/75) (`epic:admin`) —
    this repo's list had #75/#76 titles swapped relative to GitHub; fixed 2026-07-23.
    ✅ built 2026-07-23, merged [PR #87](https://github.com/pmconnolly80/FinalCapstone/pull/87)
@@ -328,7 +328,8 @@ direction at planning time — see the build-order note below.
    acceptance criteria amended 2026-07-23 to support toggling back to available (not
    just out-of-stock) and to require a deliberate confirm step. ✅ built 2026-07-23,
    merged [PR #91](https://github.com/pmconnolly80/FinalCapstone/pull/91)
-8. [#81 API + UI: customer-facing 'flag beer as unavailable' report](https://github.com/pmconnolly80/FinalCapstone/issues/81) (`epic:admin`)
+8. [#81 API + UI: customer-facing 'flag beer as unavailable' report](https://github.com/pmconnolly80/FinalCapstone/issues/81) (`epic:admin`) —
+   ✅ built 2026-07-24, branch `sprint-8-unavailability-reports`, PR not yet opened
 
 > **Build order (2026-07-23 planning session):** `AdminUsers.jsx` is touched by
 > #75/#76/#79/#77 and `ConfirmPinPad.jsx`/`BeerDetail.jsx` by #79/#80/#74/#81, so those

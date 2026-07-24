@@ -72,6 +72,25 @@ describe('AdminDashboard', () => {
     expect(screen.getByRole('link', { name: 'View' })).toHaveAttribute('href', '/admin/beers');
   });
 
+  it('renders an UnavailabilityReport anomaly with its own badge and deep link to the beer', async () => {
+    fetchAdminAnomalies.mockResolvedValue([
+      {
+        type: 'UnavailabilityReport',
+        occurredAt: '2026-07-23T18:00:00Z',
+        summary: "'Duvel' flagged unavailable by 3 customers in the last 24h",
+        actorId: null,
+        actorEmail: null,
+        deepLink: '/beers/5',
+      },
+    ]);
+
+    renderPage();
+
+    expect(await screen.findByText('Unavailable Report')).toBeInTheDocument();
+    expect(screen.getByText("'Duvel' flagged unavailable by 3 customers in the last 24h")).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View' })).toHaveAttribute('href', '/beers/5');
+  });
+
   it('shows a summary error while the anomaly panel still renders', async () => {
     fetchDashboardSummary.mockRejectedValue(new Error('Failed to load dashboard summary'));
 

@@ -17,6 +17,11 @@ public class BeersController : ControllerBase
     public const int DefaultPageSize = 200;
     public const int MaxPageSize = 500;
 
+    // #81: matches AdminAnomaliesController's own default UnavailabilityReports lookback
+    // window — a customer's repeated report only ever counts once within the same window
+    // the admin-facing signal is actually counting over.
+    public const int UnavailabilityReportWindowHours = 24;
+
     private readonly ApplicationDbContext _context;
     private readonly IBreweryLookupService _breweryLookup;
 
@@ -302,6 +307,42 @@ public class BeersController : ControllerBase
         });
 
         await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    // #81: a crowd-sourced signal alongside #80's bartender PIN-pad toggle — reachable
+    // by any signed-in customer, not gated to confirmed-only, since "is this actually
+    // available" is exactly what an uncertain customer needs to ask about. Never changes
+    // availability directly (that would be a griefing vector); it only surfaces to the
+    // admin via AdminAnomaliesController.DetectUnavailabilityReportsAsync. A customer
+    // re-reporting the same beer within the same window this session already counted
+    // is a silent no-op rather than a duplicate row or an error — repeated taps
+    // shouldn't inflate the count past what one customer's single concern is worth.
+    [Authorize]
+    [HttpPost("{id}/unavailability-reports")]
+    public async Task<IActionResult> ReportUnavailable(int id)
+    {
+        var customerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (customerId == null)
+        {
+            return Unauthorized();
+        }
+
+        var beerExists = await _context.Beers.AnyAsync(b => b.Id == id);
+        if (!beerExists)
+        {
+            return NotFound();
+        }
+
+        var windowStart = DateTime.UtcNow.AddHours(-UnavailabilityReportWindowHours);
+        var alreadyReportedRecently = await _context.UnavailabilityReports
+            .AnyAsync(r => r.CustomerId == customerId && r.BeerId == id && r.CreatedAt >= windowStart);
+        if (!alreadyReportedRecently)
+        {
+            _context.UnavailabilityReports.Add(new UnavailabilityReport { CustomerId = customerId, BeerId = id });
+            await _context.SaveChangesAsync();
+        }
 
         return NoContent();
     }

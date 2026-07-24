@@ -1772,9 +1772,66 @@ real customer through exactly 100 confirmations via a loop of admin-created
 beers — the 100th response came back with `milestoneReached: true` and
 `mugEarned: false`, confirming the two moments are independent.
 
-- Branch: `sprint-8-rating-milestone`, not yet opened as a PR.
+- Branch: `sprint-8-rating-milestone` —
+  [PR #92](https://github.com/pmconnolly80/FinalCapstone/pull/92), CI green, merged
+  to `master`.
 
-**Resume here:** open the PR for #74, then continue the Sprint 8 build order with
-#81 (customer-facing "flag beer as unavailable" report), which shares
-`BeerDetail.jsx` with #74/#80 — or #78 (Admin Dashboard reframe), which is fully
-independent and could go in either order.
+## 2026-07-24 — Sprint 8 #81: customer-facing "flag beer as unavailable" report
+
+**Epic:** `epic:admin`
+
+Built #81, the second and independent layer of the mid-shift-availability decision
+alongside #80's bartender PIN-pad toggle — a crowd-sourced signal from customers,
+not a direct availability change (that would be a griefing vector: anyone could mark
+any beer unavailable with no verification).
+
+- New `UnavailabilityReport` entity (restrict-on-delete FK to `Beer`, same pattern as
+  `BeerConfirmation`/`BeerRating`) + migration.
+  `POST /api/beers/{id}/unavailability-reports` on `BeersController` — `[Authorize]`,
+  any signed-in role, deliberately not gated to confirmed-only, since an uncertain
+  customer walking up to an empty tap is exactly the person this is for. A repeat
+  report from the same customer for the same beer within a 24h window is a silent
+  no-op (no duplicate row, no error) — the window matches the anomaly signal's own
+  lookback exactly (`BeersController.UnavailabilityReportWindowHours`), so the
+  dedup window and the counting window can't drift apart and a customer can't
+  inflate the count by tapping repeatedly.
+- Rather than a new admin screen, this extends the existing #58 anomaly panel — "an
+  alert similar in spirit to the existing anomaly panel" per the issue's own
+  framing. New 4th signal `AdminAnomaliesController.DetectUnavailabilityReportsAsync`:
+  one entry per beer with at least one recent report, grouped and counted over a
+  configurable lookback (`Anomalies:UnavailabilityReports:LookbackHours`, default
+  24, same `IConfiguration`-direct-read pattern as the other three signals).
+  "More prominent than a single one" is expressed directly in the summary text's
+  count ("flagged unavailable by 3 customers" reads as more urgent than "by 1") and
+  via `OccurredAt` being the most-recently-reported time — a beer getting
+  repeatedly flagged naturally sorts near the top of the combined, all-signal-types
+  anomalies list — rather than a separate severity tier, matching the issue's own
+  "no need for anything fancier."
+- `BeerDetail.jsx` gained a "Report this as unavailable" link, reachable by any
+  signed-in customer regardless of whether they've confirmed the beer, with a
+  thank-you message on success. `AdminDashboard.jsx`'s existing `ANOMALY_BADGES` map
+  gained an entry for the new type. New `reportBeerUnavailable()` in `api.js`.
+
+Suites: backend 323/323 (+11 new — report creation, same-customer dedup within the
+window, two distinct customers both counting, unknown beer 404 on
+`BeersControllerTests`; the anomaly signal's count-in-summary wording (plural vs.
+singular), outside-the-lookback-window exclusion, and per-beer grouping on
+`AdminAnomaliesControllerTests`; plus an HTTP-level integration test proving a real
+customer's report actually surfaces through the real `/api/admin/anomalies`
+endpoint to a real admin token). Frontend 206/206 (+5 new across
+`BeerDetail.test.jsx`/`AdminDashboard.test.jsx`). Clean `npm run build`.
+
+Verified live against the Docker stack: reported a real beer ("60 Minute IPA") as
+unavailable, submitted a second report from the same customer for the same beer and
+confirmed via `psql` that only one row exists (dedup held), confirmed the report
+shows up in `GET /api/admin/anomalies` with the correct beer name, count, and a
+`/beers/{id}` deep link, confirmed an unauthenticated report attempt 401s, and
+confirmed reporting an unknown beer id 404s.
+
+- Branch: `sprint-8-unavailability-reports`, not yet opened as a PR.
+
+**Resume here:** open the PR for #81. That closes out every Sprint 8 issue except
+#78 (reframe Admin Dashboard as operational health + pull forward most/least-
+confirmed beers), which is fully independent (`AdminDashboard.jsx` only, no
+file-overlap chain with anything else) and can be built any time — the last item
+before Sprint 8 as a whole can close.

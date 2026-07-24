@@ -666,4 +666,63 @@ public class BeersControllerTests
 
         Assert.IsType<NotFoundResult>(result);
     }
+
+    [Fact]
+    public async Task ReportUnavailable_ByAnySignedInCustomer_CreatesReport()
+    {
+        using var context = CreateContext();
+        var beer = new Beer { Name = "Duvel", Brewery = "Duvel Moortgat", Style = "Belgian Strong Golden Ale" };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        var controller = CreateController(context, userId: "cust-1");
+
+        var result = await controller.ReportUnavailable(beer.Id);
+
+        Assert.IsType<NoContentResult>(result);
+        var report = Assert.Single(context.UnavailabilityReports);
+        Assert.Equal("cust-1", report.CustomerId);
+        Assert.Equal(beer.Id, report.BeerId);
+    }
+
+    [Fact]
+    public async Task ReportUnavailable_UnknownBeer_ReturnsNotFound()
+    {
+        using var context = CreateContext();
+        var controller = CreateController(context, userId: "cust-1");
+
+        var result = await controller.ReportUnavailable(999);
+
+        Assert.IsType<NotFoundResult>(result);
+        Assert.Empty(context.UnavailabilityReports);
+    }
+
+    [Fact]
+    public async Task ReportUnavailable_RepeatedByTheSameCustomerWithinWindow_DoesNotDuplicate()
+    {
+        using var context = CreateContext();
+        var beer = new Beer { Name = "Duvel", Brewery = "Duvel Moortgat", Style = "Belgian Strong Golden Ale" };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        var controller = CreateController(context, userId: "cust-1");
+
+        await controller.ReportUnavailable(beer.Id);
+        var second = await controller.ReportUnavailable(beer.Id);
+
+        Assert.IsType<NoContentResult>(second);
+        Assert.Single(context.UnavailabilityReports);
+    }
+
+    [Fact]
+    public async Task ReportUnavailable_DifferentCustomersSameBeer_BothCounted()
+    {
+        using var context = CreateContext();
+        var beer = new Beer { Name = "Duvel", Brewery = "Duvel Moortgat", Style = "Belgian Strong Golden Ale" };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+
+        await CreateController(context, userId: "cust-1").ReportUnavailable(beer.Id);
+        await CreateController(context, userId: "cust-2").ReportUnavailable(beer.Id);
+
+        Assert.Equal(2, context.UnavailabilityReports.Count());
+    }
 }

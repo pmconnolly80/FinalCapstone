@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import BeerDetail from './BeerDetail';
-import { fetchBeer, setMyRating } from '../lib/api';
+import { fetchBeer, reportBeerUnavailable, setMyRating } from '../lib/api';
 
 vi.mock('../lib/api');
 
@@ -184,6 +184,60 @@ describe('BeerDetail', () => {
       await user.click(screen.getByRole('button', { name: 'Rate 5 stars' }));
 
       expect(await screen.findByText('Rating must be between 1 and 5.')).toBeInTheDocument();
+    });
+  });
+
+  describe('#81: report this as unavailable', () => {
+    it('hides the report action when the customer is not signed in', async () => {
+      localStorage.clear();
+      fetchBeer.mockResolvedValue({ id: 1, name: 'Duvel', brewery: 'Duvel Moortgat', style: 'Ale' });
+
+      renderBeerDetail('1');
+
+      expect(await screen.findByText('Duvel')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Report this as unavailable' })).not.toBeInTheDocument();
+    });
+
+    it('is reachable by any signed-in customer, even one who has not confirmed the beer', async () => {
+      localStorage.setItem('beer-token', 'abc');
+      fetchBeer.mockResolvedValue({ id: 1, name: 'Duvel', brewery: 'Duvel Moortgat', style: 'Ale', confirmed: false });
+
+      renderBeerDetail('1');
+
+      expect(await screen.findByRole('button', { name: 'Report this as unavailable' })).toBeInTheDocument();
+      localStorage.clear();
+    });
+
+    it('submits a report and shows a thank-you message', async () => {
+      localStorage.setItem('beer-token', 'abc');
+      const user = userEvent.setup();
+      fetchBeer.mockResolvedValue({ id: 1, name: 'Duvel', brewery: 'Duvel Moortgat', style: 'Ale' });
+      reportBeerUnavailable.mockResolvedValue(undefined);
+
+      renderBeerDetail('1');
+      await screen.findByRole('button', { name: 'Report this as unavailable' });
+
+      await user.click(screen.getByRole('button', { name: 'Report this as unavailable' }));
+
+      expect(reportBeerUnavailable).toHaveBeenCalledWith('1');
+      expect(await screen.findByText(/thanks — an admin will take a look/i)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Report this as unavailable' })).not.toBeInTheDocument();
+      localStorage.clear();
+    });
+
+    it('surfaces an API error from a failed report submission', async () => {
+      localStorage.setItem('beer-token', 'abc');
+      const user = userEvent.setup();
+      fetchBeer.mockResolvedValue({ id: 1, name: 'Duvel', brewery: 'Duvel Moortgat', style: 'Ale' });
+      reportBeerUnavailable.mockRejectedValue(new Error('Beer not found.'));
+
+      renderBeerDetail('1');
+      await screen.findByRole('button', { name: 'Report this as unavailable' });
+
+      await user.click(screen.getByRole('button', { name: 'Report this as unavailable' }));
+
+      expect(await screen.findByText('Beer not found.')).toBeInTheDocument();
+      localStorage.clear();
     });
   });
 });
