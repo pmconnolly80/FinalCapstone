@@ -607,18 +607,29 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     `npm run build`. Verified live: rebuilt the `web` container, confirmed all five
     new microcopy strings are served by the dev server across the three pages.
 
+**Bug fix (2026-07-23, not a Sprint 8 issue — a same-day follow-up to #76's finding):**
+`BeersController.DeleteBeer` no longer throws an unhandled `DbUpdateException` (a bare
+500 with a raw Npgsql/EF stack trace) when deleting a beer that any customer has
+already confirmed. Confirmed live against real Postgres before fixing (the InMemory
+provider used by every test in this repo doesn't enforce the restrict-on-delete FK the
+way Postgres does, so this bug was invisible to the test suite and only manifested
+against the Docker stack). The fix checks `BeerConfirmations.AnyAsync(...)` up front
+and returns a clean `409 Conflict` with the same guidance #76's microcopy already
+gives ("Void those confirmations first, or mark it Retired instead") — an explicit
+check rather than a caught exception, so it's deterministically testable against
+InMemory too. `AdminBeers.jsx` needed no code change: its existing generic
+`error.message` handling already surfaces the new message as-is. Backend 282/282
+(+2 new: a controller unit test and an HTTP-level integration test), frontend 184/184
+(+1 new, asserting the specific message renders). Verified live against the Docker
+stack both ways: deleting beer id 2 (which has 3 existing confirmations) now returns
+the clean 409 instead of a stack trace; deleting a freshly-created beer with no
+confirmations still succeeds with 204.
+
 **Not built** — the Admin Experience epic is done as of Sprint 5; Sprint 6 (Mobile UI
 Polish) and Sprint 7 (Beer Discovery & Recommendations) are both done and merged.
-Sprint 8 (Admin & Engagement UX Follow-ups) is in progress — #77/#75 built and merged,
-#76 built pending PR, #74/#78–#81 remaining, see `EPICS_AND_SPRINTS.md` for the planned
-build order. The Engagement, Retention & Social epic is not yet groomed into issues.
-
-**Flagged, not fixed:** `BeersController.DeleteBeer` throws an unhandled
-`DbUpdateException` (500, no useful message) when deleting a beer that any customer
-has already confirmed, since `BeerConfirmation.BeerId` is a restrict-on-delete FK.
-#76 added UI microcopy warning admins away from this; the underlying exception
-handling (a friendly 409/400 instead of an unhandled 500) is unfixed and was out of
-that copy-only issue's scope. Worth a small follow-up story.
+Sprint 8 (Admin & Engagement UX Follow-ups) is in progress — #77/#75/#76 built and
+merged, #74/#78–#81 remaining, see `EPICS_AND_SPRINTS.md` for the planned build order.
+The Engagement, Retention & Social epic is not yet groomed into issues.
 
 ## Testing policy (TDD)
 
@@ -688,9 +699,10 @@ issues #72–#73 + #83, groomed 2026-07-23, closed 2026-07-23 —
 [PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85); suites at close:
 backend 271/271, frontend 175/175). **Sprint 8: Admin & Engagement UX Follow-ups**
 (milestone [#8](https://github.com/pmconnolly80/FinalCapstone/milestone/8), issues
-#74–#81, groomed 2026-07-23) is in progress: #77/#75 built and merged (backend
-280/280, frontend 180/180), #76 built pending PR (frontend 183/183), #74/#78–#81
-remaining. See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md` for the full history.
+#74–#81, groomed 2026-07-23) is in progress: #77/#75/#76 built and merged (backend
+282/282, frontend 184/184 — includes the same-day `DeleteBeer` FK-restrict bug fix
+that followed from #76's finding), #74/#78–#81 remaining. See `EPICS_AND_SPRINTS.md`
+and `SESSION_LOG.md` for the full history.
 
 Sprint 5 built: a generalized `AdminAudit` trail + role assignment (#53) → user
 management/account actions API (#54) and screen (#55); audited beer edit/delete +
@@ -720,15 +732,16 @@ report. See the bullet above for full detail, including live-stack verification.
 [#8](https://github.com/pmconnolly80/FinalCapstone/milestone/8), issues #74–#81,
 groomed 2026-07-23, in progress — one PR per issue rather than one combined PR):
 #77 (admin-initiated bartender invite,
-[PR #86](https://github.com/pmconnolly80/FinalCapstone/pull/86)) and #75 (staff-only
+[PR #86](https://github.com/pmconnolly80/FinalCapstone/pull/86)), #75 (staff-only
 filter/search on User Management,
-[PR #87](https://github.com/pmconnolly80/FinalCapstone/pull/87)) are built and
-merged; #76 (inline consequence microcopy) is built (branch
-`sprint-8-admin-microcopy`, PR not yet opened); #74/#78–#81 remain. See
-`EPICS_AND_SPRINTS.md`'s Sprint 8 section for the planned build order (two
-file-overlap chains through `AdminUsers.jsx` and `ConfirmPinPad.jsx`/
-`BeerDetail.jsx`) and the bullets above for #77/#75/#76's detail, including the
-DeleteBeer FK-restrict gotcha #76 flagged but didn't fix.
+[PR #87](https://github.com/pmconnolly80/FinalCapstone/pull/87)), and #76 (inline
+consequence microcopy, [PR #88](https://github.com/pmconnolly80/FinalCapstone/pull/88))
+are all built and merged; #74/#78–#81 remain. See `EPICS_AND_SPRINTS.md`'s Sprint 8
+section for the planned build order (two file-overlap chains through
+`AdminUsers.jsx` and `ConfirmPinPad.jsx`/`BeerDetail.jsx`) and the bullets above for
+#77/#75/#76's detail. #76 also led to a same-day, out-of-milestone bug fix: the
+`DeleteBeer` FK-restrict gotcha it flagged (an unhandled 500 deleting a confirmed
+beer) is now fixed — see the bullet above.
 
 After Sprint 8, the **Engagement, Retention & Social** epic (milestone badges, push
 notifications + owner composer, My Beers, social feed, journal, owner analytics) is

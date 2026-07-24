@@ -550,6 +550,28 @@ public class BeersControllerTests
     }
 
     [Fact]
+    public async Task DeleteBeer_WithExistingConfirmations_ReturnsConflict_AndDoesNotDelete()
+    {
+        // BeerConfirmation.BeerId is a restrict-on-delete FK against real Postgres, which
+        // the InMemory provider here doesn't enforce — so this guards the explicit
+        // up-front check, not provider-enforced referential integrity.
+        using var context = CreateContext();
+        var beer = new Beer { Name = "Duvel", Brewery = "Duvel Moortgat", Style = "Belgian Strong Golden Ale" };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        context.BeerConfirmations.Add(new BeerConfirmation { CustomerId = "cust-1", BeerId = beer.Id, TavernId = 1, ConfirmedByUserId = "b1" });
+        await context.SaveChangesAsync();
+        var controller = CreateController(context, userId: "admin-1");
+
+        var result = await controller.DeleteBeer(beer.Id, "discontinued by brewery");
+
+        var conflict = Assert.IsType<ConflictObjectResult>(result);
+        Assert.Contains("can't be deleted", conflict.Value!.ToString());
+        Assert.Single(context.Beers);
+        Assert.Empty(context.AdminAudits);
+    }
+
+    [Fact]
     public async Task UpdateAvailability_ChangesValue_WritesAudit()
     {
         using var context = CreateContext();

@@ -1546,9 +1546,53 @@ each string is absent until the action is pending). Clean `npm run build`.
 Verified live: rebuilt the `web` container, confirmed all five new microcopy strings
 are served by the Vite dev server across the three page source files via curl.
 
-- Branch: `sprint-8-admin-microcopy`, not yet opened as a PR.
+- Branch: `sprint-8-admin-microcopy` —
+  [PR #88](https://github.com/pmconnolly80/FinalCapstone/pull/88), CI green, merged to
+  `master`.
 
-**Resume here:** open the PR for #76, then continue the build order with #79
-(variable-length staff PINs), which the plan calls for building next since it
-touches `AdminUsers.jsx`/`ConfirmPinPad.jsx` and #80 depends on its relaxed PIN
+## 2026-07-24 — Bug fix: DeleteBeer's unhandled 500 on a confirmed beer (out-of-milestone, follows from #76)
+
+**Epic:** none — a standalone bug fix, not a Sprint 8 issue, done per explicit user
+direction to fix the real gap #76 had flagged rather than let it sit for a future
+session.
+
+Confirmed the bug live against the Docker stack before fixing it: `DELETE
+/api/beers/2` (a seeded beer with 3 existing `BeerConfirmation` rows) returned a bare
+500 with a raw Npgsql/EF `DbUpdateException` stack trace in the response body — real
+in Development mode, and an unhandled exception either way. Root cause:
+`BeerConfirmation.BeerId` is a restrict-on-delete FK
+(`ApplicationDbContext.OnModelCreating`), so Postgres itself rejects the delete;
+`BeersController.DeleteBeer` never checked for this before calling
+`SaveChangesAsync`. This bug was invisible to the entire existing test suite, since
+every backend test (unit and the `WebApplicationFactory`-based integration tests)
+runs against EF Core's InMemory provider, which doesn't enforce relational FK
+constraints the way Postgres does — only live-stack testing against real Postgres
+could have surfaced it, which is exactly how it was originally found while writing
+#76's `AdminBeers.jsx` delete-step microcopy.
+
+Fix: `DeleteBeer` now checks `_context.BeerConfirmations.AnyAsync(c => c.BeerId ==
+id)` up front and returns a clean `409 Conflict` with the same guidance #76's
+microcopy already gives customers-facing admins ("Void those confirmations first, or
+mark it Retired instead") — an explicit check rather than catching the DB exception,
+which also makes it deterministically testable against the InMemory provider instead
+of depending on provider-specific exception behavior. `AdminBeers.jsx` needed no code
+change at all: its existing generic `error.message` handling in the catch block
+already surfaces whatever message the API sends.
+
+Suites: backend 282/282 (+2 new — a controller unit test seeding a
+`BeerConfirmation` directly to exercise the InMemory path, and an HTTP-level
+integration test confirming the 409 status and message). Frontend 184/184 (+1 new,
+asserting the specific conflict message renders in `AdminBeers.jsx`). Clean
+`npm run build`.
+
+Verified live against the Docker stack, both directions: `DELETE /api/beers/2`
+(existing confirmations) now returns the clean 409 message instead of a stack trace;
+creating a fresh beer with no confirmations and deleting it still returns 204 as
+before — confirming the fix doesn't over-block legitimate deletes.
+
+- Branch: `fix-delete-beer-with-confirmations`, not yet opened as a PR.
+
+**Resume here:** open the PR for this fix, then continue the Sprint 8 build order
+with #79 (variable-length staff PINs), which the plan calls for building next since
+it touches `AdminUsers.jsx`/`ConfirmPinPad.jsx` and #80 depends on its relaxed PIN
 validation.

@@ -220,6 +220,21 @@ public class BeersController : ControllerBase
             return Unauthorized();
         }
 
+        // BeerConfirmation.BeerId is a restrict-on-delete FK (ApplicationDbContext), so
+        // deleting a beer that's already been confirmed would otherwise fail deep inside
+        // SaveChangesAsync with an unhandled DbUpdateException (a bare 500 with a raw DB
+        // stack trace, confirmed live 2026-07-23 — see CLAUDE.md). Checking up front gives
+        // a clean, actionable 409 instead, and keeps the check testable against the
+        // InMemory provider, which doesn't enforce the FK the way Postgres does.
+        var hasConfirmations = await _context.BeerConfirmations.AnyAsync(c => c.BeerId == id);
+        if (hasConfirmations)
+        {
+            return Conflict(new
+            {
+                message = "This beer has already been confirmed by at least one customer and can't be deleted. Void those confirmations first, or mark it Retired instead."
+            });
+        }
+
         _context.AdminAudits.Add(new AdminAudit
         {
             AdminUserId = adminId,

@@ -19,6 +19,9 @@ const AVAILABILITY_OPTIONS = ['OnTap', 'Available', 'OutOfStock', 'Retired'];
 // confirmations can't actually be deleted — BeerConfirmation.BeerId is a restrict-on-
 // delete FK (ApplicationDbContext), so the API call fails rather than cascading. Void
 // the confirmations via AdminConfirmations.jsx first, or use Retired instead.
+// BeersController.DeleteBeer checks for this up front and returns a clean 409 with an
+// equivalent message (previously an unhandled 500 — fixed same day this microcopy was
+// added), so this component's existing generic error handling already surfaces it.
 function AdminBeers() {
   const isAdmin = getRolesFromToken().includes('Admin');
   const [searchInput, setSearchInput] = useState('');

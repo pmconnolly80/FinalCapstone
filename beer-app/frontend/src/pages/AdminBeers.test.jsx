@@ -101,6 +101,21 @@ describe('AdminBeers', () => {
     expect(deleteBeer).toHaveBeenCalledWith(1, 'discontinued by brewery');
   });
 
+  it('surfaces the API\'s conflict message when deleting a beer with existing confirmations', async () => {
+    const user = userEvent.setup();
+    deleteBeer.mockRejectedValue(
+      new Error("This beer has already been confirmed by at least one customer and can't be deleted. Void those confirmations first, or mark it Retired instead.")
+    );
+    renderPage();
+    await screen.findByText('Duvel');
+
+    await user.click(screen.getAllByRole('button', { name: 'Delete' })[0]);
+    await user.type(screen.getByPlaceholderText(/reason/i), 'discontinued by brewery');
+    await user.click(screen.getByRole('button', { name: 'Confirm delete' }));
+
+    expect(await screen.findByText(/already been confirmed by at least one customer/i)).toBeInTheDocument();
+  });
+
   it('links Add Beer and each row Edit to the existing BeerForm routes', async () => {
     renderPage();
     await screen.findByText('Duvel');
