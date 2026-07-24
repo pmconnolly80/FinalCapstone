@@ -20,27 +20,39 @@ describe('ConfirmPinPad', () => {
     expect(screen.getByText('Hand your phone to the bartender')).toBeInTheDocument();
   });
 
-  it('masks PIN entry and only accepts digits, capped at 6', async () => {
+  it('masks PIN entry and only accepts digits, capped at 8', async () => {
     const user = userEvent.setup();
     render(<ConfirmPinPad beer={beer} onClose={() => {}} />);
 
     const input = screen.getByLabelText('Bartender PIN');
     expect(input).toHaveAttribute('type', 'password');
 
-    await user.type(input, '12ab345678');
+    await user.type(input, '12ab34567890');
 
-    expect(input).toHaveValue('123456');
+    expect(input).toHaveValue('12345678');
   });
 
-  it('requires 6 digits before submitting', async () => {
+  it('requires at least 6 digits before submitting', async () => {
     const user = userEvent.setup();
     render(<ConfirmPinPad beer={beer} onClose={() => {}} />);
 
     await user.type(screen.getByLabelText('Bartender PIN'), '123');
     await user.click(screen.getByRole('button', { name: 'Confirm' }));
 
-    expect(screen.getByText('Enter the 6-digit bartender PIN.')).toBeInTheDocument();
+    expect(screen.getByText("Enter the bartender's PIN.")).toBeInTheDocument();
     expect(confirmBeer).not.toHaveBeenCalled();
+  });
+
+  it('accepts an 8-digit PIN (e.g. a birthday format) and confirms', async () => {
+    confirmBeer.mockResolvedValue({ confirmedCount: 87, goal: 200, mugEarned: false });
+    const user = userEvent.setup();
+    render(<ConfirmPinPad beer={beer} onClose={() => {}} />);
+
+    await user.type(screen.getByLabelText('Bartender PIN'), '07041999');
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+
+    expect(await screen.findByText('87 of 200')).toBeInTheDocument();
+    expect(confirmBeer).toHaveBeenCalledWith(7, '07041999');
   });
 
   it('confirms and shows the updated count', async () => {

@@ -185,18 +185,31 @@ describe('AdminUsers', () => {
     expect(within(customerRow).queryByRole('button', { name: 'Set PIN' })).not.toBeInTheDocument();
 
     await user.click(screen.getAllByRole('button', { name: 'Set PIN' })[0]);
-    await user.type(screen.getByPlaceholderText('6-digit PIN'), '123');
+    await user.type(screen.getByPlaceholderText('PIN (6-8 digits)'), '123');
     await user.click(screen.getByRole('button', { name: 'Confirm' }));
 
     expect(issueOrResetStaffPin).not.toHaveBeenCalled();
-    expect(await screen.findByText(/exactly 6 digits/i)).toBeInTheDocument();
+    expect(await screen.findByText(/pins must be 6-8 digits/i)).toBeInTheDocument();
 
     issueOrResetStaffPin.mockResolvedValue(undefined);
-    await user.clear(screen.getByPlaceholderText('6-digit PIN'));
-    await user.type(screen.getByPlaceholderText('6-digit PIN'), '135790');
+    await user.clear(screen.getByPlaceholderText('PIN (6-8 digits)'));
+    await user.type(screen.getByPlaceholderText('PIN (6-8 digits)'), '135790');
     await user.click(screen.getByRole('button', { name: 'Confirm' }));
 
     expect(issueOrResetStaffPin).toHaveBeenCalledWith('bart-1', '135790');
+  });
+
+  it('accepts an 8-digit PIN (e.g. a birthday format) when setting a staff PIN', async () => {
+    const user = userEvent.setup();
+    issueOrResetStaffPin.mockResolvedValue(undefined);
+    renderPage();
+    await screen.findByText('bartender@example.com');
+
+    await user.click(screen.getAllByRole('button', { name: 'Set PIN' })[0]);
+    await user.type(screen.getByPlaceholderText('PIN (6-8 digits)'), '07041999');
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+
+    expect(issueOrResetStaffPin).toHaveBeenCalledWith('bart-1', '07041999');
   });
 
   it('deactivates a PIN directly, with no reason step', async () => {

@@ -1,6 +1,7 @@
 namespace BeerApi.Models;
 
-// A bartender's personal 6-digit PIN, typed on the customer's phone to authorize and
+// A bartender's personal PIN (6-8 digits, StaffPinsController.MinPinLength/MaxPinLength —
+// e.g. an 8-digit birthday format), typed on the customer's phone to authorize and
 // attribute a confirmation. Hashed like a password; never stored or returned in plaintext.
 // FailedAttempts/LockedUntil are schema-ahead for the Sprint 2 lockout behavior.
 public class StaffPin

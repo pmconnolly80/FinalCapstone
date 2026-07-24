@@ -4,6 +4,8 @@ using System.Net.Http.Json;
 using BeerApi.Controllers;
 using BeerApi.Data;
 using BeerApi.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace BeerApi.Tests.IntegrationTests;
@@ -88,6 +90,58 @@ public class ConfirmationsFlowTests : IDisposable
 
         var locked = await _client.PostAsJsonAsync("/api/confirmations", new ConfirmationRequest(beer.Id, SeedData.DevBartenderPin));
 
+        Assert.Equal(HttpStatusCode.Unauthorized, locked.StatusCode);
+        Assert.Equal(wrongBody, await locked.Content.ReadAsStringAsync());
+    }
+
+    // #79: regression coverage for the full confirm + lockout flow against a bartender
+    // issued a longer, non-default PIN (e.g. an 8-digit birthday format) — not just the
+    // seeded dev bartender's 6-digit one, which every other test in this file already
+    // exercises. Seeds directly via the DbContext rather than through the admin API,
+    // since PIN-issuance itself is StaffPinLifecycleTests' concern, not this file's.
+    [Fact]
+    public async Task ConfirmationLoop_WithEightDigitBartenderPin_UpdatesProgress_AndLockoutStillApplies()
+    {
+        const string eightDigitPin = "07041999";
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var bartender = new ApplicationUser { UserName = "birthday-pin-bartender@example.com", Email = "birthday-pin-bartender@example.com" };
+            await userManager.CreateAsync(bartender, "Bartender1!");
+            await userManager.AddToRoleAsync(bartender, "Bartender");
+
+            var hasher = new PasswordHasher<ApplicationUser>();
+            context.StaffPins.Add(new StaffPin
+            {
+                UserId = bartender.Id,
+                PinHash = hasher.HashPassword(bartender, eightDigitPin),
+                IsActive = true,
+            });
+            await context.SaveChangesAsync();
+        }
+
+        var token = await RegisterCustomerAsync("birthday-pin-customer@example.com");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var beers = (await _client.GetFromJsonAsync<BeerSearchResponse>("/api/beers"))!.Items;
+
+        // "A beer counts once, ever" means the already-confirmed check runs before PIN
+        // verification — so the success case and the lockout case need distinct beers,
+        // or every lockout-loop attempt would 409 on the first beer regardless of PIN.
+        var confirmed = await _client.PostAsJsonAsync("/api/confirmations", new ConfirmationRequest(beers![0].Id, eightDigitPin));
+        Assert.Equal(HttpStatusCode.Created, confirmed.StatusCode);
+
+        // Lockout still applies the same way against an 8-digit PIN as a 6-digit one.
+        var lockoutBeer = beers[1];
+        string wrongBody = string.Empty;
+        for (var i = 0; i < ConfirmationsController.MaxPinFailures; i++)
+        {
+            var wrong = await _client.PostAsJsonAsync("/api/confirmations", new ConfirmationRequest(lockoutBeer.Id, "00000000"));
+            Assert.Equal(HttpStatusCode.Unauthorized, wrong.StatusCode);
+            wrongBody = await wrong.Content.ReadAsStringAsync();
+        }
+
+        var locked = await _client.PostAsJsonAsync("/api/confirmations", new ConfirmationRequest(lockoutBeer.Id, eightDigitPin));
         Assert.Equal(HttpStatusCode.Unauthorized, locked.StatusCode);
         Assert.Equal(wrongBody, await locked.Content.ReadAsStringAsync());
     }

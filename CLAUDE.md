@@ -585,29 +585,47 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     container, confirmed the Vite dev server serves the new "Show all users"/"Filter
     by email" UI text, and that `GET /api/admin/users` (unchanged) still returns the
     same shape.
-  - #76 (UI: inline consequence microcopy on audited admin actions, branch
-    `sprint-8-admin-microcopy`, not yet a PR): copy-only, no backend change. Adds a
-    short line of microcopy right at the point of each audited action, shown only
-    once it's pending (not on page load): `AdminUsers.jsx`'s role-change/deactivate/
-    reactivate guard steps (a new `CONSEQUENCE_MICROCOPY` map — the role-change note
-    is a previously-undocumented-in-the-UI finding from reading
+  - #76 (UI: inline consequence microcopy on audited admin actions, merged
+    [PR #88](https://github.com/pmconnolly80/FinalCapstone/pull/88)): copy-only, no
+    backend change. Adds a short line of microcopy right at the point of each audited
+    action, shown only once it's pending (not on page load): `AdminUsers.jsx`'s
+    role-change/deactivate/reactivate guard steps (a new `CONSEQUENCE_MICROCOPY` map —
+    the role-change note is a previously-undocumented-in-the-UI finding from reading
     `ConfirmationsController.ResolveBartenderFromPinAsync`: moving someone off
     Bartender/Admin silently stops their PIN from resolving for confirmations even
     though `StaffPin.IsActive` stays true); `AdminConfirmations.jsx`'s void step
     (mug-not-revoked, mirroring `TECHNICAL_ARCHITECTURE_PLAN.md` §4.1); and
-    `AdminBeers.jsx`'s delete step, which surfaces a real, previously-undocumented
-    gotcha found while researching this story: `BeerConfirmation.BeerId` is a
-    restrict-on-delete FK (`ApplicationDbContext.OnModelCreating`), so deleting a
-    beer that any customer has already confirmed doesn't cascade — it fails with an
-    unhandled `DbUpdateException` server-side, which the frontend only ever shows as
-    a generic "Failed to delete beer." The microcopy warns admins away from hitting
-    it rather than fixing the underlying exception handling, which is out of this
-    copy-only issue's scope — flagged as a follow-up, not fixed here. Suites:
-    frontend 183/183 (+6 new across the three pages' test files). Clean
-    `npm run build`. Verified live: rebuilt the `web` container, confirmed all five
-    new microcopy strings are served by the dev server across the three pages.
+    `AdminBeers.jsx`'s delete step, which surfaced the real `DeleteBeer` FK-restrict
+    gotcha fixed the same day (see the "Bug fix" note below). Suites: frontend
+    183/183 (+6 new across the three pages' test files). Clean `npm run build`.
+    Verified live: rebuilt the `web` container, confirmed all five new microcopy
+    strings are served by the dev server across the three pages.
+  - #79 (API + UI: variable-length staff PINs, branch
+    `sprint-8-variable-pin-length`, not yet a PR): PINs were hardcoded to exactly 6
+    digits in 5 places across 2 backend controllers and 3 frontend files; relaxed to
+    a configurable 6-8 digit range so an admin can issue a bartender a longer,
+    memorable format (e.g. an 8-digit birthday, `MMDDYYYY`) instead of a random
+    6-digit one. New `StaffPinsController.MinPinLength`/`MaxPinLength` constants
+    (same cross-controller reuse pattern as `MeController` referencing
+    `ConfirmationsController.MugGoal`) replace the hardcoded checks in
+    `StaffPinsController.SetPinAsync` and `ConfirmationsController.PostConfirmation`.
+    Frontend: `ConfirmPinPad.jsx` (cap raised from 6 to 8, error message now
+    length-agnostic), `MyPin.jsx` and `AdminUsers.jsx`'s Set PIN step (regex/
+    `maxLength`/placeholder/error copy all updated to state the real 6-8 range rather
+    than a fixed "6-digit" claim). Existing 6-digit PINs (the dev bartender's
+    `123456`) keep working unchanged — the range check is inclusive of 6, not a
+    replacement floor. Suites: backend 287/287 (+5 new, including an HTTP-level
+    regression test running the full confirm + lockout flow against a freshly-issued
+    8-digit PIN, per the issue's explicit acceptance criteria), frontend 187/187
+    (+3 new). Clean `npm run build`. Verified live: invited a fresh bartender via
+    #77's endpoint, issued them an 8-digit birthday-format PIN via the admin API,
+    confirmed a beer with it as a customer (201), confirmed the existing dev
+    bartender's 6-digit PIN still works unchanged (201), confirmed an unissued
+    7-digit PIN (in-range but wrong) is rejected as "Invalid PIN" (401, not a
+    validation error), and a too-short 5-digit PIN is rejected at validation (400).
 
-**Bug fix (2026-07-23, not a Sprint 8 issue — a same-day follow-up to #76's finding):**
+**Bug fix (2026-07-23, not a Sprint 8 issue — a same-day follow-up to #76's finding,
+merged [PR #89](https://github.com/pmconnolly80/FinalCapstone/pull/89)):**
 `BeersController.DeleteBeer` no longer throws an unhandled `DbUpdateException` (a bare
 500 with a raw Npgsql/EF stack trace) when deleting a beer that any customer has
 already confirmed. Confirmed live against real Postgres before fixing (the InMemory
@@ -628,8 +646,9 @@ confirmations still succeeds with 204.
 **Not built** — the Admin Experience epic is done as of Sprint 5; Sprint 6 (Mobile UI
 Polish) and Sprint 7 (Beer Discovery & Recommendations) are both done and merged.
 Sprint 8 (Admin & Engagement UX Follow-ups) is in progress — #77/#75/#76 built and
-merged, #74/#78–#81 remaining, see `EPICS_AND_SPRINTS.md` for the planned build order.
-The Engagement, Retention & Social epic is not yet groomed into issues.
+merged, #79 built pending PR, #74/#78/#80/#81 remaining, see `EPICS_AND_SPRINTS.md`
+for the planned build order. The Engagement, Retention & Social epic is not yet
+groomed into issues.
 
 ## Testing policy (TDD)
 
@@ -701,8 +720,9 @@ backend 271/271, frontend 175/175). **Sprint 8: Admin & Engagement UX Follow-ups
 (milestone [#8](https://github.com/pmconnolly80/FinalCapstone/milestone/8), issues
 #74–#81, groomed 2026-07-23) is in progress: #77/#75/#76 built and merged (backend
 282/282, frontend 184/184 — includes the same-day `DeleteBeer` FK-restrict bug fix
-that followed from #76's finding), #74/#78–#81 remaining. See `EPICS_AND_SPRINTS.md`
-and `SESSION_LOG.md` for the full history.
+that followed from #76's finding), #79 built pending PR (backend 287/287, frontend
+187/187), #74/#78/#80/#81 remaining. See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md`
+for the full history.
 
 Sprint 5 built: a generalized `AdminAudit` trail + role assignment (#53) → user
 management/account actions API (#54) and screen (#55); audited beer edit/delete +
@@ -736,12 +756,15 @@ groomed 2026-07-23, in progress — one PR per issue rather than one combined PR
 filter/search on User Management,
 [PR #87](https://github.com/pmconnolly80/FinalCapstone/pull/87)), and #76 (inline
 consequence microcopy, [PR #88](https://github.com/pmconnolly80/FinalCapstone/pull/88))
-are all built and merged; #74/#78–#81 remain. See `EPICS_AND_SPRINTS.md`'s Sprint 8
-section for the planned build order (two file-overlap chains through
-`AdminUsers.jsx` and `ConfirmPinPad.jsx`/`BeerDetail.jsx`) and the bullets above for
-#77/#75/#76's detail. #76 also led to a same-day, out-of-milestone bug fix: the
-`DeleteBeer` FK-restrict gotcha it flagged (an unhandled 500 deleting a confirmed
-beer) is now fixed — see the bullet above.
+are all built and merged; #79 (variable-length staff PINs) is built (branch
+`sprint-8-variable-pin-length`, PR not yet opened); #74/#78/#80/#81 remain. See
+`EPICS_AND_SPRINTS.md`'s Sprint 8 section for the planned build order (two
+file-overlap chains through `AdminUsers.jsx` and `ConfirmPinPad.jsx`/
+`BeerDetail.jsx`) and the bullets above for #77/#75/#76/#79's detail. #76 also led to
+a same-day, out-of-milestone bug fix
+([PR #89](https://github.com/pmconnolly80/FinalCapstone/pull/89)): the `DeleteBeer`
+FK-restrict gotcha it flagged (an unhandled 500 deleting a confirmed beer) is now
+fixed — see the bullet above.
 
 After Sprint 8, the **Engagement, Retention & Social** epic (milestone badges, push
 notifications + owner composer, My Beers, social feed, journal, owner analytics) is

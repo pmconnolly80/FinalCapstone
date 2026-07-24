@@ -5,9 +5,15 @@ import { confirmBeer } from '../lib/api';
 // identical to the bartender — nudge toward asking an admin without revealing which.
 const REPEATED_FAILURE_THRESHOLD = 3;
 
+// #79: PINs range 6-8 digits (StaffPinsController.MinPinLength/MaxPinLength on the
+// backend) rather than a hardcoded 6 — an admin can issue a longer, memorable format
+// like an 8-digit birthday instead of a random 6-digit one.
+const MIN_PIN_LENGTH = 6;
+const MAX_PIN_LENGTH = 8;
+
 // The one-device confirmation moment: this fills the CUSTOMER's screen, and the customer
 // hands the phone across the bar. The bartender verifies the beer name, keys their
-// personal 6-digit PIN, and hands it back showing the updated count.
+// personal PIN, and hands it back showing the updated count.
 function ConfirmPinPad({ beer, onClose }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
@@ -17,14 +23,14 @@ function ConfirmPinPad({ beer, onClose }) {
   const [result, setResult] = useState(null);
 
   const handlePinChange = (event) => {
-    setPin(event.target.value.replace(/\D/g, '').slice(0, 6));
+    setPin(event.target.value.replace(/\D/g, '').slice(0, MAX_PIN_LENGTH));
     setError('');
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (pin.length !== 6) {
-      setError('Enter the 6-digit bartender PIN.');
+    if (pin.length < MIN_PIN_LENGTH || pin.length > MAX_PIN_LENGTH) {
+      setError("Enter the bartender's PIN.");
       return;
     }
     setSubmitting(true);

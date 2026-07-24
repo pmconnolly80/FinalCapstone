@@ -36,10 +36,23 @@ describe('MyPin', () => {
     const user = userEvent.setup();
 
     renderMyPin();
-    await user.type(screen.getByPlaceholderText('New 6-digit PIN'), '654321');
+    await user.type(screen.getByPlaceholderText('New PIN (6-8 digits)'), '654321');
     await user.click(screen.getByRole('button', { name: 'Save PIN' }));
 
     expect(setMyPin).toHaveBeenCalledWith('654321');
+    expect(await screen.findByText('PIN updated.')).toBeInTheDocument();
+  });
+
+  it('submits a valid 8-digit PIN (e.g. a birthday format) and shows success', async () => {
+    localStorage.setItem('beer-token', 'abc');
+    setMyPin.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+
+    renderMyPin();
+    await user.type(screen.getByPlaceholderText('New PIN (6-8 digits)'), '07041999');
+    await user.click(screen.getByRole('button', { name: 'Save PIN' }));
+
+    expect(setMyPin).toHaveBeenCalledWith('07041999');
     expect(await screen.findByText('PIN updated.')).toBeInTheDocument();
   });
 
@@ -48,11 +61,11 @@ describe('MyPin', () => {
     const user = userEvent.setup();
 
     renderMyPin();
-    await user.type(screen.getByPlaceholderText('New 6-digit PIN'), '123');
+    await user.type(screen.getByPlaceholderText('New PIN (6-8 digits)'), '123');
     await user.click(screen.getByRole('button', { name: 'Save PIN' }));
 
     expect(setMyPin).not.toHaveBeenCalled();
-    expect(await screen.findByText('PINs are exactly 6 digits.')).toBeInTheDocument();
+    expect(await screen.findByText('PINs must be 6-8 digits.')).toBeInTheDocument();
   });
 
   it('shows the API error message when the change fails', async () => {
@@ -61,7 +74,7 @@ describe('MyPin', () => {
     const user = userEvent.setup();
 
     renderMyPin();
-    await user.type(screen.getByPlaceholderText('New 6-digit PIN'), '654321');
+    await user.type(screen.getByPlaceholderText('New PIN (6-8 digits)'), '654321');
     await user.click(screen.getByRole('button', { name: 'Save PIN' }));
 
     expect(
