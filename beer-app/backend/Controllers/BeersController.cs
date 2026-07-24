@@ -119,10 +119,24 @@ public class BeersController : ControllerBase
             ? null
             : await _breweryLookup.GetBreweryAsync(beer.ObdbBreweryId);
 
+        // #74: "view/edit your rating from beer detail" — since My Beers doesn't exist
+        // yet, this is the only place a customer can see or change a rating they already
+        // submitted from the PIN pad's success state. False/null for anonymous callers,
+        // same convention as GetBeers' per-item Confirmed flag.
+        var customerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var confirmed = customerId != null && await _context.BeerConfirmations
+            .AnyAsync(c => c.CustomerId == customerId && c.BeerId == id);
+        var myRating = customerId == null
+            ? null
+            : await _context.BeerRatings
+                .Where(r => r.CustomerId == customerId && r.BeerId == id)
+                .Select(r => (int?)r.Rating)
+                .FirstOrDefaultAsync();
+
         return new BeerDetailResponse(
             beer.Id, beer.Name, beer.Brewery, beer.Style, beer.Description, beer.Availability,
             beer.Abv, beer.Ibu, beer.StyleFamily, beer.Class, beer.ObdbBreweryId, beer.CreatedAt,
-            breweryInfo);
+            breweryInfo, confirmed, myRating);
     }
 
     [Authorize(Roles = "Admin")]
@@ -349,4 +363,6 @@ public record BeerDetailResponse(
     BeerClass? Class,
     string? ObdbBreweryId,
     DateTime CreatedAt,
-    BreweryInfo? BreweryInfo);
+    BreweryInfo? BreweryInfo,
+    bool Confirmed,
+    int? MyRating);

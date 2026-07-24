@@ -205,6 +205,71 @@ public class ConfirmationsFlowTests : IDisposable
         Assert.NotEqual(BeerAvailability.OutOfStock, stillOriginal!.Availability);
     }
 
+    // #74: rating requires an existing confirmation, is editable in place, and is
+    // visible from beer detail (BeerDetailResponse.MyRating) — there's no My Beers
+    // screen yet for it to live on instead.
+    [Fact]
+    public async Task Rating_RequiresConfirmation_ThenIsEditableAndVisibleFromBeerDetail()
+    {
+        var token = await RegisterCustomerAsync("rating-flow-customer@example.com");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var beers = (await _client.GetFromJsonAsync<BeerSearchResponse>("/api/beers"))!.Items;
+        var beer = beers![0];
+
+        var beforeConfirming = await _client.PutAsJsonAsync($"/api/me/ratings/{beer.Id}", new SetRatingRequest(4));
+        Assert.Equal(HttpStatusCode.BadRequest, beforeConfirming.StatusCode);
+
+        var confirmed = await _client.PostAsJsonAsync("/api/confirmations", new ConfirmationRequest(beer.Id, SeedData.DevBartenderPin));
+        Assert.Equal(HttpStatusCode.Created, confirmed.StatusCode);
+
+        var outOfRange = await _client.PutAsJsonAsync($"/api/me/ratings/{beer.Id}", new SetRatingRequest(6));
+        Assert.Equal(HttpStatusCode.BadRequest, outOfRange.StatusCode);
+
+        var firstRating = await _client.PutAsJsonAsync($"/api/me/ratings/{beer.Id}", new SetRatingRequest(4));
+        Assert.Equal(HttpStatusCode.NoContent, firstRating.StatusCode);
+
+        var afterFirstRating = await _client.GetFromJsonAsync<BeerDetailResponse>($"/api/beers/{beer.Id}");
+        Assert.True(afterFirstRating!.Confirmed);
+        Assert.Equal(4, afterFirstRating.MyRating);
+
+        var revisedRating = await _client.PutAsJsonAsync($"/api/me/ratings/{beer.Id}", new SetRatingRequest(2));
+        Assert.Equal(HttpStatusCode.NoContent, revisedRating.StatusCode);
+
+        var afterRevision = await _client.GetFromJsonAsync<BeerDetailResponse>($"/api/beers/{beer.Id}");
+        Assert.Equal(2, afterRevision!.MyRating);
+    }
+
+    // #74: a lightweight milestone at 100, distinct from the 200-beer mug.
+    [Fact]
+    public async Task ConfirmationLoop_ReachingMilestoneCount_ReportsMilestoneReached()
+    {
+        var token = await RegisterCustomerAsync("milestone-customer@example.com");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        ConfirmationResponse? last = null;
+        for (var i = 0; i < ConfirmationsController.MilestoneCount; i++)
+        {
+            int beerId;
+            using (var scope = _factory.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var beer = new Beer { Name = $"Milestone Beer {i}", Brewery = "Test Brewery", Style = "Test Style" };
+                context.Beers.Add(beer);
+                await context.SaveChangesAsync();
+                beerId = beer.Id;
+            }
+
+            var response = await _client.PostAsJsonAsync("/api/confirmations",
+                new ConfirmationRequest(beerId, SeedData.DevBartenderPin));
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+            last = await response.Content.ReadFromJsonAsync<ConfirmationResponse>();
+        }
+
+        Assert.Equal(ConfirmationsController.MilestoneCount, last!.ConfirmedCount);
+        Assert.True(last.MilestoneReached);
+        Assert.False(last.MugEarned);
+    }
+
     private async Task<string> RegisterCustomerAsync(string email)
     {
         var response = await _client.PostAsJsonAsync("/api/auth/register", new RegisterRequest(email, "Passw0rd!"));

@@ -18,6 +18,13 @@ public class ConfirmationsController : ControllerBase
 {
     public const int MugGoal = 200;
 
+    // #74: a lightweight, non-durable milestone moment distinct from the mug — no badge
+    // infrastructure, no MilestoneAward table, just a transient flag on the confirmation
+    // that just crossed the count. Unlike MugAward, nothing stops it from firing again if
+    // a correction ever moved the count back below 100 and then past it again, which is
+    // fine for a "not full badge infrastructure" celebration per the issue's scope.
+    public const int MilestoneCount = 100;
+
     // Lockout policy (#12) — defaults from grooming, tune later. Both axes stay at the
     // same threshold so neither becomes the weaker path for a brute-forcer.
     public const int MaxPinFailures = 5;
@@ -107,7 +114,8 @@ public class ConfirmationsController : ControllerBase
             confirmation.ConfirmedAt,
             confirmedCount,
             MugGoal,
-            award != null));
+            award != null,
+            confirmedCount == MilestoneCount));
     }
 
     // #80: a bartender has no device or login session of their own at the bar (the
@@ -290,5 +298,5 @@ public class ConfirmationsController : ControllerBase
 }
 
 public record ConfirmationRequest(int BeerId, string Pin);
-public record ConfirmationResponse(int BeerId, string BeerName, DateTime ConfirmedAt, int ConfirmedCount, int Goal, bool MugEarned);
+public record ConfirmationResponse(int BeerId, string BeerName, DateTime ConfirmedAt, int ConfirmedCount, int Goal, bool MugEarned, bool MilestoneReached);
 public record PinAvailabilityRequest(int BeerId, string Pin, BeerAvailability Availability);

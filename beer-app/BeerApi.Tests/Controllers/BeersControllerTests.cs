@@ -298,6 +298,56 @@ public class BeersControllerTests
     }
 
     [Fact]
+    public async Task GetBeer_AnonymousCaller_ReportsNotConfirmed_AndNullRating()
+    {
+        using var context = CreateContext();
+        var beer = new Beer { Name = "Hefeweizen", Brewery = "Weihenstephaner", Style = "Wheat" };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        var controller = CreateController(context);
+
+        var result = await controller.GetBeer(beer.Id);
+
+        Assert.False(result.Value?.Confirmed);
+        Assert.Null(result.Value?.MyRating);
+    }
+
+    [Fact]
+    public async Task GetBeer_ConfirmedByCustomer_ReportsConfirmed()
+    {
+        using var context = CreateContext();
+        var beer = new Beer { Name = "Hefeweizen", Brewery = "Weihenstephaner", Style = "Wheat" };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        context.BeerConfirmations.Add(new BeerConfirmation { CustomerId = "cust-1", BeerId = beer.Id, TavernId = 1, ConfirmedByUserId = "b1" });
+        await context.SaveChangesAsync();
+        var controller = CreateController(context, userId: "cust-1");
+
+        var result = await controller.GetBeer(beer.Id);
+
+        Assert.True(result.Value?.Confirmed);
+        Assert.Null(result.Value?.MyRating);
+    }
+
+    [Fact]
+    public async Task GetBeer_WithOwnRating_ReturnsIt_NotSomeoneElses()
+    {
+        using var context = CreateContext();
+        var beer = new Beer { Name = "Hefeweizen", Brewery = "Weihenstephaner", Style = "Wheat" };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        context.BeerRatings.AddRange(
+            new BeerRating { CustomerId = "cust-1", BeerId = beer.Id, Rating = 4 },
+            new BeerRating { CustomerId = "cust-2", BeerId = beer.Id, Rating = 1 });
+        await context.SaveChangesAsync();
+        var controller = CreateController(context, userId: "cust-1");
+
+        var result = await controller.GetBeer(beer.Id);
+
+        Assert.Equal(4, result.Value?.MyRating);
+    }
+
+    [Fact]
     public async Task GetBeer_WithoutObdbBreweryId_ReturnsNullBreweryInfo()
     {
         using var context = CreateContext();

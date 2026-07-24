@@ -21,6 +21,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<AdminAudit> AdminAudits => Set<AdminAudit>();
     public DbSet<ExternalSearchLog> ExternalSearchLogs => Set<ExternalSearchLog>();
     public DbSet<BeerRecommendation> BeerRecommendations => Set<BeerRecommendation>();
+    public DbSet<BeerRating> BeerRatings => Set<BeerRating>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -71,5 +72,16 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<MugAward>()
             .HasIndex(a => a.CustomerId)
             .IsUnique();
+
+        // One rating per customer per beer — resubmitting edits it in place (#74).
+        builder.Entity<BeerRating>()
+            .HasIndex(r => new { r.CustomerId, r.BeerId })
+            .IsUnique();
+
+        builder.Entity<BeerRating>()
+            .HasOne(r => r.Beer)
+            .WithMany()
+            .HasForeignKey(r => r.BeerId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

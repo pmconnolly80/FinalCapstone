@@ -123,4 +123,82 @@ public class MeControllerTests
         Assert.False(progress.MugEarned);
         Assert.Null(progress.MugEarnedAt);
     }
+
+    private static async Task<Beer> SeedConfirmedBeerAsync(ApplicationDbContext context, string customerId = CustomerId)
+    {
+        var beer = new Beer { Name = "Duvel", Brewery = "Duvel Moortgat", Style = "Belgian Strong Golden Ale" };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        context.BeerConfirmations.Add(new BeerConfirmation
+        {
+            CustomerId = customerId,
+            BeerId = beer.Id,
+            TavernId = 1,
+            ConfirmedByUserId = "b1",
+        });
+        await context.SaveChangesAsync();
+        return beer;
+    }
+
+    [Fact]
+    public async Task SetRating_ForConfirmedBeer_CreatesRating()
+    {
+        using var context = CreateContext();
+        var beer = await SeedConfirmedBeerAsync(context);
+        var controller = CreateController(context);
+
+        var result = await controller.SetRating(beer.Id, new SetRatingRequest(4));
+
+        Assert.IsType<NoContentResult>(result);
+        var rating = Assert.Single(context.BeerRatings);
+        Assert.Equal(CustomerId, rating.CustomerId);
+        Assert.Equal(beer.Id, rating.BeerId);
+        Assert.Equal(4, rating.Rating);
+    }
+
+    [Fact]
+    public async Task SetRating_ResubmittingForSameBeer_UpdatesInPlace_NotDuplicate()
+    {
+        using var context = CreateContext();
+        var beer = await SeedConfirmedBeerAsync(context);
+        var controller = CreateController(context);
+        await controller.SetRating(beer.Id, new SetRatingRequest(3));
+
+        var result = await controller.SetRating(beer.Id, new SetRatingRequest(5));
+
+        Assert.IsType<NoContentResult>(result);
+        var rating = Assert.Single(context.BeerRatings);
+        Assert.Equal(5, rating.Rating);
+    }
+
+    [Fact]
+    public async Task SetRating_WithoutAConfirmation_ReturnsBadRequest_AndCreatesNothing()
+    {
+        using var context = CreateContext();
+        var beer = new Beer { Name = "Duvel", Brewery = "Duvel Moortgat", Style = "Belgian Strong Golden Ale" };
+        context.Beers.Add(beer);
+        await context.SaveChangesAsync();
+        var controller = CreateController(context);
+
+        var result = await controller.SetRating(beer.Id, new SetRatingRequest(4));
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Empty(context.BeerRatings);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(6)]
+    [InlineData(-1)]
+    public async Task SetRating_OutOfRange_ReturnsBadRequest(int rating)
+    {
+        using var context = CreateContext();
+        var beer = await SeedConfirmedBeerAsync(context);
+        var controller = CreateController(context);
+
+        var result = await controller.SetRating(beer.Id, new SetRatingRequest(rating));
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Empty(context.BeerRatings);
+    }
 }

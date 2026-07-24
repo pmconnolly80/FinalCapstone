@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ConfirmPinPad from './ConfirmPinPad';
-import { confirmBeer, setBeerAvailabilityViaPin } from '../lib/api';
+import { confirmBeer, setBeerAvailabilityViaPin, setMyRating } from '../lib/api';
 
 vi.mock('../lib/api');
 
@@ -242,6 +242,66 @@ describe('ConfirmPinPad', () => {
       await user.click(screen.getByRole('button', { name: 'Yes, mark out of stock' }));
 
       expect(await screen.findByText(/no signal — try again/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('#74: "How was it?" rating prompt and milestone moment', () => {
+    it('shows the rating prompt on the success screen, skippable', async () => {
+      confirmBeer.mockResolvedValue({ confirmedCount: 87, goal: 200, mugEarned: false, milestoneReached: false });
+      const user = userEvent.setup();
+      render(<ConfirmPinPad beer={beer} onClose={() => {}} />);
+
+      await user.type(screen.getByLabelText('Bartender PIN'), '123456');
+      await user.click(screen.getByRole('button', { name: 'Confirm' }));
+      await screen.findByText('87 of 200');
+
+      expect(screen.getByText('How was it?')).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Skip' }));
+
+      expect(screen.queryByText('How was it?')).not.toBeInTheDocument();
+      expect(setMyRating).not.toHaveBeenCalled();
+    });
+
+    it('submits a rating and shows a thank-you message', async () => {
+      confirmBeer.mockResolvedValue({ confirmedCount: 87, goal: 200, mugEarned: false, milestoneReached: false });
+      setMyRating.mockResolvedValue(undefined);
+      const user = userEvent.setup();
+      render(<ConfirmPinPad beer={beer} onClose={() => {}} />);
+
+      await user.type(screen.getByLabelText('Bartender PIN'), '123456');
+      await user.click(screen.getByRole('button', { name: 'Confirm' }));
+      await screen.findByText('87 of 200');
+
+      await user.click(screen.getByRole('button', { name: 'Rate 5 stars' }));
+
+      expect(setMyRating).toHaveBeenCalledWith(7, 5);
+      expect(await screen.findByText(/thanks! rated ★5/i)).toBeInTheDocument();
+      expect(screen.queryByText('How was it?')).not.toBeInTheDocument();
+    });
+
+    it('shows a milestone moment distinct from the mug, only when the mug was not also earned', async () => {
+      confirmBeer.mockResolvedValue({ confirmedCount: 100, goal: 200, mugEarned: false, milestoneReached: true });
+      const user = userEvent.setup();
+      render(<ConfirmPinPad beer={beer} onClose={() => {}} />);
+
+      await user.type(screen.getByLabelText('Bartender PIN'), '123456');
+      await user.click(screen.getByRole('button', { name: 'Confirm' }));
+
+      expect(await screen.findByText(/nice milestone/i)).toBeInTheDocument();
+      expect(screen.queryByText('🏆 Mug earned!')).not.toBeInTheDocument();
+    });
+
+    it('does not show the milestone moment on an ordinary confirmation', async () => {
+      confirmBeer.mockResolvedValue({ confirmedCount: 87, goal: 200, mugEarned: false, milestoneReached: false });
+      const user = userEvent.setup();
+      render(<ConfirmPinPad beer={beer} onClose={() => {}} />);
+
+      await user.type(screen.getByLabelText('Bartender PIN'), '123456');
+      await user.click(screen.getByRole('button', { name: 'Confirm' }));
+      await screen.findByText('87 of 200');
+
+      expect(screen.queryByText(/nice milestone/i)).not.toBeInTheDocument();
     });
   });
 });

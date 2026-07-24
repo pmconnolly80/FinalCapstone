@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import BeerDetail from './BeerDetail';
-import { fetchBeer } from '../lib/api';
+import { fetchBeer, setMyRating } from '../lib/api';
 
 vi.mock('../lib/api');
 
@@ -134,5 +135,55 @@ describe('BeerDetail', () => {
     renderBeerDetail('1');
 
     expect(await screen.findByText('Could not load this beer. Try again.')).toBeInTheDocument();
+  });
+
+  describe('#74: view/edit your rating', () => {
+    it('omits the rating section for a beer the customer has not confirmed', async () => {
+      fetchBeer.mockResolvedValue({ id: 1, name: 'Duvel', brewery: 'Duvel Moortgat', style: 'Ale', confirmed: false });
+
+      renderBeerDetail('1');
+
+      expect(await screen.findByText('Duvel')).toBeInTheDocument();
+      expect(screen.queryByText('Your rating')).not.toBeInTheDocument();
+    });
+
+    it('shows the rating section for a confirmed beer, highlighting the existing rating', async () => {
+      fetchBeer.mockResolvedValue({
+        id: 1, name: 'Duvel', brewery: 'Duvel Moortgat', style: 'Ale', confirmed: true, myRating: 4,
+      });
+
+      renderBeerDetail('1');
+
+      expect(await screen.findByText('Your rating')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Rate 4 stars' })).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByRole('button', { name: 'Rate 3 stars' })).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('submits a new rating and highlights it once saved', async () => {
+      const user = userEvent.setup();
+      fetchBeer.mockResolvedValue({ id: 1, name: 'Duvel', brewery: 'Duvel Moortgat', style: 'Ale', confirmed: true, myRating: null });
+      setMyRating.mockResolvedValue(undefined);
+
+      renderBeerDetail('1');
+      await screen.findByText('Your rating');
+
+      await user.click(screen.getByRole('button', { name: 'Rate 5 stars' }));
+
+      expect(setMyRating).toHaveBeenCalledWith('1', 5);
+      expect(await screen.findByRole('button', { name: 'Rate 5 stars' })).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('surfaces an API error from a failed rating submission', async () => {
+      const user = userEvent.setup();
+      fetchBeer.mockResolvedValue({ id: 1, name: 'Duvel', brewery: 'Duvel Moortgat', style: 'Ale', confirmed: true, myRating: null });
+      setMyRating.mockRejectedValue(new Error('Rating must be between 1 and 5.'));
+
+      renderBeerDetail('1');
+      await screen.findByText('Your rating');
+
+      await user.click(screen.getByRole('button', { name: 'Rate 5 stars' }));
+
+      expect(await screen.findByText('Rating must be between 1 and 5.')).toBeInTheDocument();
+    });
   });
 });

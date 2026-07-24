@@ -140,6 +140,19 @@ export async function fetchMyProgress() {
   return response.json();
 }
 
+export async function setMyRating(beerId, rating) {
+  const response = await fetch(`${API_BASE_URL}/api/me/ratings/${beerId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ rating }),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || 'Failed to save rating');
+  }
+}
+
 // Reads the role claim out of the stored JWT (client-side convenience only — every admin
 // endpoint is enforced server-side regardless). Returns [] for missing or malformed tokens.
 export function getRolesFromToken() {
