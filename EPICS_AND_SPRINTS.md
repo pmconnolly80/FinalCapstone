@@ -307,10 +307,11 @@ direction at planning time — see the build-order note below.
    acceptance criteria amended 2026-07-23 to add a rating view/edit affordance on beer
    detail, since My Beers doesn't exist yet
 2. [#75 UI: staff-only filter + search on the User Management table](https://github.com/pmconnolly80/FinalCapstone/issues/75) (`epic:admin`) —
-   this repo's list had #75/#76 titles swapped relative to GitHub; fixed 2026-07-23
+   this repo's list had #75/#76 titles swapped relative to GitHub; fixed 2026-07-23.
+   ✅ built 2026-07-23, branch `sprint-8-user-mgmt-filter`, PR not yet opened
 3. [#76 UI: inline consequence microcopy on audited admin actions](https://github.com/pmconnolly80/FinalCapstone/issues/76) (`epic:admin`)
 4. [#77 API + UI: admin-initiated bartender account invite](https://github.com/pmconnolly80/FinalCapstone/issues/77) (`epic:admin`) —
-   ✅ built 2026-07-23, branch `sprint-8-bartender-invite`, PR not yet opened
+   ✅ built 2026-07-23, merged [PR #86](https://github.com/pmconnolly80/FinalCapstone/pull/86)
 5. [#78 UI + API: reframe Admin Dashboard as operational health; pull forward most/least-confirmed beers](https://github.com/pmconnolly80/FinalCapstone/issues/78) (`epic:admin`)
 6. [#79 API + UI: support variable-length staff PINs (e.g. birthday format)](https://github.com/pmconnolly80/FinalCapstone/issues/79) (`epic:admin`) —
    acceptance criteria amended 2026-07-23 to explicitly call out 3 files with hardcoded

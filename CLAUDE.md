@@ -553,8 +553,8 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
   [#8](https://github.com/pmconnolly80/FinalCapstone/milestone/8), groomed 2026-07-23,
   in progress — one PR per issue, per explicit direction, rather than Sprint 7's
   single combined PR):
-  - #77 (API + UI: admin-initiated bartender invite, branch
-    `sprint-8-bartender-invite`, not yet a PR): new
+  - #77 (API + UI: admin-initiated bartender invite, merged
+    [PR #86](https://github.com/pmconnolly80/FinalCapstone/pull/86)): new
     `POST /api/admin/users/invite-bartender` on `AdminUsersController` (`Admin`-only,
     no reason required — an account-creation action, not a correction to an existing
     one, so it doesn't fit the reason-guard pattern #53–#56 use). Creates the
@@ -573,12 +573,23 @@ status/what's next → `FEATURE_MAP.md` / `IMPLEMENTATION_BACKLOG.md` for backlo
     401s, duplicate invite 409s. SMTP isn't configured in this environment, so (same
     as `forgot-password`) the invite email itself silently no-ops rather than
     sending.
+  - #75 (UI: staff-only filter + search on User Management, branch
+    `sprint-8-user-mgmt-filter`, not yet a PR): `AdminUsers.jsx` now defaults to
+    Bartender/Admin rows only (a "Show all users (including customers)" checkbox
+    reveals the rest), plus a client-side email filter box — same filter pattern as
+    `AdminConfirmations.jsx`. Frontend-only, no backend change (the API already
+    returns every user; this is purely a client-side view filter). The acceptance
+    criteria said "email/name search," but the user model has no separate display
+    name field, so the filter searches email only. Suites: frontend 180/180 (+3 new).
+    Clean `npm run build`. Verified live: rebuilt the `web` container, confirmed the
+    Vite dev server serves the new "Show all users"/"Filter by email" UI text, and
+    that `GET /api/admin/users` (unchanged) still returns the same shape.
 
 **Not built** — the Admin Experience epic is done as of Sprint 5; Sprint 6 (Mobile UI
 Polish) and Sprint 7 (Beer Discovery & Recommendations) are both done and merged.
-Sprint 8 (Admin & Engagement UX Follow-ups) is in progress — #77 built, #74–#76/#78–#81
-remaining, see `EPICS_AND_SPRINTS.md` for the planned build order. The Engagement,
-Retention & Social epic is not yet groomed into issues.
+Sprint 8 (Admin & Engagement UX Follow-ups) is in progress — #77 built and merged, #75
+built pending PR, #74/#76/#78–#81 remaining, see `EPICS_AND_SPRINTS.md` for the planned
+build order. The Engagement, Retention & Social epic is not yet groomed into issues.
 
 ## Testing policy (TDD)
 
@@ -648,9 +659,9 @@ issues #72–#73 + #83, groomed 2026-07-23, closed 2026-07-23 —
 [PR #85](https://github.com/pmconnolly80/FinalCapstone/pull/85); suites at close:
 backend 271/271, frontend 175/175). **Sprint 8: Admin & Engagement UX Follow-ups**
 (milestone [#8](https://github.com/pmconnolly80/FinalCapstone/milestone/8), issues
-#74–#81, groomed 2026-07-23) is in progress: #77 built (backend 280/280, frontend
-177/177), #74–#76/#78–#81 remaining. See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md`
-for the full history.
+#74–#81, groomed 2026-07-23) is in progress: #77 built and merged (backend 280/280,
+frontend 177/177), #75 built pending PR (frontend 180/180), #74/#76/#78–#81
+remaining. See `EPICS_AND_SPRINTS.md` and `SESSION_LOG.md` for the full history.
 
 Sprint 5 built: a generalized `AdminAudit` trail + role assignment (#53) → user
 management/account actions API (#54) and screen (#55); audited beer edit/delete +
@@ -679,11 +690,13 @@ report. See the bullet above for full detail, including live-stack verification.
 **Sprint 8: Admin & Engagement UX Follow-ups** (milestone
 [#8](https://github.com/pmconnolly80/FinalCapstone/milestone/8), issues #74–#81,
 groomed 2026-07-23, in progress — one PR per issue rather than one combined PR):
-#77 (admin-initiated bartender invite) is built (branch `sprint-8-bartender-invite`,
-PR not yet opened); #74–#76/#78–#81 remain. See `EPICS_AND_SPRINTS.md`'s Sprint 8
+#77 (admin-initiated bartender invite) is built and merged
+([PR #86](https://github.com/pmconnolly80/FinalCapstone/pull/86)); #75 (staff-only
+filter/search on User Management) is built (branch `sprint-8-user-mgmt-filter`, PR
+not yet opened); #74/#76/#78–#81 remain. See `EPICS_AND_SPRINTS.md`'s Sprint 8
 section for the planned build order (two file-overlap chains through
-`AdminUsers.jsx` and `ConfirmPinPad.jsx`/`BeerDetail.jsx`) and the bullet above for
-#77's detail.
+`AdminUsers.jsx` and `ConfirmPinPad.jsx`/`BeerDetail.jsx`) and the bullets above for
+#77/#75's detail.
 
 After Sprint 8, the **Engagement, Retention & Social** epic (milestone badges, push
 notifications + owner composer, My Beers, social feed, journal, owner analytics) is

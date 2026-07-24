@@ -51,20 +51,58 @@ describe('AdminUsers', () => {
     expect(getAdminUsers).not.toHaveBeenCalled();
   });
 
-  it('shows the user list with role, status, and PIN badges', async () => {
+  it('defaults to a staff-only view with role, status, and PIN badges', async () => {
     renderPage();
 
-    expect(await screen.findByText('customer@example.com')).toBeInTheDocument();
-    expect(screen.getByText('bartender@example.com')).toBeInTheDocument();
-    expect(screen.getAllByText('Active')).toHaveLength(2);
+    expect(await screen.findByText('bartender@example.com')).toBeInTheDocument();
+    expect(screen.getByText('deactivated@example.com')).toBeInTheDocument();
+    expect(screen.queryByText('customer@example.com')).not.toBeInTheDocument();
+    expect(screen.getByText('Active')).toBeInTheDocument();
     expect(screen.getByText('Deactivated')).toBeInTheDocument();
     expect(screen.getByText('PIN active')).toBeInTheDocument();
-    expect(screen.getAllByText('No PIN')).toHaveLength(2);
+    expect(screen.getByText('No PIN')).toBeInTheDocument();
+  });
+
+  it('reveals customer accounts via the "show all" toggle, and hides them again when unchecked', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('bartender@example.com');
+    expect(screen.queryByText('customer@example.com')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('checkbox', { name: /show all users/i }));
+    expect(await screen.findByText('customer@example.com')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('checkbox', { name: /show all users/i }));
+    expect(screen.queryByText('customer@example.com')).not.toBeInTheDocument();
+  });
+
+  it('filters the visible rows by email', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('bartender@example.com');
+
+    await user.type(screen.getByPlaceholderText('Filter by email'), 'deactivated');
+
+    expect(screen.queryByText('bartender@example.com')).not.toBeInTheDocument();
+    expect(screen.getByText('deactivated@example.com')).toBeInTheDocument();
+    expect(screen.queryByText(/No users found/i)).not.toBeInTheDocument();
+  });
+
+  it('shows a filter-specific empty message when the filter matches nothing', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('bartender@example.com');
+
+    await user.type(screen.getByPlaceholderText('Filter by email'), 'nobody-has-this-email');
+
+    expect(await screen.findByText(/no users match this filter/i)).toBeInTheDocument();
   });
 
   it('requires a reason and an explicit confirm before changing role', async () => {
     const user = userEvent.setup();
     renderPage();
+    await screen.findByText('bartender@example.com');
+    await user.click(screen.getByRole('checkbox', { name: /show all users/i }));
     await screen.findByText('customer@example.com');
 
     const roleSelect = screen.getByDisplayValue('Customer');
@@ -85,7 +123,7 @@ describe('AdminUsers', () => {
   it('requires a reason and an explicit confirm before deactivating', async () => {
     const user = userEvent.setup();
     renderPage();
-    await screen.findByText('customer@example.com');
+    await screen.findByText('bartender@example.com');
 
     await user.click(screen.getAllByRole('button', { name: 'Deactivate' })[0]);
     expect(deactivateAccount).not.toHaveBeenCalled();
@@ -98,7 +136,7 @@ describe('AdminUsers', () => {
     await user.type(screen.getByPlaceholderText('Reason'), 'policy violation');
     await user.click(screen.getByRole('button', { name: 'Confirm' }));
 
-    expect(deactivateAccount).toHaveBeenCalledWith('cust-1', 'policy violation');
+    expect(deactivateAccount).toHaveBeenCalledWith('bart-1', 'policy violation');
   });
 
   it('offers reactivate only for a deactivated account, gated by a reason', async () => {
@@ -106,7 +144,7 @@ describe('AdminUsers', () => {
     renderPage();
     await screen.findByText('deactivated@example.com');
 
-    expect(screen.queryAllByRole('button', { name: 'Deactivate' })).toHaveLength(2);
+    expect(screen.queryAllByRole('button', { name: 'Deactivate' })).toHaveLength(1);
     await user.click(screen.getByRole('button', { name: 'Reactivate' }));
 
     reactivateAccount.mockResolvedValue(undefined);
@@ -119,6 +157,8 @@ describe('AdminUsers', () => {
   it('offers Set PIN only for staff rows, and validates the PIN format', async () => {
     const user = userEvent.setup();
     renderPage();
+    await screen.findByText('bartender@example.com');
+    await user.click(screen.getByRole('checkbox', { name: /show all users/i }));
     await screen.findByText('customer@example.com');
 
     const rows = screen.getAllByRole('row');
@@ -155,7 +195,7 @@ describe('AdminUsers', () => {
     const user = userEvent.setup();
     inviteBartender.mockResolvedValue({ id: 'new-1', email: 'newhire@example.com', role: 'Bartender', isActive: true, hasActivePin: false });
     renderPage();
-    await screen.findByText('customer@example.com');
+    await screen.findByText('bartender@example.com');
 
     await user.type(screen.getByPlaceholderText('newhire@example.com'), 'newhire@example.com');
     await user.click(screen.getByRole('button', { name: 'Invite bartender' }));
@@ -169,7 +209,7 @@ describe('AdminUsers', () => {
     const user = userEvent.setup();
     inviteBartender.mockRejectedValue(new Error('A user with that email already exists.'));
     renderPage();
-    await screen.findByText('customer@example.com');
+    await screen.findByText('bartender@example.com');
 
     await user.type(screen.getByPlaceholderText('newhire@example.com'), 'customer@example.com');
     await user.click(screen.getByRole('button', { name: 'Invite bartender' }));
@@ -182,7 +222,7 @@ describe('AdminUsers', () => {
     const user = userEvent.setup();
     deactivateAccount.mockRejectedValue(new Error('User not found.'));
     renderPage();
-    await screen.findByText('customer@example.com');
+    await screen.findByText('bartender@example.com');
 
     await user.click(screen.getAllByRole('button', { name: 'Deactivate' })[0]);
     await user.type(screen.getByPlaceholderText('Reason'), 'policy violation');

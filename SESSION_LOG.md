@@ -1482,7 +1482,32 @@ environment (a known, existing gap — see `EPICS_AND_SPRINTS.md`'s deployment-e
 note), so the invite email itself silently no-ops rather than sending, same as
 `forgot-password` already does.
 
-- Branch: `sprint-8-bartender-invite`, not yet opened as a PR.
+- Branch: `sprint-8-bartender-invite` —
+  [PR #86](https://github.com/pmconnolly80/FinalCapstone/pull/86), CI green, merged to
+  `master` before starting #75 (keeps the `AdminUsers.jsx` chain conflict-free).
 
-**Resume here:** open the PR for #77, then continue the build order above starting
-with #75 (staff-only filter/search on the User Management table).
+Then built #75 (staff-only filter + search on the User Management table), next in the
+build order: `AdminUsers.jsx` now defaults to showing only Bartender/Admin rows (a
+"Show all users (including customers)" checkbox reveals the rest), plus a client-side
+email filter box mirroring `AdminConfirmations.jsx`'s existing filter pattern.
+Frontend-only — the API already returns every user, this is purely a view filter, so
+no backend change or new backend tests. The acceptance criteria said "email/name
+search," but the user model has no separate display name field, so the filter
+searches email only (a deliberate scope call, not a gap).
+
+Existing `AdminUsers.test.jsx` tests that assumed a customer row was visible by
+default needed updating for the new default (either switched to a staff row, or
+added a "show all" toggle click first) — this was expected given the acceptance
+criteria, not a regression. Frontend suite: 180/180 (+3 new: staff-only default
+view, show-all toggle round-trip, email filter). Clean `npm run build`.
+
+Verified live: rebuilt the `web` container (`docker compose up -d --build web`),
+confirmed the Vite dev server serves the new "Show all users"/"Filter by email" UI
+text via `curl http://localhost:3001/src/pages/AdminUsers.jsx`, and confirmed
+`GET /api/admin/users` (unchanged) still returns the same response shape via curl as
+the seeded admin.
+
+- Branch: `sprint-8-user-mgmt-filter`, not yet opened as a PR.
+
+**Resume here:** open the PR for #75, then continue the build order with #76 (inline
+consequence microcopy on audited admin actions).
